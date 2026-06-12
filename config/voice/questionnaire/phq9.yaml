@@ -1,0 +1,34 @@
+# Mapping: voice questionnaire/phq9.tsv -> Measurement + PhenotypicFeature (IR)
+# PLACEHOLDER — PHQ-9 depression screener.
+#
+# Two products from one questionnaire:
+#  - a total score   -> MeasurementObservation (LOINC for PHQ-9 total)
+#  - per-item answers -> MeasurementObservation (ordinal) and/or PhenotypicFeature (HPO)
+# Per-item response choices and term URLs come from the companion phq9.json data dict.
+
+table: phq9
+keyed_by: [participant_id, session_id]
+
+# Ordinal response options shared by PHQ-9 items (frequency over last 2 weeks).
+ordinal_scale:
+  "Not at all": 0
+  "Several days": 1
+  "More than half the days": 2
+  "Nearly every day": 3
+
+# Whole-instrument score (column TBD — PHQ-9 total is computed/derived).
+score:
+  produces: MeasurementObservation
+  assay: { id: "LOINC:44261-6", label: "PHQ-9 total score" }   # TODO: verify
+
+# Per-item mappings. `phenotype` (HPO) when the item denotes a symptom; `measurement`
+# always, to retain the ordinal answer.  TODO: fill HPO terms + thresholds next task.
+items:
+  feeling_depressed:
+    measurement: { assay: { id: "TODO", label: "PHQ-9 item: depressed mood" } }
+    phenotype: { id: "HP:0000716", label: "Depression" }   # TODO: verify HPO term
+  no_interest:
+    measurement: { assay: { id: "TODO", label: "PHQ-9 item: anhedonia" } }
+  trouble_sleeping:
+    measurement: { assay: { id: "TODO", label: "PHQ-9 item: sleep disturbance" } }
+  # ... remaining items TODO

@@ -1,0 +1,25 @@
+# Mapping: voice demographics/ table -> Individual (IR)
+# PLACEHOLDER — documents the intended shape; column->concept content lands next task.
+#
+# The demographics table is wide (~150 columns) and sparse. Only the columns needed to
+# populate an Individual are mapped here; the rest are intentionally ignored.
+
+table: demographics
+keyed_by: [participant_id, session_id]
+produces: Individual
+
+# Each entry maps a source column to an IR Individual field.
+# `transform` names a (future) value-normalization rule; `value_map` gives inline recodes.
+columns:
+  # participant_id: -> Individual.id   (handled by the reader, not a column mapping)
+  age:
+    target: Individual.age_iso8601
+    transform: years_to_iso8601           # e.g. 63 -> "P63Y"   (TODO: implement)
+  sex_assigned_at_birth:
+    target: Individual.sex
+    value_map:                            # TODO: confirm source vocabulary
+      Male: MALE
+      Female: FEMALE
+  gender_identity:
+    target: Individual.gender
+    # ontology coding TBD (e.g. GSSO / NCIT); see docs/mapping-conventions.md

@@ -1,0 +1,23 @@
+# Mapping: voice questionnaire/gad7_anxiety.tsv -> Measurement + PhenotypicFeature (IR)
+# PLACEHOLDER — GAD-7 anxiety screener.
+
+table: gad7_anxiety
+keyed_by: [participant_id, session_id]
+
+ordinal_scale:
+  "Not at all": 0
+  "Several days": 1
+  "More than half the days": 2
+  "Nearly every day": 3
+
+score:
+  produces: MeasurementObservation
+  assay: { id: "LOINC:70274-6", label: "GAD-7 total score" }   # TODO: verify
+
+items:
+  nervous_anxious:
+    measurement: { assay: { id: "TODO", label: "GAD-7 item: nervousness" } }
+    phenotype: { id: "HP:0000739", label: "Anxiety" }   # TODO: verify HPO term
+  worry_too_much:
+    measurement: { assay: { id: "TODO", label: "GAD-7 item: excessive worry" } }
+  # ... remaining items TODO

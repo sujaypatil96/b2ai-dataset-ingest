@@ -1,0 +1,47 @@
+[project]
+name = "b2ai-dataset-ingest"
+version = "0.0.1"
+description = "Ingest Bridge2AI datasets (phenotype tables) into GA4GH Phenopackets via a target-neutral intermediate model with pluggable emitters."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Sujay Patil", email = "sujaysanjeev.patil@gmail.com" }]
+keywords = ["bridge2ai", "phenopackets", "ga4gh", "ingest", "phenotype"]
+dependencies = [
+    "phenopackets>=2.0.2",
+    "pydantic>=2.6",
+    "pandas>=2.2",
+    "pyyaml>=6.0",
+    "typer>=0.12",
+]
+
+[project.scripts]
+b2ai-ingest = "b2ai_dataset_ingest.cli:app"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/b2ai_dataset_ingest"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+# Typer's idiom uses function calls (Option/Argument) as parameter defaults.
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["typer.Option", "typer.Argument"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

@@ -1,0 +1,24 @@
+# Synthetic / downloaded input data (large; fetched via scripts/fetch_synthetic_data.sh)
+/data/*
+!/data/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+build/
+dist/
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Output artifacts
+/out/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

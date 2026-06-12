@@ -1,0 +1,28 @@
+# Mapping: voice questionnaire/vhi10.tsv -> Measurement + PhenotypicFeature (IR)
+# PLACEHOLDER — Voice Handicap Index (VHI-10).
+#
+# VHI-10 ships a precomputed total in `vhi_10_calc_score`, so the score mapping can read a
+# column directly rather than summing items.
+
+table: vhi10
+keyed_by: [participant_id, session_id]
+
+ordinal_scale:
+  "Never": 0
+  "Almost Never": 1
+  "Sometimes": 2
+  "Almost Always": 3
+  "Always": 4
+
+score:
+  produces: MeasurementObservation
+  source_column: vhi_10_calc_score
+  assay: { id: "TODO", label: "VHI-10 total score" }   # TODO: find LOINC/NCIT term
+
+items:
+  voice_difficult_hear:
+    measurement: { assay: { id: "TODO", label: "VHI-10 item: voice hard to hear" } }
+    phenotype: { id: "HP:0001609", label: "Hoarse voice" }   # TODO: verify HPO term
+  strain_voice:
+    measurement: { assay: { id: "TODO", label: "VHI-10 item: vocal strain" } }
+  # ... remaining items TODO

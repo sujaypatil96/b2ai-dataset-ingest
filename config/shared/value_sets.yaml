@@ -1,0 +1,16 @@
+# Cross-dataset value sets reused by per-dataset mappings.
+# PLACEHOLDER — recodes/ontology codings that are not specific to one Bridge2AI dataset.
+
+# Phenopacket Sex enum (string form used in the IR Individual.sex field).
+sex:
+  Male: MALE
+  Female: FEMALE
+  Intersex: OTHER_SEX
+  "Prefer not to answer": UNKNOWN_SEX
+
+# Default taxonomy applied to every Individual unless a source overrides it.
+taxonomy:
+  id: "NCBITaxon:9606"
+  label: "Homo sapiens"
+
+# ethnicity / race codings: TODO (decide ontology — NCIT / HANCESTRO).
