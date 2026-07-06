@@ -1,34 +1,40 @@
 # Mapping: voice diagnosis/ tables -> DiseaseObservation (IR)
-# PLACEHOLDER — the per-condition file basename selects a MONDO term.
 #
-# Each diagnosis/<condition>.tsv lists participants with that condition. The reader emits
-# one DiseaseObservation per (participant, condition). `control` is modeled as an excluded
-# disease (or skipped) rather than a MONDO term — decided next task.
+# Each diagnosis/<condition>.tsv lists the participants with that condition; membership is
+# presence in the file (the internal columns are mostly empty/"Unchecked" checkbox noise).
+# Rule: a participant row in <condition>.tsv => one DiseaseObservation(MONDO for basename),
+# deduplicated per participant. The reader emits a Disease only for conditions with a
+# *resolved* MONDO term below; the remaining `MONDO:0000000`/`TODO` placeholders are
+# skipped in v1 (surfaced as loader warnings) pending review.
+#
+# `control` is not a disease: a control-only participant still gets an Individual and any
+# measurements, but no Disease. See `control_handling` below.
+#
+# CURIEs marked (verified) were checked against EBI OLS4 on 2026-07-06.
 
 table_group: diagnosis
 keyed_by: [participant_id, session_id]
 produces: DiseaseObservation
 
-# file basename (without .tsv) -> MONDO term.  TODO: verify every CURIE/label.
 conditions:
   airway_stenosis: { id: "MONDO:0000000", label: "TODO" }
-  amyotrophic_lateral_sclerosis: { id: "MONDO:0004976", label: "amyotrophic lateral sclerosis" }
+  amyotrophic_lateral_sclerosis: { id: "MONDO:0004976", label: "amyotrophic lateral sclerosis" }  # verified
   anxiety: { id: "MONDO:0000000", label: "TODO" }
   benign_lesions: { id: "MONDO:0000000", label: "TODO" }
-  bipolar_disorder: { id: "MONDO:0004985", label: "bipolar disorder" }
+  bipolar_disorder: { id: "MONDO:0004985", label: "bipolar disorder" }  # verified
   cognitive_impairment: { id: "MONDO:0000000", label: "TODO" }
   copd_and_asthma: { id: "MONDO:0000000", label: "TODO" }
-  depression: { id: "MONDO:0002009", label: "depressive disorder" }
+  depression: { id: "MONDO:0002050", label: "depressive disorder" }  # verified (broad term; MONDO:0002009 is "major depressive disorder")
   glottic_insufficiency: { id: "MONDO:0000000", label: "TODO" }
-  huntingtons_disease: { id: "MONDO:0007739", label: "Huntington disease" }
-  laryngeal_cancer: { id: "MONDO:0005051", label: "laryngeal cancer" }
+  huntingtons_disease: { id: "MONDO:0007739", label: "Huntington disease" }  # verified
+  laryngeal_cancer: { id: "MONDO:0002352", label: "larynx cancer" }  # verified (MONDO:0005051 is NOT laryngeal cancer)
   laryngeal_dystonia: { id: "MONDO:0000000", label: "TODO" }
   laryngitis: { id: "MONDO:0000000", label: "TODO" }
   muscle_tension_dysphonia: { id: "MONDO:0000000", label: "TODO" }
-  parkinsons_disease: { id: "MONDO:0005180", label: "Parkinson disease" }
+  parkinsons_disease: { id: "MONDO:0005180", label: "Parkinson disease" }  # verified
   precancerous_lesions: { id: "MONDO:0000000", label: "TODO" }
   unexplained_chronic_cough: { id: "MONDO:0000000", label: "TODO" }
   unilateral_vocal_fold_paralysis: { id: "MONDO:0000000", label: "TODO" }
 
-# 'control' is not a disease; handled specially (TODO: skip vs. excluded=true).
+# A participant appearing only in control.tsv gets an Individual + measurements, no Disease.
 control_handling: skip

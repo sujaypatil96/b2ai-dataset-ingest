@@ -1,26 +1,67 @@
-"""Load and validate YAML mapping configs (STUB).
+"""Load and validate YAML mapping configs.
 
-A mapping config declares how one source table's columns become IR concepts. The exact
-schema is finalized in the next task; for now this module just defines where configs
-live and the load entry point.
+A mapping config declares how one source table's columns become IR concepts. Two entry
+points:
+
+- :func:`load_mapping` parses one file into a dict.
+- :func:`validate_mapping` returns a list of human-readable *warnings* (not errors) about
+  a mapping — chiefly ontology terms still flagged as placeholders (``TODO`` /
+  ``MONDO:0000000``) or missing the ``{id, label}`` shape. Placeholders are expected in
+  v1 (many diagnosis conditions are deferred), so they warn rather than fail; the reader
+  logs the warnings and simply skips unresolved terms.
 """
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
 import yaml
 
+# Sentinels that mark a term as not-yet-resolved.
+PLACEHOLDER_IDS = {"TODO", "MONDO:0000000", ""}
+
 
 def load_mapping(path: Path) -> dict[str, Any]:
-    """Load a single YAML mapping file into a dict.
-
-    Validation of the mapping schema (required keys, ontology-term shape, etc.) is
-    deferred to the next task.
-    """
+    """Load a single YAML mapping file into a dict."""
     with open(path) as fh:
         data = yaml.safe_load(fh)
     if not isinstance(data, dict):
         raise ValueError(f"Mapping file {path} did not parse to a mapping/dict")
     return data
+
+
+def is_placeholder(term: Any) -> bool:
+    """True if ``term`` is a missing / unresolved ``{id, label}`` ontology term."""
+    if not isinstance(term, dict):
+        return True
+    return term.get("id") in PLACEHOLDER_IDS or term.get("label") in {None, "", "TODO"}
+
+
+def iter_terms(mapping: dict[str, Any]) -> Iterator[tuple[str, dict[str, Any]]]:
+    """Yield ``(context, term_dict)`` for every ``{id, label}`` term in a mapping.
+
+    Understands the shapes used by the voice configs: ``conditions`` (diagnosis),
+    ``items`` and ``score.assay`` / ``score.unit`` (questionnaires).
+    """
+    for name, term in (mapping.get("conditions") or {}).items():
+        yield f"conditions.{name}", term
+    for name, term in (mapping.get("items") or {}).items():
+        yield f"items.{name}", term
+    score = mapping.get("score")
+    if isinstance(score, dict):
+        if "assay" in score:
+            yield "score.assay", score["assay"]
+        if "unit" in score:
+            yield "score.unit", score["unit"]
+
+
+def validate_mapping(mapping: dict[str, Any]) -> list[str]:
+    """Return warnings about a mapping (unresolved / malformed ontology terms)."""
+    warnings: list[str] = []
+    for context, term in iter_terms(mapping):
+        if is_placeholder(term):
+            tid = term.get("id") if isinstance(term, dict) else term
+            warnings.append(f"unresolved ontology term at {context} (id={tid!r})")
+    return warnings

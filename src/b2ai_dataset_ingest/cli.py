@@ -7,6 +7,7 @@ Usage (once implemented):
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import typer
@@ -16,8 +17,6 @@ app = typer.Typer(
     help="Ingest Bridge2AI datasets into GA4GH Phenopackets (and other future targets).",
 )
 
-# Registry of available source readers, keyed by dataset name.
-SOURCES = {"voice": "b2ai_dataset_ingest.sources.voice:VoiceSource"}
 # Registry of available output emitters, keyed by target name.
 EMITTERS = {"phenopacket": "b2ai_dataset_ingest.emitters:PhenopacketEmitter"}
 
@@ -30,13 +29,28 @@ def voice(
         Path("config/voice"), "--config", "-c", help="Mapping config dir."
     ),
     target: str = typer.Option("phenopacket", "--target", "-t", help="Output target."),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Log per-table warnings."),
 ) -> None:
-    """Ingest the Bridge2AI-Voice dataset.
+    """Ingest the Bridge2AI-Voice dataset into one phenopacket per participant."""
+    from b2ai_dataset_ingest.emitters import PhenopacketEmitter
+    from b2ai_dataset_ingest.sources.voice import VoiceSource
 
-    Wiring is in place; the conversion itself is implemented in a follow-up task.
-    """
-    typer.echo("voice ingest is not implemented yet — see docs/design/voice-ingest.md")
-    raise typer.Exit(code=1)
+    logging.basicConfig(
+        level=logging.INFO if verbose else logging.WARNING,
+        format="%(levelname)s %(name)s: %(message)s",
+    )
+
+    if target not in EMITTERS:
+        typer.echo(f"unknown target {target!r}; available: {', '.join(EMITTERS)}", err=True)
+        raise typer.Exit(code=2)
+    if target != "phenopacket":  # only the phenopacket emitter is wired in v1
+        typer.echo(f"target {target!r} is not implemented yet", err=True)
+        raise typer.Exit(code=2)
+
+    source = VoiceSource(root=input, config_dir=config)
+    participants = list(source.read())
+    written = PhenopacketEmitter().write_all(participants, output)
+    typer.echo(f"Wrote {written} phenopackets to {output}")
 
 
 @app.command()

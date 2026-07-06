@@ -1,25 +1,34 @@
 # Mapping: voice demographics/ table -> Individual (IR)
-# PLACEHOLDER — documents the intended shape; column->concept content lands next task.
 #
-# The demographics table is wide (~150 columns) and sparse. Only the columns needed to
-# populate an Individual are mapped here; the rest are intentionally ignored.
+# The demographics table is wide (~150 columns) and very sparse (in the synthetic data,
+# sex/gender are 0/407 filled, age 20/407). Only the columns needed to populate an
+# Individual are mapped; the rest are intentionally ignored. Emit what is present.
+#
+# `gender_identity` is intentionally NOT mapped in v1: there is no agreed ontology coding
+# for it yet (GSSO/NCIT) and it is unfilled in the synthetic data. Add it in a follow-up.
 
 table: demographics
 keyed_by: [participant_id, session_id]
 produces: Individual
 
 # Each entry maps a source column to an IR Individual field.
-# `transform` names a (future) value-normalization rule; `value_map` gives inline recodes.
+# `transform` names a value-normalization rule; `value_map` gives inline recodes.
 columns:
-  # participant_id: -> Individual.id   (handled by the reader, not a column mapping)
+  # participant_id -> Individual.id is handled by the reader, not a column mapping.
   age:
     target: Individual.age_iso8601
-    transform: years_to_iso8601           # e.g. 63 -> "P63Y"   (TODO: implement)
+    transform: years_to_iso8601           # e.g. "63" / "54.0" -> "P63Y" / "P54Y"
   sex_assigned_at_birth:
     target: Individual.sex
-    value_map:                            # TODO: confirm source vocabulary
+    # Source stores the display label; codes are accepted too for robustness.
+    value_map:
       Male: MALE
+      male: MALE
       Female: FEMALE
-  gender_identity:
-    target: Individual.gender
-    # ontology coding TBD (e.g. GSSO / NCIT); see docs/mapping-conventions.md
+      female: FEMALE
+      Intersex: OTHER_SEX
+      intersex: OTHER_SEX
+      Unknown: UNKNOWN_SEX
+      unknown: UNKNOWN_SEX
+      "Prefer not to answer": UNKNOWN_SEX
+      noAnswer: UNKNOWN_SEX
