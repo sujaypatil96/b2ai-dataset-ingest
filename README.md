@@ -29,8 +29,11 @@ Phenotype tables only:
 | --- | --- | --- |
 | `demographics/` | → | `Individual` |
 | `diagnosis/` (per-condition files) | → | `Disease` (file basename → MONDO) |
-| `questionnaire/` (PHQ-9, GAD-7, VHI-10, …) | → | `Measurement` (scores) + `PhenotypicFeature` (HPO) |
+| `questionnaire/` (PHQ-9, GAD-7, VHI-10) | → | `Measurement` (per-item ordinals + precomputed totals) |
 | audio / derived acoustic features | → | referenced, **not** ingested |
+
+v1 emits `Measurement`s only; HPO `PhenotypicFeature` derivation (which needs an
+ordinal→present/absent threshold policy) is a planned follow-up.
 
 One phenopacket per participant, with **time-stamped observations** — time-course is
 native to phenopackets via `TimeElement` (`PhenotypicFeature.onset`,

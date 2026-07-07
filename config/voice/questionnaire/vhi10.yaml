@@ -1,12 +1,22 @@
-# Mapping: voice questionnaire/vhi10.tsv -> Measurement + PhenotypicFeature (IR)
-# PLACEHOLDER — Voice Handicap Index (VHI-10).
+# Mapping: voice questionnaire/vhi10.tsv -> Measurement (IR)
+# Voice Handicap Index (VHI-10).
 #
-# VHI-10 ships a precomputed total in `vhi_10_calc_score`, so the score mapping can read a
-# column directly rather than summing items.
+# VHI-10 ships a precomputed total in `vhi_10_calc_score`, so per decision 2 we DO emit a
+# whole-instrument total Measurement (reading the column directly), in addition to the
+# per-item ordinals. Per-item answers -> Quantity(value=<int>, unit=UCUM {score}); the
+# answer->value map comes from the companion vhi10.json data dict `choices`, with
+# `ordinal_scale` below as a fallback.
+#
+# No public per-item / total LOINC code exists for VHI-10, so items and the total use
+# project-local `b2ai:` codes (see ontology/resources.py) as a documented stopgap; revisit
+# in a follow-up if suitable LOINC/NCIT codes are found. No HPO PhenotypicFeature yet
+# (decision 1). Item labels follow the standard VHI-10 instrument wording.
 
 table: vhi10
 keyed_by: [participant_id, session_id]
+produces: MeasurementObservation
 
+# Fallback answer->value map (used only when the data dict is unavailable).
 ordinal_scale:
   "Never": 0
   "Almost Never": 1
@@ -14,15 +24,20 @@ ordinal_scale:
   "Almost Always": 3
   "Always": 4
 
+# Precomputed whole-instrument total (range 0-40).
 score:
-  produces: MeasurementObservation
   source_column: vhi_10_calc_score
-  assay: { id: "TODO", label: "VHI-10 total score" }   # TODO: find LOINC/NCIT term
+  assay: { id: "b2ai:vhi10-total", label: "Voice Handicap Index-10 total score" }
+  unit: { id: "UCUM:{score}", label: "score" }
 
 items:
-  voice_difficult_hear:
-    measurement: { assay: { id: "TODO", label: "VHI-10 item: voice hard to hear" } }
-    phenotype: { id: "HP:0001609", label: "Hoarse voice" }   # TODO: verify HPO term
-  strain_voice:
-    measurement: { assay: { id: "TODO", label: "VHI-10 item: vocal strain" } }
-  # ... remaining items TODO
+  voice_difficult_hear: { id: "b2ai:vhi10-voice_difficult_hear", label: "My voice makes it difficult for people to hear me" }
+  tough_to_understand: { id: "b2ai:vhi10-tough_to_understand", label: "People have difficulty understanding me in a noisy room" }
+  voice_restrict_social: { id: "b2ai:vhi10-voice_restrict_social", label: "My voice difficulties restrict personal and social life" }
+  left_out_convo: { id: "b2ai:vhi10-left_out_convo", label: "I feel left out of conversations because of my voice" }
+  voice_lose_income: { id: "b2ai:vhi10-voice_lose_income", label: "My voice problem causes me to lose income" }
+  strain_voice: { id: "b2ai:vhi10-strain_voice", label: "I feel as though I have to strain to produce voice" }
+  voice_clarity: { id: "b2ai:vhi10-voice_clarity", label: "The clarity of my voice is unpredictable" }
+  voice_upsetting: { id: "b2ai:vhi10-voice_upsetting", label: "My voice problem upsets me" }
+  voice_handicapped: { id: "b2ai:vhi10-voice_handicapped", label: "My voice makes me feel handicapped" }
+  ask_whats_wrong_voice: { id: "b2ai:vhi10-ask_whats_wrong_voice", label: "People ask, what is wrong with your voice?" }

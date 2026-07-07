@@ -1,34 +1,38 @@
-# Mapping: voice questionnaire/phq9.tsv -> Measurement + PhenotypicFeature (IR)
-# PLACEHOLDER — PHQ-9 depression screener.
+# Mapping: voice questionnaire/phq9.tsv -> Measurement (IR)
+# PHQ-9 depression screener.
 #
-# Two products from one questionnaire:
-#  - a total score   -> MeasurementObservation (LOINC for PHQ-9 total)
-#  - per-item answers -> MeasurementObservation (ordinal) and/or PhenotypicFeature (HPO)
-# Per-item response choices and term URLs come from the companion phq9.json data dict.
+# v1 emits per-item ordinal Measurements only. Each item's answer -> Quantity(value=<int>,
+# unit=UCUM {score}); the integer for an answer string comes from the companion phq9.json
+# data dict's per-item `choices` (which also covers items on a different scale, e.g.
+# `hard_to_work`), falling back to `ordinal_scale` below when no data dict is present.
+#
+# No whole-instrument total: the synthetic PHQ-9 table ships no total column (and items are
+# sparse), so per decision 2 we do NOT compute one. No HPO PhenotypicFeature yet
+# (decision 1 — the ordinal->present/absent threshold policy is deferred).
+#
+# Item LOINC codes verified against the NLM Clinical Table LOINC service on 2026-07-06.
 
 table: phq9
 keyed_by: [participant_id, session_id]
+produces: MeasurementObservation
 
-# Ordinal response options shared by PHQ-9 items (frequency over last 2 weeks).
+# Fallback answer->value map, used only when the companion data dict is unavailable
+# (e.g. the multisession test fixture). Real data uses the data dict `choices`.
 ordinal_scale:
   "Not at all": 0
   "Several days": 1
   "More than half the days": 2
   "Nearly every day": 3
 
-# Whole-instrument score (column TBD — PHQ-9 total is computed/derived).
-score:
-  produces: MeasurementObservation
-  assay: { id: "LOINC:44261-6", label: "PHQ-9 total score" }   # TODO: verify
-
-# Per-item mappings. `phenotype` (HPO) when the item denotes a symptom; `measurement`
-# always, to retain the ordinal answer.  TODO: fill HPO terms + thresholds next task.
+# Per-item assay terms (column -> LOINC OntologyClass).
 items:
-  feeling_depressed:
-    measurement: { assay: { id: "TODO", label: "PHQ-9 item: depressed mood" } }
-    phenotype: { id: "HP:0000716", label: "Depression" }   # TODO: verify HPO term
-  no_interest:
-    measurement: { assay: { id: "TODO", label: "PHQ-9 item: anhedonia" } }
-  trouble_sleeping:
-    measurement: { assay: { id: "TODO", label: "PHQ-9 item: sleep disturbance" } }
-  # ... remaining items TODO
+  no_interest: { id: "LOINC:44250-9", label: "Little interest or pleasure in doing things" }
+  feeling_depressed: { id: "LOINC:44255-8", label: "Feeling down, depressed, or hopeless" }
+  trouble_sleeping: { id: "LOINC:44259-0", label: "Trouble falling or staying asleep, or sleeping too much" }
+  no_energy: { id: "LOINC:44254-1", label: "Feeling tired or having little energy" }
+  no_appetite: { id: "LOINC:44251-7", label: "Poor appetite or overeating" }
+  feeling_bad_self: { id: "LOINC:44258-2", label: "Feeling bad about yourself, or that you are a failure" }
+  trouble_concentrate: { id: "LOINC:44252-5", label: "Trouble concentrating on things" }
+  move_speak_slow: { id: "LOINC:44253-3", label: "Moving or speaking slowly, or being fidgety or restless" }
+  thoughts_death: { id: "LOINC:44260-8", label: "Thoughts that you would be better off dead, or of hurting yourself" }
+  hard_to_work: { id: "LOINC:69722-7", label: "How difficult have these problems made it to work / cope" }

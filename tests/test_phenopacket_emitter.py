@@ -1,14 +1,126 @@
-"""Phenopacket emitter contract. Not implemented yet -> xfail until the next task."""
+"""Phenopacket emitter: IR Participant -> schema-v2 Phenopacket."""
 
-import pytest
+import phenopackets as pp
 
 from b2ai_dataset_ingest.emitters import PhenopacketEmitter
-from b2ai_dataset_ingest.model import Individual, Participant
+from b2ai_dataset_ingest.model import (
+    DiseaseObservation,
+    Individual,
+    MeasurementObservation,
+    OntologyTerm,
+    Participant,
+    PhenotypicFeatureObservation,
+    Quantity,
+    TimePoint,
+)
 
 
-@pytest.mark.xfail(reason="PhenopacketEmitter.emit not implemented yet", raises=NotImplementedError)
 def test_emit_single_participant():
-    emitter = PhenopacketEmitter()
-    pkt = emitter.emit(Participant(individual=Individual(id="ms-0001")))
-    # Once implemented: pkt is a phenopackets.schema.v2.Phenopacket with subject.id == "ms-0001".
-    assert pkt is not None
+    pkt = PhenopacketEmitter().emit(Participant(individual=Individual(id="ms-0001")))
+    assert isinstance(pkt, pp.Phenopacket)
+    assert pkt.subject.id == "ms-0001"
+    # Taxonomy defaults to Homo sapiens, with a matching MetaData resource.
+    assert pkt.subject.taxonomy.id == "NCBITaxon:9606"
+    prefixes = {r.namespace_prefix for r in pkt.meta_data.resources}
+    assert "NCBITaxon" in prefixes
+
+
+def test_emit_disease_and_measurement_with_time():
+    baseline = TimePoint(
+        session_id="ses-baseline",
+        ontology_class=OntologyTerm(id="NCIT:C25213", label="Baseline"),
+    )
+    participant = Participant(
+        individual=Individual(id="p1", sex="FEMALE", age_iso8601="P40Y"),
+        diseases=[
+            DiseaseObservation(
+                term=OntologyTerm(id="MONDO:0005180", label="Parkinson disease"),
+                onset=baseline,
+            )
+        ],
+        measurements=[
+            MeasurementObservation(
+                assay=OntologyTerm(id="LOINC:44255-8", label="depressed mood"),
+                value_quantity=Quantity(
+                    value=2.0, unit=OntologyTerm(id="UCUM:{score}", label="score")
+                ),
+                time=baseline,
+            )
+        ],
+    )
+    pkt = PhenopacketEmitter().emit(participant)
+
+    assert pkt.subject.sex == pp.FEMALE
+    assert pkt.subject.time_at_last_encounter.age.iso8601duration == "P40Y"
+
+    [disease] = pkt.diseases
+    assert disease.term.id == "MONDO:0005180"
+    assert disease.onset.ontology_class.id == "NCIT:C25213"
+
+    [measurement] = pkt.measurements
+    assert measurement.assay.id == "LOINC:44255-8"
+    assert measurement.value.quantity.value == 2.0
+    assert measurement.value.quantity.unit.id == "UCUM:{score}"
+    assert measurement.time_observed.ontology_class.id == "NCIT:C25213"
+
+    # Every prefix used has a MetaData resource.
+    prefixes = {r.namespace_prefix for r in pkt.meta_data.resources}
+    assert {"MONDO", "LOINC", "NCIT", "UCUM", "NCBITaxon"} <= prefixes
+
+
+def test_emit_phenotypic_feature_and_hp_resource():
+    participant = Participant(
+        individual=Individual(id="p3"),
+        phenotypic_features=[
+            PhenotypicFeatureObservation(
+                type=OntologyTerm(id="HP:0001337", label="Tremor"), excluded=False
+            )
+        ],
+    )
+    pkt = PhenopacketEmitter().emit(participant)
+    [feature] = pkt.phenotypic_features
+    assert feature.type.id == "HP:0001337"
+    prefixes = {r.namespace_prefix for r in pkt.meta_data.resources}
+    assert "HP" in prefixes
+
+
+def test_metadata_excludes_shadowed_value_term_prefix():
+    # value_term is shadowed by value_quantity (the emitter emits the quantity), so the
+    # value_term's prefix (NCIT) must NOT appear as a MetaData resource.
+    participant = Participant(
+        individual=Individual(id="p4"),
+        measurements=[
+            MeasurementObservation(
+                assay=OntologyTerm(id="LOINC:44255-8", label="x"),
+                value_quantity=Quantity(
+                    value=1.0, unit=OntologyTerm(id="UCUM:{score}", label="score")
+                ),
+                value_term=OntologyTerm(id="NCIT:C25626", label="Present"),
+            )
+        ],
+    )
+    pkt = PhenopacketEmitter().emit(participant)
+    [measurement] = pkt.measurements
+    assert measurement.value.HasField("quantity")
+    prefixes = {r.namespace_prefix for r in pkt.meta_data.resources}
+    assert "NCIT" not in prefixes
+    assert {"LOINC", "UCUM", "NCBITaxon"} <= prefixes
+
+
+def test_uuid_session_leaves_time_unset():
+    # A stray UUID session has no recognized term -> no TimeElement fabricated.
+    participant = Participant(
+        individual=Individual(id="p2"),
+        measurements=[
+            MeasurementObservation(
+                assay=OntologyTerm(id="LOINC:44255-8", label="depressed mood"),
+                value_quantity=Quantity(
+                    value=1.0, unit=OntologyTerm(id="UCUM:{score}", label="score")
+                ),
+                time=TimePoint(session_id="5E054A0F-CFA2-46AF-9248-14949EAB163E"),
+            )
+        ],
+    )
+    pkt = PhenopacketEmitter().emit(participant)
+    [measurement] = pkt.measurements
+    assert not measurement.HasField("time_observed")

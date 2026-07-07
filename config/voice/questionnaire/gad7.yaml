@@ -1,23 +1,31 @@
-# Mapping: voice questionnaire/gad7_anxiety.tsv -> Measurement + PhenotypicFeature (IR)
-# PLACEHOLDER — GAD-7 anxiety screener.
+# Mapping: voice questionnaire/gad7_anxiety.tsv -> Measurement (IR)
+# GAD-7 anxiety screener.
+#
+# v1 emits per-item ordinal Measurements only (Quantity value=<int>, unit=UCUM {score}),
+# with the answer->value map read from the companion gad7_anxiety.json data dict `choices`
+# and `ordinal_scale` below as a fallback. No total (the synthetic table ships none;
+# decision 2) and no HPO PhenotypicFeature yet (decision 1).
+#
+# Item LOINC codes verified against the NLM Clinical Table LOINC service on 2026-07-06.
+# `tough_to_work` (GAD-7 functional-impairment item) shares LOINC:69722-7 with PHQ-9 Q10.
 
 table: gad7_anxiety
 keyed_by: [participant_id, session_id]
+produces: MeasurementObservation
 
+# Fallback answer->value map (used only when the data dict is unavailable).
 ordinal_scale:
   "Not at all": 0
   "Several days": 1
   "More than half the days": 2
   "Nearly every day": 3
 
-score:
-  produces: MeasurementObservation
-  assay: { id: "LOINC:70274-6", label: "GAD-7 total score" }   # TODO: verify
-
 items:
-  nervous_anxious:
-    measurement: { assay: { id: "TODO", label: "GAD-7 item: nervousness" } }
-    phenotype: { id: "HP:0000739", label: "Anxiety" }   # TODO: verify HPO term
-  worry_too_much:
-    measurement: { assay: { id: "TODO", label: "GAD-7 item: excessive worry" } }
-  # ... remaining items TODO
+  nervous_anxious: { id: "LOINC:69725-0", label: "Feeling nervous, anxious, or on edge" }
+  cant_control_worry: { id: "LOINC:68509-9", label: "Not being able to stop or control worrying" }
+  worry_too_much: { id: "LOINC:69733-4", label: "Worrying too much about different things" }
+  trouble_relaxing: { id: "LOINC:69734-2", label: "Trouble relaxing" }
+  hard_to_sit_still: { id: "LOINC:69735-9", label: "Being so restless that it is hard to sit still" }
+  easily_agitated: { id: "LOINC:69689-8", label: "Becoming easily annoyed or irritable" }
+  afraid_of_things: { id: "LOINC:69736-7", label: "Feeling afraid as if something awful might happen" }
+  tough_to_work: { id: "LOINC:69722-7", label: "How difficult have these problems made it to work / cope" }

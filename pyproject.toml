@@ -10,10 +10,14 @@ keywords = ["bridge2ai", "phenopackets", "ga4gh", "ingest", "phenotype"]
 dependencies = [
     "phenopackets>=2.0.2",
     "pydantic>=2.6",
-    "pandas>=2.2",
     "pyyaml>=6.0",
     "typer>=0.12",
 ]
+
+# NOTE: `oaklib` is an *optional* runtime aid used by ontology/terms.py to fill/verify
+# ontology labels at emit time. It is intentionally NOT a declared dependency (its
+# transitive tree is large and the pipeline never needs it — config `{id, label}` pairs
+# are the source of truth). Install it separately (`uv pip install oaklib`) to enable.
 
 [project.scripts]
 b2ai-ingest = "b2ai_dataset_ingest.cli:app"
