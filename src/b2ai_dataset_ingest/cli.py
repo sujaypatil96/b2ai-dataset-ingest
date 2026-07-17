@@ -51,6 +51,34 @@ def voice(
     participants = list(source.read())
     written = PhenopacketEmitter().write_all(participants, output)
     typer.echo(f"Wrote {written} phenopackets to {output}")
+    # Aggregate, PHI-safe summary so silent degradation (skipped items, un-keyed sessions,
+    # unmapped tables) is visible rather than hidden behind a reassuring file count.
+    typer.echo(source.report.render())
+
+
+@app.command()
+def validate(
+    input: Path = typer.Option(..., "--input", "-i", help="Path to the voice phenotype/ dir."),
+    config: Path = typer.Option(
+        Path("config/voice"), "--config", "-c", help="Mapping config dir."
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Log per-table warnings."),
+) -> None:
+    """Preflight-check the voice layout against its configs and data dictionaries.
+
+    Reads only headers, dictionary keys, and aggregate cell counts — never raw values — so it
+    is safe on the real, PHI-sensitive dataset. Exits non-zero if any contract error is found.
+    """
+    from b2ai_dataset_ingest.sources.voice.validate import validate_voice
+
+    logging.basicConfig(
+        level=logging.INFO if verbose else logging.WARNING,
+        format="%(levelname)s %(name)s: %(message)s",
+    )
+    report = validate_voice(root=input, config_dir=config)
+    typer.echo(report.render())
+    if report.errors:
+        raise typer.Exit(code=1)
 
 
 @app.command()

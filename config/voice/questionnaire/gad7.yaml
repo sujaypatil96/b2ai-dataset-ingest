@@ -10,8 +10,14 @@
 # `tough_to_work` (GAD-7 functional-impairment item) shares LOINC:69722-7 with PHQ-9 Q10.
 
 table: gad7_anxiety
-keyed_by: [participant_id, session_id]
 produces: MeasurementObservation
+
+# Session-key candidates, tried in order; the first present in the TSV header wins. The
+# synthetic tree carries a bare `session_id`; the real b2aiprep release instead uses the
+# per-instrument `gad_7_session_id` (confirmed in the real GAD-7 data dictionary). Listing
+# both keeps synthetic and real data keying correctly without code changes; if neither is
+# present the reader emits rows un-merged and flags the table (see the ingest summary).
+session_columns: [session_id, gad_7_session_id]
 
 # Fallback answer->value map (used only when the data dict is unavailable).
 ordinal_scale:

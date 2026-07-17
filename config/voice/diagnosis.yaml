@@ -13,8 +13,12 @@
 # CURIEs marked (verified) were checked against EBI OLS4 on 2026-07-06.
 
 table_group: diagnosis
-keyed_by: [participant_id, session_id]
 produces: DiseaseObservation
+
+# Diagnosis is enrollment-level in the real dataset (no per-visit session column), so onset
+# is populated only when a session column happens to be present (as in the synthetic tree).
+# First present wins; absent everywhere => onset left unset.
+session_columns: [session_id]
 
 conditions:
   airway_stenosis: { id: "MONDO:0000000", label: "TODO" }

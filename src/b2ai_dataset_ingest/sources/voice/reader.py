@@ -9,20 +9,24 @@ The voice ``phenotype/`` tree is a set of TSVs keyed by ``participant_id`` +
 
 Audio/derived-feature tables (``task/``) are referenced, not ingested.
 
-The synthetic data is messy in ways the reader must tolerate (all confirmed against the
-public synthetic tables):
+The data is messy in ways the reader must tolerate:
 
-- rows are **not** unique per ``(participant_id, session_id)`` — a participant can have
-  several rows for the same ``session_id``; these are merged "last non-empty wins";
-- most ``session_id`` values are ``ses-baseline`` but a minority are raw UUIDs (generation
-  noise) — each distinct ``session_id`` is treated as its own timepoint; and
+- rows are **not** unique per ``(participant_id, session)`` — a participant can have several
+  rows for the same session; these are merged "last non-empty wins" *within a session*;
+- the session key column is **not** uniform across the real dataset. The synthetic tree
+  carries a bare ``session_id``; the real b2aiprep release instead uses per-instrument names
+  (``gad_7_session_id``, ``phq_9_session_id``, ``vhi_session_id``, ...). Each questionnaire
+  config declares its ``session_columns`` (a candidate list, first present wins); when none
+  is present the reader refuses to merge (rows become independent timepoints) and records it,
+  rather than silently collapsing every visit into one ``(pid, "")`` group;
+- companion data dicts come in two envelope shapes (flat real / nested synthetic), handled
+  by :func:`~b2ai_dataset_ingest.mapping.loaders.load_data_dict`; and
 - tables are wide and sparse — only mapped columns are read, missing ones are ignored.
 """
 
 from __future__ import annotations
 
 import csv
-import json
 import logging
 from collections import OrderedDict
 from collections.abc import Iterable
@@ -30,7 +34,12 @@ from pathlib import Path
 from typing import Any
 
 from b2ai_dataset_ingest.mapping.engine import MappingEngine
-from b2ai_dataset_ingest.mapping.loaders import is_placeholder, load_mapping, validate_mapping
+from b2ai_dataset_ingest.mapping.loaders import (
+    is_placeholder,
+    load_data_dict,
+    load_mapping,
+    validate_mapping,
+)
 from b2ai_dataset_ingest.model import (
     DiseaseObservation,
     Individual,
@@ -39,13 +48,20 @@ from b2ai_dataset_ingest.model import (
     Participant,
     TimePoint,
 )
+from b2ai_dataset_ingest.reporting import IngestReport
 from b2ai_dataset_ingest.sources.base import Source
 
 logger = logging.getLogger(__name__)
 
+# Default session-key candidates when a config omits ``session_columns``. The bare
+# ``session_id`` is the synthetic/fixture convention; real configs prepend it with the
+# instrument-specific name so both datasets resolve.
+DEFAULT_SESSION_COLUMNS = ["session_id"]
+
 # Recognized session labels -> the NCIT visit term used as the TimeElement fallback.
 # (There are no real dates/ages in the data, so the session label is the richest signal.)
-# Unrecognized session ids — e.g. stray UUIDs — leave the timepoint's ontology_class unset.
+# Unrecognized session ids — e.g. real opaque ids or stray UUIDs — leave the timepoint's
+# ontology_class unset (the id still distinguishes the visit).
 SESSION_TERMS: dict[str, OntologyTerm] = {
     "ses-baseline": OntologyTerm(id="NCIT:C25213", label="Baseline"),
     "ses-followup": OntologyTerm(id="NCIT:C16033", label="Follow-Up"),
@@ -71,7 +87,13 @@ class _Accumulator:
 class VoiceSource(Source):
     dataset_id = "bridge2ai-voice"
 
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        #: Aggregate, PHI-safe counts for the most recent :meth:`read`. The CLI prints it.
+        self.report = IngestReport()
+
     def read(self) -> Iterable[Participant]:
+        self.report = IngestReport()
         participants: OrderedDict[str, _Accumulator] = OrderedDict()
 
         def accumulator(participant_id: str) -> _Accumulator:
@@ -83,9 +105,11 @@ class VoiceSource(Source):
         self._read_diagnoses(accumulator)
         self._read_questionnaires(accumulator)
 
+        self.report.participants = len(participants)
         for participant_id in sorted(participants):
             acc = participants[participant_id]
             individual = acc.individual or Individual(id=participant_id)
+            self.report.diseases_emitted += len(acc.diseases)
             yield Participant(
                 individual=individual,
                 diseases=acc.diseases,
@@ -102,10 +126,15 @@ class VoiceSource(Source):
         self._warn(mapping, "demographics.yaml")
         engine = MappingEngine(mapping)
         table = mapping.get("table", "demographics")
-        rows = self._read_tsv(self.root / "demographics" / f"{table}.tsv")
+        tsv = self.root / "demographics" / f"{table}.tsv"
+        rows = self._read_tsv(tsv)
+        if not rows:
+            self.report.tables_missing.append(f"demographics/{table}")
+            return
+        self.report.tables_read.append(table)
         for participant_id, prows in _group_by(rows, _participant_key).items():
-            merged = _merge_rows(prows)
-            fields = engine.individual_fields(merged)
+            merged = _merge_rows(prows, self.report)
+            fields = engine.individual_fields(merged, report=self.report)
             accumulator(participant_id).individual = Individual(id=participant_id, **fields)
 
     # -- diagnosis -> Disease (one per resolved condition file the participant is in) --
@@ -117,6 +146,7 @@ class VoiceSource(Source):
         mapping = load_mapping(path)
         self._warn(mapping, "diagnosis.yaml")
         conditions = mapping.get("conditions") or {}
+        session_candidates = _session_columns(mapping)
         for tsv in sorted(diag_dir.glob("*.tsv")):
             basename = tsv.stem
             term_spec = conditions.get(basename)
@@ -133,72 +163,95 @@ class VoiceSource(Source):
             else:
                 term = OntologyTerm(**term_spec)
             rows = self._read_tsv(tsv)
+            if not rows:
+                continue
+            # Diagnosis is enrollment-level in the real dataset (no session column); onset is
+            # only populated when a configured session column is actually present.
+            session_col = _resolve_session_column(rows[0], session_candidates)
             for participant_id, prows in _group_by(rows, _participant_key).items():
                 acc = accumulator(participant_id)
                 if term is not None:
-                    onset = _timepoint(prows[0].get("session_id", ""))
+                    session_id = prows[0].get(session_col, "") if session_col else ""
+                    onset = _timepoint(session_id) if session_id else None
                     acc.add_disease(DiseaseObservation(term=term, onset=onset))
 
     # -- questionnaires -> Measurements (per (participant, session) timepoint) --
     def _read_questionnaires(self, accumulator: Any) -> None:
-        config_dir = self.config_dir / "questionnaire"
-        if not config_dir.is_dir():
+        """Discovery is *data-dir driven*: every ``questionnaire/*.tsv`` is considered, and a
+        table with no mapping config is recorded as unmapped (not silently invisible). This is
+        symmetric with diagnosis and surfaces real tables the configs don't yet cover.
+        """
+        data_dir = self.root / "questionnaire"
+        if not data_dir.is_dir():
             return
-        for cfg_path in sorted(config_dir.glob("*.yaml")):
-            mapping = load_mapping(cfg_path)
+        configs = self._questionnaire_configs()
+        for tsv in sorted(data_dir.glob("*.tsv")):
+            table = tsv.stem
+            entry = configs.get(table)
+            if entry is None:
+                logger.info("questionnaire: %s has no mapping config; not ingested", table)
+                self.report.tables_unmapped.append(table)
+                continue
+            cfg_path, mapping = entry
             self._warn(mapping, f"questionnaire/{cfg_path.name}")
             engine = MappingEngine(mapping)
-            table = mapping.get("table", cfg_path.stem)
-            rows = self._read_tsv(self.root / "questionnaire" / f"{table}.tsv")
+            rows = self._read_tsv(tsv)
             if not rows:
                 continue
-            data_dict = self._read_data_elements(
-                self.root / "questionnaire" / f"{table}.json"
+            self.report.tables_read.append(table)
+            data_dict = load_data_dict(tsv.with_suffix(".json"))
+            self._ingest_questionnaire_rows(table, mapping, engine, rows, data_dict, accumulator)
+
+    def _ingest_questionnaire_rows(
+        self,
+        table: str,
+        mapping: dict[str, Any],
+        engine: MappingEngine,
+        rows: list[dict[str, str]],
+        data_dict: dict[str, Any],
+        accumulator: Any,
+    ) -> None:
+        session_col = _resolve_session_column(rows[0], _session_columns(mapping))
+        if session_col is None:
+            # Fail loud, not silent: with no resolvable session key we must NOT merge (that
+            # would blend distinct visits). Emit each row as its own timepoint and flag it.
+            logger.error(
+                "questionnaire %s: none of session_columns %s present; emitting rows "
+                "un-merged (no session key)",
+                table,
+                _session_columns(mapping),
             )
-            for (participant_id, session_id), prows in _group_by(
-                rows, _participant_session_key
-            ).items():
-                if len(prows) > 1:
-                    logger.warning(
-                        "questionnaire %s: %d rows for (%s, %s); merging last-non-empty-wins",
-                        table,
-                        len(prows),
-                        participant_id,
-                        session_id,
-                    )
-                merged = _merge_rows(prows)
-                time = _timepoint(session_id)
-                measurements = engine.measurements(merged, data_dict, time)
-                accumulator(participant_id).measurements.extend(measurements)
+            self.report.tables_without_session.append(table)
+            groups: OrderedDict[tuple[str, object], list[dict[str, str]]] = OrderedDict(
+                ((row.get("participant_id", ""), index), [row]) for index, row in enumerate(rows)
+            )
+        else:
+            groups = _group_by(
+                rows, lambda r: (r.get("participant_id", ""), r.get(session_col, ""))
+            )
+        for (participant_id, _key), prows in groups.items():
+            session_id = prows[0].get(session_col, "") if session_col else ""
+            merged = _merge_rows(prows, self.report)
+            time = _timepoint(session_id) if session_id else None
+            measurements = engine.measurements(merged, data_dict, time, report=self.report)
+            accumulator(participant_id).measurements.extend(measurements)
+
+    def _questionnaire_configs(self) -> dict[str, tuple[Path, dict[str, Any]]]:
+        """Map each questionnaire config's ``table`` name to ``(path, mapping)``."""
+        config_dir = self.config_dir / "questionnaire"
+        configs: dict[str, tuple[Path, dict[str, Any]]] = {}
+        if not config_dir.is_dir():
+            return configs
+        for cfg_path in sorted(config_dir.glob("*.yaml")):
+            mapping = load_mapping(cfg_path)
+            configs[mapping.get("table", cfg_path.stem)] = (cfg_path, mapping)
+        return configs
 
     # -- IO helpers --
     @staticmethod
     def _read_tsv(path: Path) -> list[dict[str, str]]:
-        if not path.exists():
-            return []
-        with open(path, newline="") as fh:
-            return list(csv.DictReader(fh, delimiter="\t"))
-
-    @staticmethod
-    def _read_data_elements(path: Path) -> dict[str, Any]:
-        """Return the ``data_elements`` map from a ReproSchema companion JSON, or ``{}``.
-
-        The JSON is ``{<table>: {"data_elements": {<column>: {...}}}}``; we return the
-        inner ``data_elements`` so the engine can read per-column ``choices`` directly.
-        """
-        if not path.exists():
-            return {}
-        try:
-            doc = json.loads(path.read_text())
-        except (OSError, ValueError) as exc:
-            logger.warning("could not read data dict %s: %s", path, exc)
-            return {}
-        if not isinstance(doc, dict) or not doc:
-            return {}
-        top = next(iter(doc.values()))
-        if isinstance(top, dict) and isinstance(top.get("data_elements"), dict):
-            return top["data_elements"]
-        return {}
+        _, rows = _read_tsv_header_and_rows(path)
+        return rows
 
     @staticmethod
     def _warn(mapping: dict[str, Any], source: str) -> None:
@@ -206,12 +259,40 @@ class VoiceSource(Source):
             logger.warning("%s: %s", source, warning)
 
 
+def _read_tsv_header_and_rows(path: Path) -> tuple[list[str] | None, list[dict[str, str]]]:
+    """Read a TSV into (header, rows). ``header`` is None only when the file is absent, so a
+    present-but-empty table is distinguishable from a missing one (the header still lists its
+    columns). ``rows`` is a list of column->value dicts.
+    """
+    if not path.exists():
+        return None, []
+    with open(path, newline="") as fh:
+        reader = csv.DictReader(fh, delimiter="\t")
+        rows = list(reader)
+        header = list(reader.fieldnames) if reader.fieldnames else []
+    return header, rows
+
+
 def _participant_key(row: dict[str, str]) -> str:
     return row.get("participant_id", "")
 
 
-def _participant_session_key(row: dict[str, str]) -> tuple[str, str]:
-    return row.get("participant_id", ""), row.get("session_id", "")
+def _session_columns(mapping: dict[str, Any]) -> list[str]:
+    """The ordered session-key candidates for a table's config (first present in the header
+    wins). Accepts a scalar or list ``session_columns``; defaults to the bare ``session_id``.
+    """
+    cols = mapping.get("session_columns", DEFAULT_SESSION_COLUMNS)
+    if isinstance(cols, str):
+        return [cols]
+    return list(cols) if cols else list(DEFAULT_SESSION_COLUMNS)
+
+
+def _resolve_session_column(sample_row: dict[str, str], candidates: Iterable[str]) -> str | None:
+    """Return the first candidate present as a column in the header, or None if none are."""
+    for candidate in candidates:
+        if candidate in sample_row:
+            return candidate
+    return None
 
 
 def _group_by(rows: Iterable[dict[str, str]], key: Any) -> OrderedDict[Any, list[dict]]:
@@ -221,10 +302,16 @@ def _group_by(rows: Iterable[dict[str, str]], key: Any) -> OrderedDict[Any, list
     return grouped
 
 
-def _merge_rows(rows: list[dict[str, str]]) -> dict[str, str]:
-    """Collapse rows sharing a key into one, taking the last non-empty value per column."""
+def _merge_rows(rows: list[dict[str, str]], report: IngestReport | None = None) -> dict[str, str]:
+    """Collapse rows sharing a key into one, taking the last non-empty value per column.
+
+    Safe only for rows that genuinely share a timepoint; the caller guarantees that by
+    grouping on a resolved session column first. A merge of >1 row is recorded on the report.
+    """
     if len(rows) == 1:
         return rows[0]
+    if report is not None:
+        report.rows_merged += len(rows) - 1
     merged: dict[str, str] = {}
     for row in rows:
         for column, value in row.items():
