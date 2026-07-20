@@ -61,17 +61,28 @@ def test_numeric_coded_cell_resolves_against_named_choices():
 
 def test_boolean_choice_values_are_not_treated_as_ordinals():
     # isinstance(True, int) is True in Python; a bool value must fall back to positional.
+    # "Yes" is placed at positional index 0 so the correct (guarded) result 0.0 differs from
+    # the buggy int(True)==1 result 1.0 -- otherwise the assertion would pass either way.
     data_dict = {
         "yesno": {
             "choices": [
-                {"name": {"en": "No"}, "value": False},
                 {"name": {"en": "Yes"}, "value": True},
+                {"name": {"en": "No"}, "value": False},
             ]
         }
     }
     engine = _engine({"yesno": {"id": "b2ai:yn", "label": "yn"}})
     [m] = engine.measurements({"yesno": "Yes"}, data_dict)
-    assert m.value_quantity.value == 1.0  # positional, not int(True)==1 by coincidence-only
+    assert m.value_quantity.value == 0.0  # positional index 0; the bool trap would yield 1.0
+
+
+def test_non_numeric_age_is_not_logged(caplog):
+    # PHI regression: age is a free-text HIPAA quasi-identifier; a non-numeric value must never
+    # be echoed into logs, not even at the default WARNING level (see mapping/engine.py).
+    with caplog.at_level(logging.WARNING):
+        assert MappingEngine.years_to_iso8601("ninety-SECRET-PII") is None
+    assert "SECRET-PII" not in caplog.text
+    assert "ninety" not in caplog.text
 
 
 def test_unresolved_answer_is_skipped_and_counted_without_leaking_value(caplog):

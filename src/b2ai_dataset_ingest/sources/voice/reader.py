@@ -324,5 +324,6 @@ def _timepoint(session_id: str) -> TimePoint:
     """Build a TimePoint for a session id, attaching an NCIT term for known labels."""
     term = SESSION_TERMS.get(session_id)
     if term is None:
-        logger.debug("unrecognized session id %r; leaving TimeElement unset", session_id)
+        # PHI-safe: don't log the raw id (real session ids can be opaque UUIDs = re-id vectors).
+        logger.debug("unrecognized session id; leaving TimeElement unset")
     return TimePoint(session_id=session_id, ontology_class=term)
