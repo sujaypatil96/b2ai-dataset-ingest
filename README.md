@@ -51,9 +51,24 @@ src/b2ai_dataset_ingest/
   emitters/     output writers; emitters/phenopacket.py is the first target
   ontology/     MONDO/HPO/LOINC term helpers
 config/         per-dataset YAML mappings (config/voice/) + shared value sets
+mappings/       SSSOM term mappings: B2AI dataset terms (b2ai:) -> HPO, with a validator
 docs/           design docs (SDDs), ADRs, plans, mapping conventions
 tests/          fixtures + tests, incl. tests/data/multisession/ for time-course
 data/           (gitignored) synthetic input lands here — see scripts/fetch_synthetic_data.sh
+```
+
+### Term mappings to HPO (SSSOM)
+
+`mappings/` holds [SSSOM](https://mapping-commons.github.io/sssom/) files mapping Bridge2AI-Voice
+dataset terms (a project-local `b2ai:` namespace) to the Human Phenotype Ontology — a standalone,
+shareable artifact, separate from the ETL configs and not yet consumed by the emitter. Every HPO
+code is machine-verified against a pinned HPO release (via oaklib) so nothing is hallucinated;
+`b2ai-ingest validate-mappings` (and CI) enforce it. See
+[docs/mapping-conventions.md](docs/mapping-conventions.md#term-mappings-to-hpo-sssom).
+
+```bash
+uv sync --extra validation            # install oaklib (the offline HPO backend)
+uv run b2ai-ingest validate-mappings  # verify no HPO term is hallucinated / obsolete / mislabeled
 ```
 
 ## Getting started
