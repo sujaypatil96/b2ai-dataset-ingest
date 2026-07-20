@@ -1,0 +1,73 @@
+---
+name: curation-assist
+description: Assist an expert-in-the-loop curator mapping Bridge2AI dataset terms (data-dictionary columns) to ontology terms (HPO, MONDO, LOINC) as SSSOM. Use when proposing new term mappings, deciding whether a column is in scope, choosing a SKOS predicate, or reviewing candidate mappings; it proposes and justifies against project conventions and gates every code through a deterministic verifier so ontology codes are never hallucinated, while a human makes the final call.
+user-invocable: true
+---
+
+# Curation assistant (expert-in-the-loop)
+
+Mapping a dataset term to an ontology term is **two questions**, and this skill keeps them
+separate:
+
+1. **Which concept does this column mean, and how close is the match?** -- *judgment.* There
+   is often no single right answer; a curator (ideally a domain expert) decides. This skill
+   *proposes and justifies*; it never silently commits a judgment call.
+2. **What is the real code/label for that concept, and is it current?** -- *deterministic.*
+   Never type an ontology id from memory. Search the ontology, take the code from it, and let
+   the validator re-check it. Reproducible.
+
+The whole point is to make step 1 **more consistent** (rule-guided, reviewable) without
+pretending it is deterministic, and to make step 2 **airtight**.
+
+## When to use / not use
+
+- **Use** when: proposing mappings for new columns/tables; deciding if a column is in scope;
+  picking a predicate; or reviewing/critiquing existing candidate mappings.
+- **Don't use** for the mechanics of the pipeline itself (reading tables, emitting
+  phenopackets) -- that is ordinary code. This skill is only the *curation judgment* layer.
+
+## Workflow
+
+1. **Scope filter.** For each column, read its data-dictionary `description` (not just the
+   name) and apply `references/scope-checklist.md`. Most columns are *not* phenotypes
+   (admin, scores, psychosocial impact, triggers, task data, history) -- record those as
+   out-of-scope with the bucket, and move on. Only sign/symptom/finding columns proceed.
+2. **Name the concept** from the description, in ontology-agnostic words (e.g. "poor appetite
+   or overeating" -> the concept is *abnormal eating behaviour*, not literally "poor appetite").
+3. **Search, don't guess.** Run `scripts/search_hpo.py "<concept>"` (or `--ontology mondo`).
+   Take candidate ids + authoritative labels from the output. If the source description
+   *contradicts* the lexical match (classic trap: "dizziness" vs HPO *Vertigo* = spinning),
+   **flag it, don't auto-accept.**
+4. **Choose a predicate** per `references/predicate-rules.md` (exact / broad / narrow /
+   related, and the "A-or-B conflation" rule). When unsure, prefer the weaker predicate + a
+   comment.
+5. **Emit a review artifact**, not a fait accompli -- one row per candidate in the format in
+   `references/review-artifact.md`: proposal, rationale, alternatives, confidence, and an
+   explicit split of *auto-verified* (code is real/current) vs *needs expert sign-off*
+   (concept + predicate).
+6. **Run the deterministic gate.** Nothing ships until
+   `uv run b2ai-ingest validate-mappings --data-root <phenotype/>` is clean (existence,
+   `owl:deprecated`, label match, structure, subject-column existence). This is the
+   guarantee; treat a red gate as blocking.
+7. **Close the loop.** When an expert overrides a proposal, add the decision back into
+   `references/scope-checklist.md` or `references/predicate-rules.md` as a rule or worked
+   example. Over time this shrinks the variance in step 1 -- the reason this skill exists.
+
+## Guardrails (do not skip)
+
+- Codes are the ontology's, never yours. If `search_hpo.py` returns nothing, the concept may
+  be out of HPO scope -- say so; don't invent a code.
+- `exactMatch` only when the source term is a verbatim ontology label or **exact** synonym;
+  otherwise broad/narrow/related.
+- A green validator means *the codes are real and correctly labelled* -- it does **not** mean
+  the concept/predicate choice is right. Keep the human sign-off visible; don't let "the
+  validator passed" stand in for review.
+- `mapping_justification` stays `semapv:ManualMappingCuration` -- these are curated, and the
+  files should say so.
+
+## Sources of truth (cross-reference, don't duplicate)
+
+- Format + predicate spec + how the validator works: `docs/mapping-conventions.md`.
+- The deterministic gate: `b2ai-ingest validate-mappings` (src/.../ontology/sssom_validate.py).
+- Scope buckets and predicate heuristics with worked examples: the `references/` files here --
+  these are **meant to be edited by domain experts** in PRs.
