@@ -13,14 +13,33 @@ points:
 
 from __future__ import annotations
 
+import json
+import logging
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
 import yaml
 
+logger = logging.getLogger(__name__)
+
 # Sentinels that mark a term as not-yet-resolved.
 PLACEHOLDER_IDS = {"TODO", "MONDO:0000000", ""}
+
+# Field names that mark a dict as a ReproSchema data-dictionary *element* (one per column).
+# Used to tell a flat {column: element} dict apart from an unrelated JSON object.
+DATA_ELEMENT_FIELDS = frozenset(
+    {
+        "description",
+        "valueType",
+        "datatype",
+        "choices",
+        "question",
+        "termURL",
+        "minValue",
+        "maxValue",
+    }
+)
 
 
 def load_mapping(path: Path) -> dict[str, Any]:
@@ -30,6 +49,52 @@ def load_mapping(path: Path) -> dict[str, Any]:
     if not isinstance(data, dict):
         raise ValueError(f"Mapping file {path} did not parse to a mapping/dict")
     return data
+
+
+def normalize_data_dict(doc: Any, source: str = "<data dict>") -> dict[str, Any]:
+    """Normalize a ReproSchema companion data dict to a flat ``{column: element}`` map.
+
+    Two envelope shapes occur in the wild and must both be understood:
+
+    - **Flat** — the shape the *real* b2aiprep release publishes: top-level keys are the
+      column names, each value the element dict (``{description, valueType, choices, ...}``).
+    - **Nested** — the shape the local synthetic generator emits:
+      ``{<table>: {"description", "url", "data_elements": {<column>: {...}}}}``.
+
+    Returns the inner ``{column: element}`` map for either shape, or ``{}`` (with a warning)
+    for an empty/unreadable/unrecognized document, so callers get a single, flat contract.
+    """
+    if not isinstance(doc, dict) or not doc:
+        return {}
+    # Nested envelope: a top-level value carries a ``data_elements`` map.
+    for value in doc.values():
+        if isinstance(value, dict) and isinstance(value.get("data_elements"), dict):
+            return value["data_elements"]
+    # Flat envelope: every top-level value looks like a data-dictionary element.
+    if all(isinstance(v, dict) and (DATA_ELEMENT_FIELDS & v.keys()) for v in doc.values()):
+        return doc
+    logger.warning(
+        "%s: unrecognized data-dict envelope (%d top-level keys); choices/labels unavailable",
+        source,
+        len(doc),
+    )
+    return {}
+
+
+def load_data_dict(path: Path) -> dict[str, Any]:
+    """Read a companion data-dict JSON and return a flat ``{column: element}`` map.
+
+    Delegates envelope handling to :func:`normalize_data_dict`. A missing or malformed file
+    yields ``{}`` (the reader/engine then fall back to the config ``ordinal_scale``).
+    """
+    if not path.exists():
+        return {}
+    try:
+        doc = json.loads(path.read_text())
+    except (OSError, ValueError) as exc:
+        logger.warning("could not read data dict %s: %s", path, exc)
+        return {}
+    return normalize_data_dict(doc, source=path.name)
 
 
 def is_placeholder(term: Any) -> bool:

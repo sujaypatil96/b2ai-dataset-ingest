@@ -8,8 +8,8 @@
 # for it yet (GSSO/NCIT) and it is unfilled in the synthetic data. Add it in a follow-up.
 
 table: demographics
-keyed_by: [participant_id, session_id]
 produces: Individual
+# One Individual per participant_id; demographics is not keyed by session.
 
 # Each entry maps a source column to an IR Individual field.
 # `transform` names a value-normalization rule; `value_map` gives inline recodes.

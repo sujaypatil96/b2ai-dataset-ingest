@@ -2,6 +2,10 @@
 /data/*
 !/data/.gitkeep
 
+# Real Bridge2AI-Voice PhysioNet download — credentialed access, HIPAA/PII-sensitive.
+# Must never be committed or pushed.
+/physionet.org/
+
 # Python
 __pycache__/
 *.py[cod]
