@@ -81,6 +81,49 @@ def validate(
         raise typer.Exit(code=1)
 
 
+@app.command("validate-mappings")
+def validate_mappings(
+    mappings: Path = typer.Option(
+        Path("mappings"), "--mappings", "-m", help="Directory of *.sssom.tsv files."
+    ),
+    data_root: Path = typer.Option(
+        None,
+        "--data-root",
+        "-d",
+        help="phenotype/ dir to check b2ai: subjects against (skipped if omitted).",
+    ),
+    strict_ontology: bool = typer.Option(
+        False,
+        "--strict-ontology",
+        help="Fail if the oaklib HPO backend is unavailable (default: skip the HPO check).",
+    ),
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Log details."),
+) -> None:
+    """Validate the B2AI -> HPO SSSOM mappings (no hallucinated / drifted HPO terms).
+
+    Structural checks always run. The HPO existence/label check runs when oaklib + the HPO
+    SQLite are available (install the ``validation`` extra); ``--strict-ontology`` makes their
+    absence an error. Subject columns are checked only when ``--data-root`` is given. Exits
+    non-zero if any error is found.
+    """
+    from b2ai_dataset_ingest.ontology.sssom_validate import default_mapping_files, validate_paths
+
+    logging.basicConfig(
+        level=logging.INFO if verbose else logging.WARNING,
+        format="%(levelname)s %(name)s: %(message)s",
+    )
+    files = sorted(mappings.glob("*.sssom.tsv")) or default_mapping_files()
+    if not files:
+        typer.echo(f"no *.sssom.tsv files found under {mappings}", err=True)
+        raise typer.Exit(code=2)
+    result = validate_paths(
+        files, data_root=data_root, check_ontology=True if strict_ontology else None
+    )
+    typer.echo(result.render())
+    if result.errors:
+        raise typer.Exit(code=1)
+
+
 @app.command()
 def targets() -> None:
     """List available output targets."""

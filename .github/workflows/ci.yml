@@ -22,3 +22,22 @@ jobs:
 
       - name: Test
         run: uv run pytest -q
+
+  validate-mappings:
+    # Enforces the B2AI -> HPO SSSOM guardrail: installs the `validation` extra (oaklib) so the
+    # HPO existence/label checks actually run and a hallucinated/obsolete/mislabeled term fails CI.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync dependencies (with validation extra)
+        run: uv sync --extra validation
+
+      - name: Validate mappings (CLI, strict HPO check)
+        run: uv run b2ai-ingest validate-mappings --strict-ontology
+
+      - name: Test the validator + negative controls
+        run: uv run pytest tests/test_sssom_mappings.py -q

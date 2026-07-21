@@ -1,0 +1,61 @@
+# curie_map:
+#   b2ai: https://github.com/sujaypatil96/b2ai-dataset-ingest#
+#   HP: http://purl.obolibrary.org/obo/HP_
+#   skos: http://www.w3.org/2004/02/skos/core#
+#   semapv: https://w3id.org/semapv/vocab/
+#   github: https://github.com/
+#   obo: http://purl.obolibrary.org/obo/
+# mapping_set_id: https://github.com/sujaypatil96/b2ai-dataset-ingest/mappings/b2ai-voice-signs-symptoms.sssom.tsv
+# mapping_set_version: '2026-07-17'
+# license: https://creativecommons.org/publicdomain/zero/1.0/
+# mapping_provider: https://github.com/sujaypatil96/b2ai-dataset-ingest
+# creator_id:
+#   - github:sujaypatil96
+# subject_source: b2ai-voice/3.1.0
+# object_source: obo:hp
+# object_source_version: hp/releases/2026-02-16
+# mapping_tool: 'oaklib (sqlite:obo:hp)'
+# mapping_date: '2026-07-17'
+# comment: Bridge2AI-Voice confounders/ and diagnosis/ clinical signs and symptoms mapped to HPO. Every object_id verified against the pinned HPO release with oaklib. See docs/mapping-conventions.md.
+subject_id	subject_label	predicate_id	object_id	object_label	mapping_justification	confidence	comment
+b2ai:confounders.dizziness	Dizziness	skos:relatedMatch	HP:0002321	Vertigo	semapv:ManualMappingCuration	0.6	source scopes to lightheadedness/balance disturbance (non-spinning); Vertigo is HPO's nearest term but the senses differ (cf. HP:0031972 Presyncope, HP:4000033 Non-spinning vertigo)
+b2ai:confounders.shortness_breath	Shortness of breath	skos:exactMatch	HP:0002094	Dyspnea	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.ataxia	Ataxia	skos:exactMatch	HP:0001251	Ataxia	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.apraxia_of_speech	Apraxia of speech	skos:exactMatch	HP:0011098	Speech apraxia	semapv:ManualMappingCuration	0.95	HPO synonym 'Apraxia of speech'
+b2ai:confounders.dysarthria	Dysarthria	skos:exactMatch	HP:0001260	Dysarthria	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.confusion	Confusion	skos:exactMatch	HP:0001289	Confusion	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.hearing_loss	Hearing loss	skos:exactMatch	HP:0000365	Hearing impairment	semapv:ManualMappingCuration	0.95	HPO synonym 'Hearing loss'
+b2ai:confounders.nasal_congestion_obstruction	Nasal congestion or obstruction	skos:exactMatch	HP:0001742	Nasal congestion	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.scratchy_sore_throat	Scratchy or sore throat	skos:exactMatch	HP:0033050	Pharyngalgia	semapv:ManualMappingCuration	0.95	HPO synonym 'Sore throat'
+b2ai:confounders.coughing_clearing_throat	Coughing or clearing your throat	skos:narrowMatch	HP:0012735	Cough	semapv:ManualMappingCuration	0.75	column conflates coughing + throat clearing (HPO has no throat-clearing term); Cough is the narrower captured sense
+b2ai:confounders.headache_migraine	Headache or migraine	skos:broadMatch	HP:0002315	Headache	semapv:ManualMappingCuration	0.8	column conflates headache and migraine
+b2ai:confounders.anxiety_nervousness	Anxiety or nervousness	skos:exactMatch	HP:0000739	Anxiety	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.atrial_fibrillation	Atrial fibrillation	skos:exactMatch	HP:0005110	Atrial fibrillation	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.bronchiectasis	Bronchiectasis	skos:exactMatch	HP:0002110	Bronchiectasis	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.emphysema	Emphysema	skos:exactMatch	HP:0002097	Emphysema	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.cleft_lip	Cleft lip	skos:exactMatch	HP:0410030	Cleft lip	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.cleft_palate	Cleft palate	skos:exactMatch	HP:0000175	Cleft palate	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.epilepsy	Epilepsy	skos:broadMatch	HP:0001250	Seizure	semapv:ManualMappingCuration	0.8	epilepsy (disorder) manifests as seizures (phenotype)
+b2ai:confounders.congestive_heart_failure	Congestive heart failure	skos:exactMatch	HP:0001635	Congestive heart failure	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.coronary_heart_disease	Coronary heart disease	skos:relatedMatch	HP:0001677	Coronary artery atherosclerosis	semapv:ManualMappingCuration	0.6	closest HPO phenotype; HPO synonym 'Coronary disease'
+b2ai:confounders.obesity	Obesity	skos:exactMatch	HP:0001513	Obesity	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.pneumothorax_atelectasis	Pneumothorax or atelectasis	skos:narrowMatch	HP:0002107	Pneumothorax	semapv:ManualMappingCuration	0.75	column conflates two distinct conditions; this row = pneumothorax
+b2ai:confounders.pneumothorax_atelectasis	Pneumothorax or atelectasis	skos:narrowMatch	HP:0100750	Atelectasis	semapv:ManualMappingCuration	0.75	column conflates two distinct conditions; this row = atelectasis
+b2ai:confounders.pulmonary_hypertension	Pulmonary hypertension	skos:narrowMatch	HP:0002092	Pulmonary arterial hypertension	semapv:ManualMappingCuration	0.75	HPO term is the arterial subtype; source column is general pulmonary hypertension
+b2ai:confounders.scoliosis	Scoliosis	skos:exactMatch	HP:0002650	Scoliosis	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.sinusitis	Sinusitis (rhinitis)	skos:exactMatch	HP:0000246	Sinusitis	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.sleep_disturbance	Sleep disturbance	skos:exactMatch	HP:0002360	Sleep disturbance	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.chronic_kidney_disease	Chronic kidney disease	skos:exactMatch	HP:0012622	Chronic kidney disease	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.stroke	Stroke / aphasia	skos:narrowMatch	HP:0001297	Stroke	semapv:ManualMappingCuration	0.75	column conflates stroke and/or aphasia; this row = the stroke sense
+b2ai:confounders.stroke	Stroke / aphasia	skos:narrowMatch	HP:0002381	Aphasia	semapv:ManualMappingCuration	0.75	column conflates stroke and/or aphasia; this row = the aphasia sense
+b2ai:confounders.velopharyngeal_insufficiency	Velopharyngeal insufficiency	skos:exactMatch	HP:0000220	Velopharyngeal insufficiency	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.recurrent_bronchitis	Recurrent bronchitis	skos:broadMatch	HP:0012387	Bronchitis	semapv:ManualMappingCuration	0.8	
+b2ai:confounders.brain_tumor	Brain tumor	skos:exactMatch	HP:0030692	Brain neoplasm	semapv:ManualMappingCuration	0.95	HPO synonym 'Brain tumor'
+b2ai:confounders.chronic_ear_infections	Chronic ear infections	skos:exactMatch	HP:0000403	Recurrent otitis media	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.stutter_dysfluency	Stutter / dysfluency	skos:exactMatch	HP:0025268	Stuttering	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.osa_med_hist_lung	Obstructive sleep apnea (OSA)	skos:exactMatch	HP:0002870	Obstructive sleep apnea	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.speech_difficulty	Speech difficulty	skos:broadMatch	HP:0002167	Abnormal speech pattern	semapv:ManualMappingCuration	0.8	
+b2ai:parkinsons_disease.diagnosis_parkinsons_gold_standard_diagnosis_category_1___bradykinesia	Bradykinesia (Parkinsonism criterion)	skos:exactMatch	HP:0002067	Bradykinesia	semapv:ManualMappingCuration	0.95	
+b2ai:parkinsons_disease.diagnosis_parkinsons_gold_standard_diagnosis_category_1___rigidity	Rigidity (Parkinsonism criterion)	skos:exactMatch	HP:0002063	Rigidity	semapv:ManualMappingCuration	0.95	
+b2ai:parkinsons_disease.diagnosis_parkinsons_gold_standard_diagnosis_category_1___tremor	Tremor (Parkinsonism criterion)	skos:exactMatch	HP:0001337	Tremor	semapv:ManualMappingCuration	0.95	
+b2ai:parkinsons_disease.diagnosis_parkinsons_gold_standard_diagnosis_category_3___rest_tremor	Rest tremor (supportive criterion)	skos:exactMatch	HP:0002322	Resting tremor	semapv:ManualMappingCuration	0.95	

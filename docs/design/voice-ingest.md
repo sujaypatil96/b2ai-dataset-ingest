@@ -81,3 +81,9 @@ objects grouped by `participant_id`, and `PhenopacketEmitter` renders each parti
   `value_term` for future genuinely-categorical items.
 - Still open: whether to promote the IR to a LinkML schema; adding HPO
   `PhenotypicFeature` derivation (needs an ordinal→present/absent threshold policy).
+- **HPO term mappings (done, decoupled):** dataset terms → HPO now exist as validated SSSOM
+  files under `mappings/` (`b2ai:` namespace in `ontology/curie_map.py`), guarded by
+  `ontology/sssom_validate.py` (oaklib checks every `HP:` id against a pinned release for
+  existence, non-obsolescence, and label match). This is a standalone artifact; *consuming* it
+  to emit `PhenotypicFeature`s is still gated on the threshold policy above. See
+  [../mapping-conventions.md](../mapping-conventions.md#term-mappings-to-hpo-sssom).

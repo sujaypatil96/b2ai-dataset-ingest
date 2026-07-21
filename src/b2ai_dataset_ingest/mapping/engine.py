@@ -134,7 +134,8 @@ class MappingEngine:
         try:
             years = int(float(str(value).strip()))
         except (TypeError, ValueError):
-            logger.warning("age %r is not numeric; leaving age unset", value)
+            # PHI-safe: never interpolate the raw age cell (a free-text HIPAA quasi-identifier).
+            logger.warning("age value is not numeric; leaving age unset")
             return None
         return f"P{years}Y"
 
