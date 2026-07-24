@@ -19,4 +19,5 @@ Written design/decision/plan artifacts for `b2ai-dataset-ingest`.
 ## Index
 
 - ADR-0001 — [Repo name, architecture, and tooling](adr/0001-name-architecture-tooling.md)
+- ADR-0002 — [Conditional HPO mapping — value-condition in SSSOM, executed in the pipeline](adr/0002-conditional-hpo-mapping.md) *(accepted)*
 - SDD — [Bridge2AI-Voice phenotype → phenopacket pipeline](design/voice-ingest.md) *(draft)*
