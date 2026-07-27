@@ -49,6 +49,14 @@ KNOWN_RESOURCES: dict[str, dict[str, str]] = {
         "namespace_prefix": "NCIT",
         "iri_prefix": "http://purl.obolibrary.org/obo/NCIT_",
     },
+    "ECO": {
+        "id": "eco",
+        "name": "Evidence and Conclusion Ontology (ECO)",
+        "url": "http://purl.obolibrary.org/obo/eco.owl",
+        "version": "2026-05-15",
+        "namespace_prefix": "ECO",
+        "iri_prefix": "http://purl.obolibrary.org/obo/ECO_",
+    },
     "NCBITAXON": {
         "id": "ncbitaxon",
         "name": "NCBI organismal classification",

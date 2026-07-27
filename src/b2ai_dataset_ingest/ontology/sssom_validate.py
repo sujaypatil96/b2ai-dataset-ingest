@@ -33,9 +33,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml
-
+from b2ai_dataset_ingest.mapping.conditions import ConditionParseError, parse_condition
 from b2ai_dataset_ingest.mapping.loaders import load_data_dict
+from b2ai_dataset_ingest.mapping.sssom_io import (
+    MetadataError,
+    default_mapping_files,
+    parse_sssom,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +56,8 @@ ALLOWED_PREDICATES = frozenset(
     }
 )
 REQUIRED_COLUMNS = ("subject_id", "predicate_id", "object_id", "mapping_justification")
+#: The only SSSOM predicate_modifier we emit — ``Not`` -> phenopacket ``excluded`` (ADR-0002).
+ALLOWED_MODIFIERS = frozenset({"", "Not"})
 _RELEASE_DATE = re.compile(r"(\d{4}-\d{2}-\d{2})")
 
 
@@ -101,45 +107,6 @@ class ValidationResult:
             f"{len(self.errors)} error(s), {len(self.warnings)} warning(s)"
         )
         return "\n".join(lines)
-
-
-# --------------------------------------------------------------------------- parsing
-
-
-class MetadataError(ValueError):
-    """Raised when the SSSOM metadata header is not parseable YAML."""
-
-
-def parse_sssom(path: Path) -> tuple[dict[str, Any], list[dict[str, str]]]:
-    """Parse a SSSOM/TSV file into ``(metadata, rows)``.
-
-    The commented (``#``) prologue is joined and parsed as the SSSOM YAML metadata block; the
-    remaining lines are a TSV whose first row is the header. Raises :class:`MetadataError` if
-    the header is not valid YAML.
-    """
-    meta_lines: list[str] = []
-    tsv_lines: list[str] = []
-    for raw in path.read_text().splitlines():
-        if raw.startswith("#"):
-            content = raw[1:]
-            meta_lines.append(content[1:] if content.startswith(" ") else content)
-        elif raw.strip():
-            tsv_lines.append(raw)
-    try:
-        metadata = yaml.safe_load("\n".join(meta_lines)) if meta_lines else {}
-    except yaml.YAMLError as exc:
-        raise MetadataError(str(exc)) from exc
-    if not isinstance(metadata, dict):
-        metadata = {}
-    rows: list[dict[str, str]] = []
-    if tsv_lines:
-        header = tsv_lines[0].split("\t")
-        for line in tsv_lines[1:]:
-            cells = line.split("\t")
-            # pad short rows so trailing empty cells (e.g. blank comment) don't misalign
-            cells += [""] * (len(header) - len(cells))
-            rows.append(dict(zip(header, cells, strict=False)))
-    return metadata, rows
 
 
 # ------------------------------------------------------------------- ontology backend
@@ -213,7 +180,7 @@ def _check_row(
     row: dict[str, str],
     fname: str,
     file_prefixes: set[str],
-    seen: set[tuple[str, str, str]],
+    seen: set[tuple[str, str, str, str, str]],
 ) -> Iterable[Finding]:
     subj = row.get("subject_id", "").strip()
     pred = row.get("predicate_id", "").strip()
@@ -252,11 +219,29 @@ def _check_row(
         except ValueError:
             yield err("bad-confidence", f"confidence {conf!r} is not a number")
 
+    # Conditional-mapping columns (ADR-0002): the absent pole is expressed with the standard
+    # predicate_modifier: Not; the value gate is a parseable when_value expression. The
+    # validator checks structure only — a cut-point being *clinically* right needs a curator.
+    modifier = row.get("predicate_modifier", "").strip()
+    if modifier not in ALLOWED_MODIFIERS:
+        yield err(
+            "bad-predicate-modifier",
+            f"predicate_modifier {modifier!r} not in {sorted(ALLOWED_MODIFIERS)}",
+        )
+    when_value = row.get("when_value", "").strip()
+    if when_value:
+        try:
+            parse_condition(when_value)
+        except ConditionParseError as exc:
+            yield err("bad-when-value", f"when_value {when_value!r} does not parse: {exc}")
+
+    # Duplicate detection keys on the whole conditional identity, so a present/absent pair
+    # (same subject/predicate/object, differing predicate_modifier + when_value) is allowed.
     if subj and pred and obj:
-        triple = (subj, pred, obj)
-        if triple in seen:
-            yield err("duplicate", f"duplicate mapping {triple}")
-        seen.add(triple)
+        key = (subj, pred, obj, modifier, when_value)
+        if key in seen:
+            yield err("duplicate", f"duplicate mapping {key}")
+        seen.add(key)
 
 
 def _check_subject_exists(
@@ -351,7 +336,7 @@ def validate_paths(
     result.ontology_checked = adapter is not None
     result.subjects_checked = data_root is not None
 
-    seen: set[tuple[str, str, str]] = set()  # cross-file duplicate detection
+    seen: set[tuple[str, str, str, str, str]] = set()  # cross-file duplicate detection
     for path in paths:
         fname = path.name
         try:
@@ -394,7 +379,14 @@ def _check_version(metadata: dict[str, Any], fname: str, loaded: str | None) -> 
         )
 
 
-def default_mapping_files(repo_root: Path | None = None) -> list[Path]:
-    """The shipped SSSOM files under ``mappings/``."""
-    root = repo_root or Path(__file__).resolve().parents[3]
-    return sorted((root / "mappings").glob("*.sssom.tsv"))
+# ``parse_sssom``/``MetadataError``/``default_mapping_files`` now live in
+# :mod:`b2ai_dataset_ingest.mapping.sssom_io` (shared with the apply path) and are re-exported
+# here so ``from ...sssom_validate import parse_sssom`` (CLI, tests) keeps working.
+__all__ = [
+    "Finding",
+    "MetadataError",
+    "ValidationResult",
+    "default_mapping_files",
+    "parse_sssom",
+    "validate_paths",
+]

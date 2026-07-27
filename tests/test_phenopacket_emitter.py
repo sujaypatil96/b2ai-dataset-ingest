@@ -5,6 +5,8 @@ import phenopackets as pp
 from b2ai_dataset_ingest.emitters import PhenopacketEmitter
 from b2ai_dataset_ingest.model import (
     DiseaseObservation,
+    Evidence,
+    ExternalReference,
     Individual,
     MeasurementObservation,
     OntologyTerm,
@@ -82,6 +84,42 @@ def test_emit_phenotypic_feature_and_hp_resource():
     assert feature.type.id == "HP:0001337"
     prefixes = {r.namespace_prefix for r in pkt.meta_data.resources}
     assert "HP" in prefixes
+
+
+def test_derived_feature_renders_provenance_and_declares_resources():
+    # A value-gated, self-report-derived feature (ADR-0002): excluded pole + ECO Evidence +
+    # an ExternalReference to the b2ai source item; both new prefixes must get a Resource.
+    participant = Participant(
+        individual=Individual(id="p5"),
+        phenotypic_features=[
+            PhenotypicFeatureObservation(
+                type=OntologyTerm(id="HP:0000716", label="Depression"),
+                excluded=True,
+                description="Derived absent from self-reported item b2ai:phq9.feeling_depressed",
+                evidence=[
+                    Evidence(
+                        evidence_code=OntologyTerm(id="ECO:0006160", label="self-reported"),
+                        reference=ExternalReference(
+                            id="b2ai:phq9.feeling_depressed",
+                            reference="https://example.org/phq9.feeling_depressed",
+                            description="Feeling down, depressed, or hopeless",
+                        ),
+                    )
+                ],
+            )
+        ],
+    )
+    pkt = PhenopacketEmitter().emit(participant)
+    [feature] = pkt.phenotypic_features
+    assert feature.excluded is True
+    assert feature.description.startswith("Derived absent")
+    [evidence] = feature.evidence
+    assert evidence.evidence_code.id == "ECO:0006160"
+    assert evidence.reference.id == "b2ai:phq9.feeling_depressed"
+    assert evidence.reference.description == "Feeling down, depressed, or hopeless"
+    # The ECO code and the b2ai ExternalReference id both contribute a MetaData Resource.
+    prefixes = {r.namespace_prefix for r in pkt.meta_data.resources}
+    assert {"HP", "ECO", "b2ai", "NCBITaxon"} <= prefixes
 
 
 def test_metadata_excludes_shadowed_value_term_prefix():

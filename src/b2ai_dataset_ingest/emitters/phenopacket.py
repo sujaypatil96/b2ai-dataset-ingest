@@ -131,12 +131,30 @@ def _phenotypic_feature(observation) -> pp.PhenotypicFeature:
     feature = pp.PhenotypicFeature(
         type=_ontology_class(observation.type), excluded=observation.excluded
     )
+    if observation.description:
+        feature.description = observation.description
     if observation.severity is not None:
         feature.severity.CopyFrom(_ontology_class(observation.severity))
     onset = _time_element(observation.onset)
     if onset is not None:
         feature.onset.CopyFrom(onset)
+    for item in observation.evidence:
+        feature.evidence.append(_evidence(item))
     return feature
+
+
+def _evidence(evidence) -> pp.Evidence:
+    """Build a GA4GH ``Evidence`` (ECO code + optional source ``ExternalReference``)."""
+    message = pp.Evidence(evidence_code=_ontology_class(evidence.evidence_code))
+    reference = evidence.reference
+    if reference is not None:
+        external = pp.ExternalReference(id=reference.id)
+        if reference.reference:
+            external.reference = reference.reference
+        if reference.description:
+            external.description = reference.description
+        message.reference.CopyFrom(external)
+    return message
 
 
 def _time_element(time: TimePoint | None) -> pp.TimeElement | None:
@@ -187,6 +205,12 @@ def _collect_prefixes(message) -> list[str]:
 def _walk_ontology_ids(message, prefixes: set[str]) -> None:
     if isinstance(message, pp.OntologyClass):
         if message.id:
+            prefixes.add(prefix_of(message.id))
+        return
+    # An ExternalReference id (e.g. a b2ai: source item on an Evidence) is a CURIE too, so it
+    # must contribute its prefix — the MetaData must declare a Resource for it to be resolvable.
+    if isinstance(message, pp.ExternalReference):
+        if message.id and ":" in message.id:
             prefixes.add(prefix_of(message.id))
         return
     for field, value in message.ListFields():  # only *set* fields

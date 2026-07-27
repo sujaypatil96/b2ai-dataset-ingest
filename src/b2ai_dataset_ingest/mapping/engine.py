@@ -13,7 +13,7 @@ turns one source row into IR objects. Two table shapes are supported in v1:
 Ordinal answers become ``Quantity(value=<int>, unit=UCUM {score})`` (per the confirmed
 plan). The integer for an answer is resolved encoding-agnostically: an answer cell may hold
 the choice *label* ("Several days"), the choice *code* ("almostNever"), or a numeric code
-("1" / "3.0"), and :meth:`MappingEngine._ordinal_value` accepts all three. The resolution
+("1" / "3.0"), and :meth:`MappingEngine.ordinal_value` accepts all three. The resolution
 index is built from the companion ReproSchema data dict's per-item ``choices`` when
 available, falling back to the config's ``ordinal_scale`` (used by fixtures that ship no
 data dict). Diagnosis is basename-driven and handled by the reader, not here.
@@ -155,7 +155,7 @@ class MappingEngine:
             raw = (row.get(column) or "").strip()
             if not raw:
                 continue
-            ordinal = self._ordinal_value(column, raw, data_dict)
+            ordinal = self.ordinal_value(column, raw, data_dict)
             if ordinal is None:
                 # PHI-safe: identify the column, never the raw answer value.
                 logger.warning(
@@ -202,10 +202,14 @@ class MappingEngine:
             report.measurements_emitted += len(out)
         return out
 
-    def _ordinal_value(
+    def ordinal_value(
         self, column: str, answer: str, data_dict: dict[str, Any] | None
     ) -> int | None:
         """Map an answer to its ordinal integer, agnostic to how the cell is encoded.
+
+        Public so the conditional-mapping apply path
+        (:func:`b2ai_dataset_ingest.mapping.hpo_rules.derive_features`) and the preflight
+        validator can resolve an answer to the same score the emitted Measurement uses.
 
         The cell may carry the choice *label* ("Several days"), the choice *code*
         ("almostNever"), or a numeric code ("1" / "3.0"). Resolution order:

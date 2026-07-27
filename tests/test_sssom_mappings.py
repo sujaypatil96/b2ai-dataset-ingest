@@ -131,6 +131,62 @@ def test_validator_catches_structural_faults(tmp_path: Path):
     assert expected <= codes
 
 
+_COND_COLS = (
+    "subject_id\tsubject_label\tpredicate_id\tobject_id\tobject_label\t"
+    "mapping_justification\tconfidence\tpredicate_modifier\twhen_value"
+)
+
+
+def _cond_row(subject, obj, obj_label, modifier="", when=""):
+    return "\t".join(
+        [subject, "x", "skos:broadMatch", obj, obj_label,
+         "semapv:ManualMappingCuration", "0.8", modifier, when]
+    )
+
+
+def _write_conditional(tmp_path: Path, rows: list[str]) -> Path:
+    path = tmp_path / "cond.sssom.tsv"
+    path.write_text(SSSOM_HEADER + _COND_COLS + "\n" + "\n".join(rows) + "\n")
+    return path
+
+
+def test_validator_catches_when_value_and_modifier_faults(tmp_path: Path):
+    """Offline: an unknown predicate_modifier and an unparseable when_value are errors."""
+    path = _write_conditional(
+        tmp_path,
+        [
+            _cond_row("b2ai:phq9.feeling_depressed", "HP:0000716", "Depression", modifier="Maybe"),
+            _cond_row("b2ai:phq9.no_energy", "HP:0012378", "Fatigue", when="totally bogus"),
+        ],
+    )
+    codes = {f.code for f in validate_paths([path], check_ontology=False).errors}
+    assert {"bad-predicate-modifier", "bad-when-value"} <= codes
+
+
+def test_present_absent_pair_is_not_a_duplicate_but_true_duplicates_are(tmp_path: Path):
+    """A value-gated present/absent pair shares subject/predicate/object yet is not a duplicate;
+    two identical conditional rows still are (dedup keys on modifier + when_value too)."""
+    ok = _write_conditional(
+        tmp_path,
+        [
+            _cond_row("b2ai:phq9.feeling_depressed", "HP:0000716", "Depression", when=">=1"),
+            _cond_row("b2ai:phq9.feeling_depressed", "HP:0000716", "Depression", "Not", "==0"),
+        ],
+    )
+    ok_errors = validate_paths([ok], check_ontology=False).errors
+    assert not [f for f in ok_errors if f.code == "duplicate"]
+
+    dup = _write_conditional(
+        tmp_path,
+        [
+            _cond_row("b2ai:phq9.feeling_depressed", "HP:0000716", "Depression", when=">=1"),
+            _cond_row("b2ai:phq9.feeling_depressed", "HP:0000716", "Depression", when=">=1"),
+        ],
+    )
+    codes = {f.code for f in validate_paths([dup], check_ontology=False).errors}
+    assert "duplicate" in codes
+
+
 def test_validator_requires_self_contained_curie_map(tmp_path: Path):
     """A prefix used in a row but absent from the file's own curie_map is an error (L1)."""
     # The header declares b2ai/HP/skos/semapv; MONDO is not declared here.

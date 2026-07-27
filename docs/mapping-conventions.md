@@ -46,9 +46,10 @@ Common keys: `table` / `table_group` (which source table[s]), `keyed_by`
 
 Separate from the ETL configs above, `mappings/` holds **SSSOM** files that map Bridge2AI-Voice
 dataset *terms* to the Human Phenotype Ontology (HPO). These are a standalone, shareable
-term-to-term artifact; they are **not** (yet) consumed by the emitter — deriving
-`PhenotypicFeature`s from them needs an ordinal→present/absent threshold policy and is a
-follow-up.
+term-to-term artifact. A row with an empty `when_value` is a pure semantic mapping (the item is
+*about* the HPO concept) and produces no output. A row that carries a **`when_value`** condition
+is *value-gated*: the pipeline derives a `PhenotypicFeature` from a participant's answer (see
+"Conditional (value-gated) mappings" below and [ADR-0002](adr/0002-conditional-hpo-mapping.md)).
 
 - **Namespace.** Dataset terms use the project-local `b2ai:` CURIE prefix (canonical expansions
   live in `src/b2ai_dataset_ingest/ontology/curie_map.py`, derived from the emitter's
@@ -83,3 +84,32 @@ follow-up.
   `tests/test_sssom_mappings.py`, which also cross-checks the files with the reference `sssom-py`
   validator. Rationale: LLM-proposed ontology codes are unreliable and must be machine-checked
   before they ship (the same reason the ETL configs' MONDO/LOINC/NCIT terms are verified).
+
+### Conditional (value-gated) mappings
+
+A term→term mapping records that an item is *about* an HPO concept; it does not assert a
+participant *has* it — that depends on the answer. Two optional columns turn a mapping into a
+value-gated one that derives a `PhenotypicFeature` (per [ADR-0002](adr/0002-conditional-hpo-mapping.md)):
+
+- **`when_value`** — a condition on the participant's answer. Grammar: comparisons `>=1`, `<=3`,
+  `>0`, `<2`, `==0`, `!=0`; string equality `== "Checked"`; membership `in {1,2,3}` /
+  `in {"a","b"}`; and `&` conjunction (`>=1 & <=3`). Numeric conditions are evaluated against the
+  same **ordinal score** the emitted Measurement carries (resolved from the data dict's
+  `choices`); string conditions against the raw cell (case-insensitively). An **empty**
+  `when_value` is an inert semantic mapping — additive, changing no output.
+- **`predicate_modifier`** — `Not` marks the **absent** pole (→ phenopacket
+  `PhenotypicFeature.excluded = true`); empty marks present. No other value is allowed.
+
+Declare `when_value` once in the file's SSSOM `extension_definitions` metadata; a present/absent
+pair repeats the same `subject_id`/`predicate_id`/`object_id` and differs only in
+`predicate_modifier` + `when_value` (so it is **not** a duplicate). Each derived feature is
+stamped with provenance: a human-readable `description` and a GA4GH `Evidence` whose
+`evidenceCode` is `ECO:0006160` ("self-reported patient statement … in automatic assertion") with
+an `ExternalReference` back to the source item — self-report-derived phenotypes stay
+distinguishable from clinician-observed findings. The validator checks only that `when_value`
+**parses** and `predicate_modifier ∈ {"", "Not"}`; whether a cut-point is *clinically* right is a
+curator judgment (see the `curation-assist` skill). The apply path lives in
+`mapping/hpo_rules.py` (loader + derivation) and `mapping/conditions.py` (the grammar); the reader
+runs it during questionnaire ingestion. Note the reference `sssom-py` parser **drops**
+`when_value` on load, so the pipeline reads mappings with the column-preserving `parse_sssom`
+in `mapping/sssom_io.py`.

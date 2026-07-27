@@ -17,23 +17,28 @@
 # mapping_tool: 'oaklib (sqlite:obo:hp)'
 # mapping_date: '2026-07-17'
 # comment: Bridge2AI-Voice questionnaire/ symptom items mapped to HPO phenotypes. Every object_id verified against the pinned HPO release with oaklib. See docs/mapping-conventions.md.
-subject_id	subject_label	predicate_id	object_id	object_label	mapping_justification	confidence	comment
-b2ai:phq9.no_interest	Little interest or pleasure in doing things	skos:exactMatch	HP:0012154	Anhedonia	semapv:ManualMappingCuration	0.95	
-b2ai:phq9.feeling_depressed	Feeling down, depressed, or hopeless	skos:broadMatch	HP:0000716	Depression	semapv:ManualMappingCuration	0.8	
-b2ai:phq9.trouble_sleeping	Trouble falling/staying asleep, or sleeping too much	skos:broadMatch	HP:0002360	Sleep disturbance	semapv:ManualMappingCuration	0.8	item conflates insomnia and hypersomnia; Sleep disturbance subsumes both poles
-b2ai:phq9.no_energy	Feeling tired or having little energy	skos:exactMatch	HP:0012378	Fatigue	semapv:ManualMappingCuration	0.95	
-b2ai:phq9.no_appetite	Poor appetite or overeating	skos:broadMatch	HP:0100738	Abnormal eating behavior	semapv:ManualMappingCuration	0.8	item conflates poor appetite and overeating; Abnormal eating behavior subsumes both poles
-b2ai:phq9.trouble_concentrate	Trouble concentrating on things	skos:relatedMatch	HP:0000736	Short attention span	semapv:ManualMappingCuration	0.6	closest HPO term for difficulty concentrating
-b2ai:phq9.thoughts_death	Thoughts of being better off dead or self-harm	skos:exactMatch	HP:0031589	Suicidal ideation	semapv:ManualMappingCuration	0.95	
-b2ai:gad7_anxiety.nervous_anxious	Feeling nervous, anxious, or on edge	skos:exactMatch	HP:0000739	Anxiety	semapv:ManualMappingCuration	0.95	
-b2ai:gad7_anxiety.easily_agitated	Becoming easily annoyed or irritable	skos:exactMatch	HP:0000737	Irritability	semapv:ManualMappingCuration	0.95	
-b2ai:gad7_anxiety.hard_to_sit_still	So restless that it is hard to sit still	skos:exactMatch	HP:0000711	Restlessness	semapv:ManualMappingCuration	0.95	
-b2ai:dyspnea_index.di_air_in	I have trouble getting air in	skos:broadMatch	HP:0002094	Dyspnea	semapv:ManualMappingCuration	0.8	
-b2ai:dyspnea_index.di_effort_breathe	It takes more effort to breathe than it used to	skos:broadMatch	HP:0002094	Dyspnea	semapv:ManualMappingCuration	0.8	
-b2ai:dyspnea_index.di_exercise	Shortness of breath worse with exercise	skos:exactMatch	HP:0002875	Exertional dyspnea	semapv:ManualMappingCuration	0.95	
-b2ai:dyspnea_index.di_sound_breathing_in	I make sound/noise breathing in	skos:exactMatch	HP:0010307	Stridor	semapv:ManualMappingCuration	0.95	HPO lists 'Noisy breathing' as an exact synonym of Stridor
-b2ai:dyspnea_index.di_strain	I have to strain to breathe	skos:broadMatch	HP:0002094	Dyspnea	semapv:ManualMappingCuration	0.8	
-b2ai:leicester_cough_questionnaire.lcq_bout	How many times a day have you had a coughing bout	skos:broadMatch	HP:0012735	Cough	semapv:ManualMappingCuration	0.8	
-b2ai:leicester_cough_questionnaire.lcq_hoarse_voice	Hoarse voice as a result of your cough	skos:exactMatch	HP:0001609	Hoarse voice	semapv:ManualMappingCuration	0.95	
-b2ai:leicester_cough_questionnaire.lcq_sputum_phlegm	Bothered by sputum (phlegm) production when coughing	skos:exactMatch	HP:0031245	Productive cough	semapv:ManualMappingCuration	0.95	
-b2ai:voice_perception.voice_quality_perception	Self-rated voice quality (1-10)	skos:relatedMatch	HP:0001618	Dysphonia	semapv:ManualMappingCuration	0.6	low self-rated voice quality relates to dysphonia; not a direct assertion
+# extension_definitions:
+#   - slot_name: when_value
+#     property: b2ai:when_value
+#     type_hint: xsd:string
+subject_id	subject_label	predicate_id	object_id	object_label	mapping_justification	confidence	comment	predicate_modifier	when_value
+b2ai:phq9.no_interest	Little interest or pleasure in doing things	skos:exactMatch	HP:0012154	Anhedonia	semapv:ManualMappingCuration	0.95			
+b2ai:phq9.feeling_depressed	Feeling down, depressed, or hopeless	skos:broadMatch	HP:0000716	Depression	semapv:ManualMappingCuration	0.8	answer >=1 (at least 'Several days') asserts the phenotype present		>=1
+b2ai:phq9.feeling_depressed	Feeling down, depressed, or hopeless	skos:broadMatch	HP:0000716	Depression	semapv:ManualMappingCuration	0.8	answer ==0 ('Not at all') asserts the phenotype absent	Not	==0
+b2ai:phq9.trouble_sleeping	Trouble falling/staying asleep, or sleeping too much	skos:broadMatch	HP:0002360	Sleep disturbance	semapv:ManualMappingCuration	0.8	item conflates insomnia and hypersomnia; Sleep disturbance subsumes both poles		
+b2ai:phq9.no_energy	Feeling tired or having little energy	skos:exactMatch	HP:0012378	Fatigue	semapv:ManualMappingCuration	0.95			
+b2ai:phq9.no_appetite	Poor appetite or overeating	skos:broadMatch	HP:0100738	Abnormal eating behavior	semapv:ManualMappingCuration	0.8	item conflates poor appetite and overeating; Abnormal eating behavior subsumes both poles		
+b2ai:phq9.trouble_concentrate	Trouble concentrating on things	skos:relatedMatch	HP:0000736	Short attention span	semapv:ManualMappingCuration	0.6	closest HPO term for difficulty concentrating		
+b2ai:phq9.thoughts_death	Thoughts of being better off dead or self-harm	skos:exactMatch	HP:0031589	Suicidal ideation	semapv:ManualMappingCuration	0.95			
+b2ai:gad7_anxiety.nervous_anxious	Feeling nervous, anxious, or on edge	skos:exactMatch	HP:0000739	Anxiety	semapv:ManualMappingCuration	0.95			
+b2ai:gad7_anxiety.easily_agitated	Becoming easily annoyed or irritable	skos:exactMatch	HP:0000737	Irritability	semapv:ManualMappingCuration	0.95			
+b2ai:gad7_anxiety.hard_to_sit_still	So restless that it is hard to sit still	skos:exactMatch	HP:0000711	Restlessness	semapv:ManualMappingCuration	0.95			
+b2ai:dyspnea_index.di_air_in	I have trouble getting air in	skos:broadMatch	HP:0002094	Dyspnea	semapv:ManualMappingCuration	0.8			
+b2ai:dyspnea_index.di_effort_breathe	It takes more effort to breathe than it used to	skos:broadMatch	HP:0002094	Dyspnea	semapv:ManualMappingCuration	0.8			
+b2ai:dyspnea_index.di_exercise	Shortness of breath worse with exercise	skos:exactMatch	HP:0002875	Exertional dyspnea	semapv:ManualMappingCuration	0.95			
+b2ai:dyspnea_index.di_sound_breathing_in	I make sound/noise breathing in	skos:exactMatch	HP:0010307	Stridor	semapv:ManualMappingCuration	0.95	HPO lists 'Noisy breathing' as an exact synonym of Stridor		
+b2ai:dyspnea_index.di_strain	I have to strain to breathe	skos:broadMatch	HP:0002094	Dyspnea	semapv:ManualMappingCuration	0.8			
+b2ai:leicester_cough_questionnaire.lcq_bout	How many times a day have you had a coughing bout	skos:broadMatch	HP:0012735	Cough	semapv:ManualMappingCuration	0.8			
+b2ai:leicester_cough_questionnaire.lcq_hoarse_voice	Hoarse voice as a result of your cough	skos:exactMatch	HP:0001609	Hoarse voice	semapv:ManualMappingCuration	0.95			
+b2ai:leicester_cough_questionnaire.lcq_sputum_phlegm	Bothered by sputum (phlegm) production when coughing	skos:exactMatch	HP:0031245	Productive cough	semapv:ManualMappingCuration	0.95			
+b2ai:voice_perception.voice_quality_perception	Self-rated voice quality (1-10)	skos:relatedMatch	HP:0001618	Dysphonia	semapv:ManualMappingCuration	0.6	low self-rated voice quality relates to dysphonia; not a direct assertion		
