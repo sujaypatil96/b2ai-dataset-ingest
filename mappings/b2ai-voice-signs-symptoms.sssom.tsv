@@ -6,7 +6,7 @@
 #   github: https://github.com/
 #   obo: http://purl.obolibrary.org/obo/
 # mapping_set_id: https://github.com/sujaypatil96/b2ai-dataset-ingest/mappings/b2ai-voice-signs-symptoms.sssom.tsv
-# mapping_set_version: '2026-07-17'
+# mapping_set_version: '2026-07-30'
 # license: https://creativecommons.org/publicdomain/zero/1.0/
 # mapping_provider: https://github.com/sujaypatil96/b2ai-dataset-ingest
 # creator_id:
@@ -15,8 +15,8 @@
 # object_source: obo:hp
 # object_source_version: hp/releases/2026-02-16
 # mapping_tool: 'oaklib (sqlite:obo:hp)'
-# mapping_date: '2026-07-17'
-# comment: Bridge2AI-Voice confounders/ and diagnosis/ clinical signs and symptoms mapped to HPO. Every object_id verified against the pinned HPO release with oaklib. See docs/mapping-conventions.md.
+# mapping_date: '2026-07-30'
+# comment: Bridge2AI-Voice confounders/, diagnosis/, and pediatric/ (pediatric_medical_conditions) clinical signs, symptoms, and medical-history conditions mapped to HPO. Conditions/diseases are mapped to their best-fit HPO phenotype (exact where HPO has the term, broad/related to the nearest phenotype otherwise); diseases with no defensible HPO phenotype (e.g. cystic fibrosis, multiple sclerosis, COVID-19, trisomy 21) are left for a future MONDO layer. Medications, procedures, substances, and injuries are out of scope. Every object_id verified against the pinned HPO release with oaklib. See docs/mapping-conventions.md.
 subject_id	subject_label	predicate_id	object_id	object_label	mapping_justification	confidence	comment
 b2ai:confounders.dizziness	Dizziness	skos:relatedMatch	HP:0002321	Vertigo	semapv:ManualMappingCuration	0.6	source scopes to lightheadedness/balance disturbance (non-spinning); Vertigo is HPO's nearest term but the senses differ (cf. HP:0031972 Presyncope, HP:4000033 Non-spinning vertigo)
 b2ai:confounders.shortness_breath	Shortness of breath	skos:exactMatch	HP:0002094	Dyspnea	semapv:ManualMappingCuration	0.95	
@@ -59,3 +59,88 @@ b2ai:parkinsons_disease.diagnosis_parkinsons_gold_standard_diagnosis_category_1_
 b2ai:parkinsons_disease.diagnosis_parkinsons_gold_standard_diagnosis_category_1___rigidity	Rigidity (Parkinsonism criterion)	skos:exactMatch	HP:0002063	Rigidity	semapv:ManualMappingCuration	0.95	
 b2ai:parkinsons_disease.diagnosis_parkinsons_gold_standard_diagnosis_category_1___tremor	Tremor (Parkinsonism criterion)	skos:exactMatch	HP:0001337	Tremor	semapv:ManualMappingCuration	0.95	
 b2ai:parkinsons_disease.diagnosis_parkinsons_gold_standard_diagnosis_category_3___rest_tremor	Rest tremor (supportive criterion)	skos:exactMatch	HP:0002322	Resting tremor	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.acid_reflux	Acid reflux (heart burn, GERD)	skos:exactMatch	HP:0002020	Gastroesophageal reflux	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.adhd_med_hist_psychological	Attention deficit/hyperactivity disorder (ADHD)	skos:exactMatch	HP:0007018	Attention deficit hyperactivity disorder	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.airway_stenosis_med_hist_throat	Airway stenosis (glottal, subglottal, tracheal)	skos:relatedMatch	HP:0004894	Laryngotracheal stenosis	semapv:ManualMappingCuration	0.7	source 'airway stenosis' spans glottal/subglottal/tracheal; Laryngotracheal stenosis is the nearest HPO term (cf. HP:0002777 Tracheal stenosis)
+b2ai:confounders.anxiety_disorder	Anxiety disorder (generalized or social)	skos:broadMatch	HP:0000739	Anxiety	semapv:ManualMappingCuration	0.8	disorder mapped to its core phenotype Anxiety
+b2ai:confounders.asd_med_hist_psychological	Autism spectrum disorder (ASD)	skos:exactMatch	HP:0000717	Autism	semapv:ManualMappingCuration	0.9	ASD mapped to HPO Autism
+b2ai:confounders.asthma_med_hist_lung	Asthma	skos:exactMatch	HP:0002099	Asthma	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.bipolar_disorder	Bipolar disorder	skos:exactMatch	HP:0007302	Bipolar affective disorder	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.bpd_med_hist_psychological	Borderline personality disorder (BPD)	skos:exactMatch	HP:0012076	Borderline personality disorder	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.brain_cancer	Brain cancer	skos:exactMatch	HP:0030692	Brain neoplasm	semapv:ManualMappingCuration	0.9	cf. confounders.brain_tumor -> HP:0030692
+b2ai:confounders.chronic_cough_med_hist_throat	Chronic cough	skos:exactMatch	HP:0034315	Chronic cough	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.chronic_pericarditis	Chronic pericarditis	skos:broadMatch	HP:0001701	Pericarditis	semapv:ManualMappingCuration	0.8	HPO Pericarditis subsumes the chronic form (cf. HP:0002563 Constrictive pericarditis)
+b2ai:confounders.copd_med_hist_lung	Chronic obstructive pulmonary disease (COPD)	skos:exactMatch	HP:0006510	Chronic pulmonary obstruction	semapv:ManualMappingCuration	0.95	HPO exact synonym 'COPD'
+b2ai:confounders.currently_considered_obese	Currently considered obese	skos:exactMatch	HP:0001513	Obesity	semapv:ManualMappingCuration	0.95	cf. confounders.obesity -> HP:0001513
+b2ai:confounders.currently_have_diabetes	Diabetes	skos:exactMatch	HP:0000819	Diabetes mellitus	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.depression_major_depressive_disorder	Depression or major depressive disorder	skos:exactMatch	HP:0000716	Depression	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.ear_cancer	Ear cancer	skos:exactMatch	HP:0012780	Neoplasm of the ear	semapv:ManualMappingCuration	0.9	
+b2ai:confounders.eating_disorder	Eating disorder	skos:broadMatch	HP:0100738	Abnormal eating behavior	semapv:ManualMappingCuration	0.8	disorder mapped to its core phenotype Abnormal eating behavior
+b2ai:confounders.esophageal_cancer	Esophageal cancer	skos:exactMatch	HP:0100751	Esophageal neoplasm	semapv:ManualMappingCuration	0.9	
+b2ai:confounders.glottic_insufficiency_med_hist_throat	Glottic insufficiency, presbyphonia	skos:relatedMatch	HP:0005934	Imperfect vocal cord adduction	semapv:ManualMappingCuration	0.7	glottic insufficiency = incomplete glottal closure; Imperfect vocal cord adduction is the nearest HPO term
+b2ai:confounders.interstitial_lung_disease	Interstitial lung disease	skos:exactMatch	HP:0006530	Abnormal pulmonary interstitial morphology	semapv:ManualMappingCuration	0.9	'interstitial lung disease' is an exact synonym of the HPO term
+b2ai:confounders.laryngeal_cancer	Laryngeal cancer	skos:exactMatch	HP:0100605	Neoplasm of the larynx	semapv:ManualMappingCuration	0.9	
+b2ai:confounders.laryngospasm_irritable_larynx	Laryngospasm, irritable larynx	skos:exactMatch	HP:0025425	Laryngospasm	semapv:ManualMappingCuration	0.9	source adds 'irritable larynx'; Laryngospasm is the primary phenotype
+b2ai:confounders.lesions_vocal_cord	Lesions of the vocal cord	skos:broadMatch	HP:0008777	Abnormal vocal cord morphology	semapv:ManualMappingCuration	0.8	vocal-cord lesions = structural vocal cord abnormality
+b2ai:confounders.lung_cancer	Lung cancer	skos:exactMatch	HP:0100526	Neoplasm of the lung	semapv:ManualMappingCuration	0.9	
+b2ai:confounders.muscle_tension_dysphonia	Muscle tension dysphonia	skos:broadMatch	HP:0001618	Dysphonia	semapv:ManualMappingCuration	0.8	muscle tension dysphonia is a functional subtype; Dysphonia is the general HPO phenotype
+b2ai:confounders.obsessive_compulsive_disorder	Obsessive compulsive disorder (OCD)	skos:broadMatch	HP:0000722	Compulsive behaviors	semapv:ManualMappingCuration	0.8	OCD mapped to its core compulsive-behavior phenotype (cf. HP:0008770 Obsessive-compulsive trait)
+b2ai:confounders.oral_cancer	Oral cancer	skos:exactMatch	HP:0100649	Neoplasm of the oral cavity	semapv:ManualMappingCuration	0.9	
+b2ai:confounders.panic_disorder	Panic disorder	skos:broadMatch	HP:0025269	Panic attack	semapv:ManualMappingCuration	0.8	disorder mapped to its core phenotype Panic attack
+b2ai:confounders.parkinsons_disease	Parkinson's disease	skos:broadMatch	HP:0001300	Parkinsonism	semapv:ManualMappingCuration	0.8	confounders history item; Parkinson's disease mapped to its Parkinsonism phenotype
+b2ai:confounders.schizophrenia_med_hist_psychological	Schizophrenia	skos:exactMatch	HP:0100753	Schizophrenia	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.seasonal_allergies_med_hist_enm	Seasonal allergies	skos:exactMatch	HP:0012395	Seasonal allergy	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.sinus_cancer	Sinus cancer	skos:exactMatch	HP:0030072	Paranasal sinus neoplasm	semapv:ManualMappingCuration	0.9	
+b2ai:confounders.swallowing_disorder	Swallowing disorder / dysphagia	skos:exactMatch	HP:0002015	Dysphagia	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.thyroid_cancer	Thyroid cancer	skos:exactMatch	HP:0002890	Thyroid carcinoma	semapv:ManualMappingCuration	0.9	
+b2ai:confounders.thyroid_disease	Thyroid disease	skos:broadMatch	HP:0000820	Abnormality of the thyroid gland	semapv:ManualMappingCuration	0.8	general 'thyroid disease' mapped to the umbrella HPO thyroid-gland abnormality
+b2ai:confounders.vocal_cord_dysfunction	Vocal cord dysfunction / paradoxical vocal fold motion	skos:exactMatch	HP:0031801	Vocal cord dysfunction	semapv:ManualMappingCuration	0.95	
+b2ai:pediatric_medical_conditions.peds_mc_breathing_conditions___asthma	Asthma	skos:exactMatch	HP:0002099	Asthma	semapv:ManualMappingCuration	0.95	
+b2ai:pediatric_medical_conditions.peds_mc_breathing_conditions___bronchiolitis	Bronchiolitis	skos:exactMatch	HP:0011950	Bronchiolitis	semapv:ManualMappingCuration	0.9	
+b2ai:pediatric_medical_conditions.peds_mc_breathing_conditions___chronic_cough	Chronic cough	skos:exactMatch	HP:0034315	Chronic cough	semapv:ManualMappingCuration	0.95	
+b2ai:pediatric_medical_conditions.peds_mc_breathing_conditions___recurrent_croup	Recurrent croup	skos:exactMatch	HP:0033000	Subglottic laryngitis	semapv:ManualMappingCuration	0.9	croup = subglottic laryngitis (HPO exact synonym)
+b2ai:pediatric_medical_conditions.peds_mc_breathing_conditions___subglottic_stenosis	Subglottic stenosis	skos:exactMatch	HP:0001607	Subglottic stenosis	semapv:ManualMappingCuration	0.95	
+b2ai:pediatric_medical_conditions.peds_mc_breathing_conditions___vocal_cord_webs	Vocal cord webs	skos:exactMatch	HP:0005950	Laryngeal web	semapv:ManualMappingCuration	0.9	vocal cord web = laryngeal web
+b2ai:pediatric_medical_conditions.peds_mc_conditions___esophageal_atresia	Esophageal atresia	skos:exactMatch	HP:0002032	Esophageal atresia	semapv:ManualMappingCuration	0.95	
+b2ai:pediatric_medical_conditions.peds_mc_conditions___prematurity	Prematurity	skos:exactMatch	HP:0001622	Premature birth	semapv:ManualMappingCuration	0.9	
+b2ai:pediatric_medical_conditions.peds_mc_conditions___rheumatoid_arthritis	Rheumatoid arthritis	skos:exactMatch	HP:0001370	Rheumatoid arthritis	semapv:ManualMappingCuration	0.95	
+b2ai:pediatric_medical_conditions.peds_mc_conditions___tracheoesophageal_fistula	Tracheoesophageal fistula	skos:exactMatch	HP:0002575	Tracheoesophageal fistula	semapv:ManualMappingCuration	0.95	
+b2ai:pediatric_medical_conditions.peds_mc_hearing_loss___hearing_loss	Hearing loss	skos:exactMatch	HP:0000365	Hearing impairment	semapv:ManualMappingCuration	0.9	HPO synonym 'Hearing loss'
+b2ai:pediatric_medical_conditions.peds_mc_hearing_loss___mild_hearing_loss	Mild hearing loss	skos:exactMatch	HP:0012712	Mild hearing impairment	semapv:ManualMappingCuration	0.9	
+b2ai:pediatric_medical_conditions.peds_mc_hearing_loss___cholesteatoma	Cholesteatoma	skos:exactMatch	HP:0009797	Cholesteatoma	semapv:ManualMappingCuration	0.95	
+b2ai:pediatric_medical_conditions.peds_mc_l2w___dry_cough	Dry cough	skos:exactMatch	HP:0031246	Nonproductive cough	semapv:ManualMappingCuration	0.9	
+b2ai:pediatric_medical_conditions.peds_mc_l2w___ear_infection	Ear infection	skos:exactMatch	HP:0000388	Otitis media	semapv:ManualMappingCuration	0.9	
+b2ai:pediatric_medical_conditions.peds_mc_l2w___nasal_congestion	Nasal congestion	skos:exactMatch	HP:0001742	Nasal congestion	semapv:ManualMappingCuration	0.95	
+b2ai:pediatric_medical_conditions.peds_mc_l2w___sneezing	Sneezing	skos:exactMatch	HP:0025095	Sneeze	semapv:ManualMappingCuration	0.9	
+b2ai:pediatric_medical_conditions.peds_mc_l2w___sorethroat_or_tonsillitis	Sore throat / tonsillitis	skos:broadMatch	HP:0025439	Pharyngitis	semapv:ManualMappingCuration	0.7	conflates sore throat and tonsillitis
+b2ai:pediatric_medical_conditions.peds_mc_l2w___stridor	Stridor	skos:exactMatch	HP:0010307	Stridor	semapv:ManualMappingCuration	0.95	
+b2ai:pediatric_medical_conditions.peds_mc_l2w___wet_productive_cough	Wet, productive cough	skos:exactMatch	HP:0031245	Productive cough	semapv:ManualMappingCuration	0.95	
+b2ai:pediatric_medical_conditions.peds_mc_l2w___wheezing_or_trouble_breathing	Wheezing or trouble breathing	skos:broadMatch	HP:0030828	Wheezing	semapv:ManualMappingCuration	0.8	conflates wheezing and trouble breathing
+b2ai:pediatric_medical_conditions.peds_mc_neck_mass___thyroglossal_duct_cyst	Thyroglossal duct cyst	skos:exactMatch	HP:0010518	Thyroglossal cyst	semapv:ManualMappingCuration	0.9	
+b2ai:pediatric_medical_conditions.peds_mc_neck_mass___branchial_cleft_cyst	Branchial cleft cyst	skos:exactMatch	HP:0009796	Branchial cyst	semapv:ManualMappingCuration	0.9	
+b2ai:pediatric_medical_conditions.peds_mc_neck_mass___dermoid_cyst	Dermoid cyst	skos:exactMatch	HP:0025247	Dermoid cyst	semapv:ManualMappingCuration	0.9	
+b2ai:pediatric_medical_conditions.peds_mc_neck_mass___thyroid_nodule_or_cancer	Thyroid nodule or cancer	skos:broadMatch	HP:0025388	Thyroid nodule	semapv:ManualMappingCuration	0.8	conflates thyroid nodule and thyroid cancer
+b2ai:pediatric_medical_conditions.peds_mc_neck_mass___enlarged_lymph_node	Enlarged lymph node	skos:exactMatch	HP:0025289	Cervical lymphadenopathy	semapv:ManualMappingCuration	0.85	neck-mass context -> cervical
+b2ai:pediatric_medical_conditions.peds_mc_psych_disorders___adhd	Attention deficit/hyperactivity disorder (ADHD)	skos:exactMatch	HP:0007018	Attention deficit hyperactivity disorder	semapv:ManualMappingCuration	0.95	
+b2ai:pediatric_medical_conditions.peds_mc_psych_disorders___anxiety_disorder	Anxiety disorder	skos:broadMatch	HP:0000739	Anxiety	semapv:ManualMappingCuration	0.8	disorder mapped to its core phenotype Anxiety
+b2ai:pediatric_medical_conditions.peds_mc_psych_disorders___asd	Autism spectrum disorder (ASD)	skos:exactMatch	HP:0000717	Autism	semapv:ManualMappingCuration	0.9	
+b2ai:pediatric_medical_conditions.peds_mc_psych_disorders___depression	Depression or major depressive disorder	skos:exactMatch	HP:0000716	Depression	semapv:ManualMappingCuration	0.95	
+b2ai:pediatric_medical_conditions.peds_mc_psych_disorders___eating_disorder	Eating disorder	skos:broadMatch	HP:0100738	Abnormal eating behavior	semapv:ManualMappingCuration	0.8	disorder mapped to its core phenotype
+b2ai:pediatric_medical_conditions.peds_mc_psych_disorders___insomnia_or_sleep_disorder	Insomnia / sleep disorder	skos:broadMatch	HP:0002360	Sleep disturbance	semapv:ManualMappingCuration	0.8	conflates insomnia and general sleep disorder
+b2ai:pediatric_medical_conditions.peds_mc_psych_disorders___ocd	Obsessive-compulsive disorder (OCD)	skos:broadMatch	HP:0000722	Compulsive behaviors	semapv:ManualMappingCuration	0.8	OCD mapped to its core compulsive-behavior phenotype
+b2ai:pediatric_medical_conditions.peds_mc_psych_disorders___panic	Panic disorder	skos:broadMatch	HP:0025269	Panic attack	semapv:ManualMappingCuration	0.8	disorder mapped to its core phenotype Panic attack
+b2ai:pediatric_medical_conditions.peds_mc_psych_disorders___social_anxiety_disorder	Social anxiety disorder	skos:exactMatch	HP:6000029	Social anxiety	semapv:ManualMappingCuration	0.9	
+b2ai:pediatric_medical_conditions.peds_mc_snoring_apnea___obstructive_sleep_apnea	Obstructive sleep apnea	skos:exactMatch	HP:0002870	Obstructive sleep apnea	semapv:ManualMappingCuration	0.95	
+b2ai:pediatric_medical_conditions.peds_mc_snoring_apnea___snoring	Snoring	skos:exactMatch	HP:0025267	Snoring	semapv:ManualMappingCuration	0.95	
+b2ai:pediatric_medical_conditions.peds_mc_voice_disorders___acid_reflux_disease	Acid reflux disease (GERD)	skos:exactMatch	HP:0002020	Gastroesophageal reflux	semapv:ManualMappingCuration	0.95	
+b2ai:pediatric_medical_conditions.peds_mc_voice_disorders___airway_stenosis	Airway stenosis	skos:relatedMatch	HP:0004894	Laryngotracheal stenosis	semapv:ManualMappingCuration	0.7	nearest HPO term for laryngeal/airway stenosis
+b2ai:pediatric_medical_conditions.peds_mc_voice_disorders___bilateral_vocal_cord_paralysis	Bilateral vocal cord paralysis	skos:exactMatch	HP:0012820	Bilateral vocal cord paralysis	semapv:ManualMappingCuration	0.95	
+b2ai:pediatric_medical_conditions.peds_mc_voice_disorders___unilateral_vocal_cord_paralysis	Unilateral vocal cord paralysis	skos:exactMatch	HP:0008757	Unilateral vocal cord paralysis	semapv:ManualMappingCuration	0.95	
+b2ai:pediatric_medical_conditions.peds_mc_voice_disorders___vocal_nodules_or_polyps	Vocal nodules or polyps	skos:broadMatch	HP:0008777	Abnormal vocal cord morphology	semapv:ManualMappingCuration	0.7	vocal nodules/polyps are structural vocal-cord lesions
+b2ai:pediatric_medical_conditions.peds_mc_allergies	Known allergies (food, environmental, or medication)	skos:broadMatch	HP:0012393	Allergy	semapv:ManualMappingCuration	0.8	food/environmental/medication allergies
+b2ai:pediatric_medical_conditions.peds_mc_dif_swallowing	Difficulty swallowing liquids or solids	skos:exactMatch	HP:0002015	Dysphagia	semapv:ManualMappingCuration	0.95	
+b2ai:pediatric_medical_conditions.peds_mc_epistaxis	History of epistaxis	skos:exactMatch	HP:0000421	Epistaxis	semapv:ManualMappingCuration	0.95	
+b2ai:pediatric_medical_conditions.peds_mc_ear_inf_ant_py	Ear infections requiring antibiotics in the past year	skos:exactMatch	HP:0000403	Recurrent otitis media	semapv:ManualMappingCuration	0.9	
+b2ai:pediatric_medical_conditions.peds_mc_fr_inf_tons	Frequent throat infections or tonsillitis	skos:broadMatch	HP:0011110	Recurrent tonsillitis	semapv:ManualMappingCuration	0.7	conflates frequent throat infections and tonsillitis
+b2ai:pediatric_medical_conditions.peds_mc_fr_v_f	Frequent vocal strain or voice fatigue	skos:relatedMatch	HP:0001618	Dysphonia	semapv:ManualMappingCuration	0.6	vocal strain/voice fatigue; nearest HPO voice phenotype
+b2ai:pediatric_medical_conditions.peds_mc_hw_voice_2_w	Hoarse or weak voice for more than two weeks	skos:broadMatch	HP:0001609	Hoarse voice	semapv:ManualMappingCuration	0.8	conflates hoarse and weak voice

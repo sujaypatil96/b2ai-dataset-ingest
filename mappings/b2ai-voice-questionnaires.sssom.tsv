@@ -6,7 +6,7 @@
 #   github: https://github.com/
 #   obo: http://purl.obolibrary.org/obo/
 # mapping_set_id: https://github.com/sujaypatil96/b2ai-dataset-ingest/mappings/b2ai-voice-questionnaires.sssom.tsv
-# mapping_set_version: '2026-07-17'
+# mapping_set_version: '2026-07-30'
 # license: https://creativecommons.org/publicdomain/zero/1.0/
 # mapping_provider: https://github.com/sujaypatil96/b2ai-dataset-ingest
 # creator_id:
@@ -15,8 +15,8 @@
 # object_source: obo:hp
 # object_source_version: hp/releases/2026-02-16
 # mapping_tool: 'oaklib (sqlite:obo:hp)'
-# mapping_date: '2026-07-17'
-# comment: Bridge2AI-Voice questionnaire/ symptom items mapped to HPO phenotypes. Every object_id verified against the pinned HPO release with oaklib. See docs/mapping-conventions.md.
+# mapping_date: '2026-07-30'
+# comment: Bridge2AI-Voice questionnaire/ and pediatric_questionnaire/ symptom items mapped to HPO phenotypes (PHQ-9, GAD-7, DSM-5, ADHD/ASRS, PTSD, PANAS, custom affect, dyspnea index, Leicester cough, VHI-10, voice perception, pediatric PHQ-A, pediatric voice surveys). Psychosocial-impact, positive-affect, and redundant-facet items are out of scope (see docs/mapping-conventions.md). Every object_id verified against the pinned HPO release with oaklib.
 # extension_definitions:
 #   - slot_name: when_value
 #     property: b2ai:when_value
@@ -42,3 +42,46 @@ b2ai:leicester_cough_questionnaire.lcq_bout	How many times a day have you had a 
 b2ai:leicester_cough_questionnaire.lcq_hoarse_voice	Hoarse voice as a result of your cough	skos:exactMatch	HP:0001609	Hoarse voice	semapv:ManualMappingCuration	0.95			
 b2ai:leicester_cough_questionnaire.lcq_sputum_phlegm	Bothered by sputum (phlegm) production when coughing	skos:exactMatch	HP:0031245	Productive cough	semapv:ManualMappingCuration	0.95			
 b2ai:voice_perception.voice_quality_perception	Self-rated voice quality (1-10)	skos:relatedMatch	HP:0001618	Dysphonia	semapv:ManualMappingCuration	0.6	low self-rated voice quality relates to dysphonia; not a direct assertion		
+b2ai:phq9.feeling_bad_self	Feeling bad about yourself - or that you are a failure	skos:relatedMatch	HP:0031469	Low self-esteem	semapv:ManualMappingCuration	0.6	PHQ-9 worthlessness/guilt item; Low self-esteem is the nearest single HPO term (also connotes guilt, HP:6000011)		
+b2ai:adhd_adult.difficulty_attention	How often do you have difficulty keeping your attention when doing boring/repetitive work	skos:broadMatch	HP:0000736	Short attention span	semapv:ManualMappingCuration	0.8	ASRS inattention item; representative of the inattention construct (careless/distracted/misplace/etc. redundant)		
+b2ai:adhd_adult.overly_active	How often do you feel overly active and compelled to do things, like driven by a motor	skos:broadMatch	HP:0000752	Hyperactivity	semapv:ManualMappingCuration	0.8	ASRS hyperactivity item; representative of the hyperactivity construct (fidget/restless/remain_seated redundant)		
+b2ai:adhd_adult.interrupt_others	How often do you interrupt others when they are busy	skos:broadMatch	HP:0100710	Impulsivity	semapv:ManualMappingCuration	0.8	ASRS impulsivity item; representative of the impulsivity construct (difficulty_waiting/finish_other_sent redundant)		
+b2ai:ptsd_adult.feeling_jumpy	Feeling jumpy or easily startled when you hear an unexpected noise	skos:exactMatch	HP:0002267	Exaggerated startle response	semapv:ManualMappingCuration	0.9			
+b2ai:ptsd_adult.super_alert	Being 'super alert', on guard, or constantly on the lookout for danger	skos:exactMatch	HP:5200231	Hypervigilance	semapv:ManualMappingCuration	0.9	'super alert, on guard, on the lookout for danger' = hypervigilance		
+b2ai:ptsd_adult.irritable	Being extremely irritable or angry to the point of yelling, fights, or destroying things	skos:exactMatch	HP:0000737	Irritability	semapv:ManualMappingCuration	0.9	item escalates to aggression (yelling, fights, destroying things; cf. HP:0000718 Aggressive behavior)		
+b2ai:ptsd_adult.losing_interest	Losing interest in activities you used to enjoy before a stressful experience	skos:exactMatch	HP:0012154	Anhedonia	semapv:ManualMappingCuration	0.95			
+b2ai:panas.nervous	Nervous	skos:relatedMatch	HP:0000739	Anxiety	semapv:ManualMappingCuration	0.6	PANAS momentary-state affect rating, not a persistent symptom		
+b2ai:panas.hostile	Hostile	skos:relatedMatch	HP:0000737	Irritability	semapv:ManualMappingCuration	0.6	PANAS momentary-state affect ('hostile'); also connotes aggression (HP:0000718)		
+b2ai:custom_affect_scale.agitated	Agitated (restless, fidgety, pacing, cannot sit still)	skos:relatedMatch	HP:0000713	Agitation	semapv:ManualMappingCuration	0.6	momentary-state affect rating (0-10); parenthetical adds restlessness (HP:0000711)		
+b2ai:custom_affect_scale.irritated	Irritated or angry (towards something or someone)	skos:relatedMatch	HP:0000737	Irritability	semapv:ManualMappingCuration	0.6	momentary-state affect rating		
+b2ai:custom_affect_scale.lack_of_pleasure	Lack of pleasure (in things you tend to enjoy)	skos:relatedMatch	HP:0012154	Anhedonia	semapv:ManualMappingCuration	0.6	momentary-state rating of lack of pleasure		
+b2ai:custom_affect_scale.sad_or_down	Sad or down	skos:relatedMatch	HP:0000716	Depression	semapv:ManualMappingCuration	0.6	momentary-state 'sad or down' rating, not a depression diagnosis		
+b2ai:custom_affect_scale.tired	Tired or fatigued	skos:relatedMatch	HP:0012378	Fatigue	semapv:ManualMappingCuration	0.6	momentary-state 'tired or fatigued' rating		
+b2ai:custom_affect_scale.worried	Worried or anxious	skos:relatedMatch	HP:0000739	Anxiety	semapv:ManualMappingCuration	0.6	momentary-state 'worried or anxious' rating		
+b2ai:vhi10.strain_voice	I feel as though I have to strain to produce voice	skos:relatedMatch	HP:0001618	Dysphonia	semapv:ManualMappingCuration	0.6	effortful phonation ('strain to produce voice'); no specific HPO term - VHI-10 is otherwise psychosocial-impact		
+b2ai:dsm5_adult.feeling_down	Feeling down, depressed, or hopeless	skos:exactMatch	HP:0000716	Depression	semapv:ManualMappingCuration	0.95			
+b2ai:dsm5_adult.little_interest	Little interest or pleasure in doing things	skos:exactMatch	HP:0012154	Anhedonia	semapv:ManualMappingCuration	0.95			
+b2ai:dsm5_adult.feeling_nervous	Feeling nervous, anxious, frightened, worried, or on edge	skos:exactMatch	HP:0000739	Anxiety	semapv:ManualMappingCuration	0.95			
+b2ai:dsm5_adult.feeling_panic	Feeling panic or being frightened	skos:broadMatch	HP:0025269	Panic attack	semapv:ManualMappingCuration	0.8			
+b2ai:dsm5_adult.feeling_more_irritated	Feeling more irritated, grouchy, or angry than usual	skos:exactMatch	HP:0000737	Irritability	semapv:ManualMappingCuration	0.95			
+b2ai:dsm5_adult.hearing_things	Hearing things other people couldn't hear, such as voices when no one was around	skos:exactMatch	HP:0008765	Auditory hallucination	semapv:ManualMappingCuration	0.95			
+b2ai:dsm5_adult.someone_hear_thoughts	Feeling that someone could hear your thoughts, or that you could hear another person's thoughts	skos:broadMatch	HP:5200419	Disorder of thought control	semapv:ManualMappingCuration	0.8	conflates thought broadcasting (HP:0025777) + hearing others' thoughts; HPO parent term subsumes both		
+b2ai:dsm5_adult.memory_issues	Problems with memory (learning new information) or with location (finding your way home)	skos:broadMatch	HP:0002354	Memory impairment	semapv:ManualMappingCuration	0.8	conflates memory + spatial orientation ('finding your way home')		
+b2ai:dsm5_adult.unexplained_aches	Unexplained aches and pains (e.g., head, back, joints, abdomen, legs)	skos:broadMatch	HP:0012531	Pain	semapv:ManualMappingCuration	0.8	unexplained aches/pains at multiple sites; generic Pain subsumes them		
+b2ai:dsm5_adult.self_harm	Thoughts of actually hurting yourself	skos:relatedMatch	HP:0100716	Self-injurious behavior	semapv:ManualMappingCuration	0.6	self-harm ideation; HPO term denotes the behavior, and the item is broader than suicide (cf. HP:0031589)		
+b2ai:dsm5_adult.repeat_acts	Feeling driven to perform certain behaviors or mental acts over and over again	skos:exactMatch	HP:0000722	Compulsive behaviors	semapv:ManualMappingCuration	0.9	compulsions		
+b2ai:dsm5_adult.feeling_detached	Feeling detached or distant from yourself, your body, surroundings, or memories	skos:exactMatch	HP:5200217	Depersonalization	semapv:ManualMappingCuration	0.9			
+b2ai:dsm5_adult.sleep_quality	Problems with sleep that affected your sleep quality overall	skos:broadMatch	HP:0002360	Sleep disturbance	semapv:ManualMappingCuration	0.8			
+b2ai:dsm5_adult.sleeping_less	Sleeping less than usual, but still have a lot of energy	skos:exactMatch	HP:5200276	Decreased need for sleep	semapv:ManualMappingCuration	0.9	manic-type reduced sleep need		
+b2ai:dsm5_adult.social_phobia_2	Felt anxious, worried, or nervous about social situations	skos:exactMatch	HP:6000029	Social anxiety	semapv:ManualMappingCuration	0.9	representative of the DSM-5 social-phobia cluster (social_phobia_1..10 redundant)		
+b2ai:pediatric_hqa.peds_phqa_no_interest	Little interest or pleasure in doing things	skos:exactMatch	HP:0012154	Anhedonia	semapv:ManualMappingCuration	0.95			
+b2ai:pediatric_hqa.peds_phqa_feeling_depressed	Feeling down, depressed, irritable, or hopeless	skos:broadMatch	HP:0000716	Depression	semapv:ManualMappingCuration	0.8	item adds 'irritable'		
+b2ai:pediatric_hqa.peds_phqa_trouble_sleeping	Trouble falling asleep, staying asleep, or sleeping too much	skos:broadMatch	HP:0002360	Sleep disturbance	semapv:ManualMappingCuration	0.8	conflates insomnia and hypersomnia		
+b2ai:pediatric_hqa.peds_phqa_no_energy	Feeling tired, or having little energy	skos:exactMatch	HP:0012378	Fatigue	semapv:ManualMappingCuration	0.95			
+b2ai:pediatric_hqa.peds_phqa_no_appetite	Poor appetite, weight loss, or overeating	skos:broadMatch	HP:0100738	Abnormal eating behavior	semapv:ManualMappingCuration	0.8	conflates poor appetite, weight loss, and overeating		
+b2ai:pediatric_hqa.peds_phqa_trouble_concentrate	Trouble concentrating on things like school work, reading, or watching TV	skos:relatedMatch	HP:0000736	Short attention span	semapv:ManualMappingCuration	0.6	closest HPO term for difficulty concentrating		
+b2ai:pediatric_hqa.peds_phqa_thoughts_death	Thoughts that you would be better off dead, or of hurting yourself	skos:exactMatch	HP:0031589	Suicidal ideation	semapv:ManualMappingCuration	0.95			
+b2ai:pediatric_hqa.peds_phqa_feeling_bad_self	Feeling bad about yourself - or that you are a failure	skos:relatedMatch	HP:0031469	Low self-esteem	semapv:ManualMappingCuration	0.6	PHQ-A worthlessness/guilt item; Low self-esteem is the nearest single HPO term		
+b2ai:pediatric_vhi10.peds_dry_raspy_hoarse	My child's voice sounds dry, raspy, and/or hoarse	skos:broadMatch	HP:0001609	Hoarse voice	semapv:ManualMappingCuration	0.8	conflates dry/raspy/hoarse voice quality		
+b2ai:pediatric_voice_outcome_survey.peds_os_straining	Do you find your child 'straining' when he or she speaks because of his or her voice problem	skos:relatedMatch	HP:0001618	Dysphonia	semapv:ManualMappingCuration	0.6	effortful/strained phonation; representative voice-quality item (instrument otherwise psychosocial)		
+b2ai:pediatric_voice_outcome_survey.peds_os_trouble_food_iquids	Trouble with food or liquids 'going down the wrong pipe' with cough after eating/drinking	skos:broadMatch	HP:0002835	Aspiration	semapv:ManualMappingCuration	0.7	food/liquids 'going down the wrong pipe' with cough = aspiration		

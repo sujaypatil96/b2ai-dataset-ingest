@@ -40,6 +40,8 @@ the ontology term is *narrower* than the column, not broader. Instead:
 | `di_air_in` "trouble getting air in" | HP:0002094 Dyspnea | broad | item is a specific expression of the umbrella phenotype |
 | `pulmonary_hypertension` | HP:0002092 Pulmonary arterial hypertension | narrow | HPO term is the arterial subtype |
 | `no_appetite` "poor appetite **or** overeating" | HP:0100738 Abnormal eating behavior | broad | retargeted to a term that subsumes both poles |
+| `panic_disorder` (a disorder) | HP:0025269 Panic attack | broad | disorder → its core phenotype; HPO term is the manifestation the disorder subsumes (cf. `anxiety_disorder`→Anxiety, `epilepsy`→Seizure) |
+| `acid_reflux` "heart burn, GERD" | HP:0002020 Gastroesophageal reflux | exact | GERD is an exact synonym — a named disease *with* an exact HPO term stays exact |
 | `stroke` "stroke **and/or** aphasia" | HP:0001297 Stroke **+** HP:0002381 Aphasia | narrow ×2 | split; each sense is narrower than the column |
 | `dizziness` "lightheadedness or balance disturbance" | HP:0002321 Vertigo | related | **trap:** HPO *Vertigo* = spinning, which the source excludes — synonym match is misleading, so downgrade + comment |
 
