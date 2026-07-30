@@ -79,6 +79,30 @@ class MeasurementObservation(BaseModel):
     time: TimePoint | None = None
 
 
+class ExternalReference(BaseModel):
+    """A pointer to an external record — the GA4GH ``ExternalReference`` analogue.
+
+    Used as the source pointer on a self-report ``Evidence``: ``id`` is the source item CURIE
+    (e.g. ``b2ai:phq9.feeling_depressed``), ``reference`` its full IRI.
+    """
+
+    id: str = Field(..., description="CURIE or identifier of the referenced record.")
+    reference: str | None = Field(None, description="Full IRI/URL of the referenced record.")
+    description: str | None = None
+
+
+class Evidence(BaseModel):
+    """Why an observation was asserted — the GA4GH ``Evidence`` analogue.
+
+    ``evidence_code`` is an ECO term (e.g. ``ECO:0006160`` self-reported statement used in
+    automatic assertion), so a questionnaire-derived phenotype is never weighted like a
+    clinician-observed finding.
+    """
+
+    evidence_code: OntologyTerm = Field(..., description="ECO term for the kind of evidence.")
+    reference: ExternalReference | None = None
+
+
 class PhenotypicFeatureObservation(BaseModel):
     """A present/absent phenotype — symptom-level questionnaire items mapped to HPO."""
 
@@ -86,6 +110,12 @@ class PhenotypicFeatureObservation(BaseModel):
     excluded: bool = Field(False, description="True if the feature is explicitly absent.")
     severity: OntologyTerm | None = None
     onset: TimePoint | None = None
+    description: str | None = Field(
+        None, description="Human-readable provenance (source item, predicate, when_value)."
+    )
+    evidence: list[Evidence] = Field(
+        default_factory=list, description="Evidence codes/refs — e.g. an ECO self-report code."
+    )
 
 
 class Participant(BaseModel):

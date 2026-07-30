@@ -41,17 +41,24 @@ pretending it is deterministic, and to make step 2 **airtight**.
 4. **Choose a predicate** per `references/predicate-rules.md` (exact / broad / narrow /
    related, and the "A-or-B conflation" rule). When unsure, prefer the weaker predicate + a
    comment.
-5. **Emit a review artifact**, not a fait accompli -- one row per candidate in the format in
+5. **Author the value condition (`when_value`), when the item should derive a phenotype.**
+   A term mapping only says the item is *about* a concept; a `when_value` says *which answers
+   assert it* (and its absent pole). Follow `references/when-value.md`: pick the cut-point,
+   write the present row and (usually) the `predicate_modifier: Not` absent row, and flag the
+   threshold as **needs expert sign-off** -- the validator checks that it *parses*, never that
+   it is clinically right. Leave `when_value` empty for a purely semantic mapping.
+6. **Emit a review artifact**, not a fait accompli -- one row per candidate in the format in
    `references/review-artifact.md`: proposal, rationale, alternatives, confidence, and an
    explicit split of *auto-verified* (code is real/current) vs *needs expert sign-off*
-   (concept + predicate).
-6. **Run the deterministic gate.** Nothing ships until
+   (concept + predicate + `when_value` cut-point).
+7. **Run the deterministic gate.** Nothing ships until
    `uv run b2ai-ingest validate-mappings --data-root <phenotype/>` is clean (existence,
-   `owl:deprecated`, label match, structure, subject-column existence). This is the
-   guarantee; treat a red gate as blocking.
-7. **Close the loop.** When an expert overrides a proposal, add the decision back into
-   `references/scope-checklist.md` or `references/predicate-rules.md` as a rule or worked
-   example. Over time this shrinks the variance in step 1 -- the reason this skill exists.
+   `owl:deprecated`, label match, structure, subject-column existence, `when_value` parses,
+   `predicate_modifier ∈ {"", "Not"}`). This is the guarantee; treat a red gate as blocking.
+8. **Close the loop.** When an expert overrides a proposal, add the decision back into
+   `references/scope-checklist.md`, `references/predicate-rules.md`, or
+   `references/when-value.md` as a rule or worked example. Over time this shrinks the variance
+   in step 1 -- the reason this skill exists.
 
 ## Guardrails (do not skip)
 
@@ -59,9 +66,10 @@ pretending it is deterministic, and to make step 2 **airtight**.
   be out of HPO scope -- say so; don't invent a code.
 - `exactMatch` only when the source term is a verbatim ontology label or **exact** synonym;
   otherwise broad/narrow/related.
-- A green validator means *the codes are real and correctly labelled* -- it does **not** mean
-  the concept/predicate choice is right. Keep the human sign-off visible; don't let "the
-  validator passed" stand in for review.
+- A green validator means *the codes are real and correctly labelled*, and that any
+  `when_value` **parses** -- it does **not** mean the concept, the predicate, or the
+  cut-point is right. Keep the human sign-off visible; don't let "the validator passed" stand
+  in for review.
 - `mapping_justification` stays `semapv:ManualMappingCuration` -- these are curated, and the
   files should say so.
 

@@ -211,7 +211,7 @@ def _check_choice_coverage(
             answer = (row.get(column) or "").strip()
             if not answer:
                 continue
-            if engine._ordinal_value(column, answer, data_dict) is None:
+            if engine.ordinal_value(column, answer, data_dict) is None:
                 unresolved += 1
                 distinct_unresolved.add(answer)
             else:

@@ -5,7 +5,9 @@ The voice ``phenotype/`` tree is a set of TSVs keyed by ``participant_id`` +
 
     demographics/   -> Individual
     diagnosis/      -> DiseaseObservation (per-condition file basename -> MONDO)
-    questionnaire/  -> MeasurementObservation (per-item ordinals + precomputed totals)
+    questionnaire/  -> MeasurementObservation (per-item ordinals + precomputed totals), and
+                       PhenotypicFeatureObservation for items with a value-gated B2AI -> HPO
+                       ``when_value`` mapping (see mapping/hpo_rules.py, ADR-0002)
 
 Audio/derived-feature tables (``task/``) are referenced, not ingested.
 
@@ -27,6 +29,7 @@ The data is messy in ways the reader must tolerate:
 from __future__ import annotations
 
 import csv
+import functools
 import logging
 from collections import OrderedDict
 from collections.abc import Iterable
@@ -34,6 +37,11 @@ from pathlib import Path
 from typing import Any
 
 from b2ai_dataset_ingest.mapping.engine import MappingEngine
+from b2ai_dataset_ingest.mapping.hpo_rules import (
+    ConditionalRule,
+    derive_features,
+    load_conditional_rules,
+)
 from b2ai_dataset_ingest.mapping.loaders import (
     is_placeholder,
     load_data_dict,
@@ -46,6 +54,7 @@ from b2ai_dataset_ingest.model import (
     MeasurementObservation,
     OntologyTerm,
     Participant,
+    PhenotypicFeatureObservation,
     TimePoint,
 )
 from b2ai_dataset_ingest.reporting import IngestReport
@@ -76,6 +85,7 @@ class _Accumulator:
         self.individual: Individual | None = None
         self.diseases: list[DiseaseObservation] = []
         self.measurements: list[MeasurementObservation] = []
+        self.phenotypic_features: list[PhenotypicFeatureObservation] = []
         self._disease_ids: set[str] = set()
 
     def add_disease(self, disease: DiseaseObservation) -> None:
@@ -87,10 +97,21 @@ class _Accumulator:
 class VoiceSource(Source):
     dataset_id = "bridge2ai-voice"
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self, root: Path, config_dir: Path, mappings: Iterable[Path] | None = None
+    ) -> None:
+        super().__init__(root, config_dir)
         #: Aggregate, PHI-safe counts for the most recent :meth:`read`. The CLI prints it.
         self.report = IngestReport()
+        #: SSSOM files carrying B2AI -> HPO ``when_value`` rules; None -> the shipped defaults.
+        self._mappings = list(mappings) if mappings is not None else None
+        self._hpo_rules: dict[str, dict[str, list[ConditionalRule]]] | None = None
+
+    def _conditional_rules(self) -> dict[str, dict[str, list[ConditionalRule]]]:
+        """Value-gated B2AI -> HPO rules, loaded once and indexed ``table -> column -> [rules]``."""
+        if self._hpo_rules is None:
+            self._hpo_rules = load_conditional_rules(self._mappings)
+        return self._hpo_rules
 
     def read(self) -> Iterable[Participant]:
         self.report = IngestReport()
@@ -114,6 +135,7 @@ class VoiceSource(Source):
                 individual=individual,
                 diseases=acc.diseases,
                 measurements=acc.measurements,
+                phenotypic_features=acc.phenotypic_features,
                 source_dataset=self.dataset_id,
             )
 
@@ -229,12 +251,23 @@ class VoiceSource(Source):
             groups = _group_by(
                 rows, lambda r: (r.get("participant_id", ""), r.get(session_col, ""))
             )
+        # Value-gated B2AI -> HPO rules for this table's columns (empty if none authored). The
+        # resolver reuses the engine's ordinal resolution so a condition (`>=1`) is evaluated
+        # against the same score the emitted Measurement carries.
+        table_rules = self._conditional_rules().get(table, {})
+        resolve_ordinal = functools.partial(engine.ordinal_value, data_dict=data_dict)
         for (participant_id, _key), prows in groups.items():
             session_id = prows[0].get(session_col, "") if session_col else ""
             merged = _merge_rows(prows, self.report)
             time = _timepoint(session_id) if session_id else None
-            measurements = engine.measurements(merged, data_dict, time, report=self.report)
-            accumulator(participant_id).measurements.extend(measurements)
+            acc = accumulator(participant_id)
+            acc.measurements.extend(
+                engine.measurements(merged, data_dict, time, report=self.report)
+            )
+            if table_rules:
+                acc.phenotypic_features.extend(
+                    derive_features(merged, table_rules, resolve_ordinal, time, self.report)
+                )
 
     def _questionnaire_configs(self) -> dict[str, tuple[Path, dict[str, Any]]]:
         """Map each questionnaire config's ``table`` name to ``(path, mapping)``."""
