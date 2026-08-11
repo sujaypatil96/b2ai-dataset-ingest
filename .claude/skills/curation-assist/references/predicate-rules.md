@@ -38,6 +38,16 @@ is no honest subsumer and you must split: PHQ-9 `feeling_bad_self` conflates wor
 (HP:0031469, under *Cognitive distortion*) with guilt (HP:6000011, under *Dysregulated negative
 emotional state*) — no near common parent, so two `narrowMatch` rows at 0.75.
 
+**A parent that covers *most* senses is not a subsumer.** This is the seductive failure: a
+plausible parent covers two of three senses, retargeting to it feels like the tidy answer, and
+the third sense disappears without a trace. Verify the candidate subsumes **every** sense before
+retargeting. `ptsd_adult.irritable` ("extremely irritable or angry to the point of yelling,
+fights, or destroying things") was proposed for HP:0031467 *Dysregulated negative emotional
+state* on exactly those grounds — it *is* the parent of both *Irritability* and *Anger*. But the
+behavioural escalation is HP:0000718 *Aggressive behavior*, which sits under *Disinhibition*, a
+different branch, so HP:0031467 cannot reach it. Three senses, three `narrowMatch` rows;
+retargeting would have silently dropped the clause that makes it a PTSD item at all.
+
 **A conflation is easy to miss when the `subject_label` is abbreviated.** That row read
 "Feeling bad about yourself - or that you are a failure", which looks single-sense; the data
 dictionary's actual text ends "…*or have let yourself or your family down*", which is the guilt
@@ -60,6 +70,8 @@ half. Copy the full item text from the data dict before judging a column — and
 | `custom_affect_scale.sad_or_down` "Sad or down" | HP:5200273 Pathological sadness | related | same term, weaker predicate: one momentary 0–10 rating does not establish the excess in intensity/duration that makes sadness *pathological* |
 | `phq9.trouble_concentrate` "Trouble concentrating… reading the newspaper or watching television" | HP:0031987 Diminished ability to concentrate | exact | exact synonyms "Concentration problems"/"Poor concentration", and the HPO definition names re-reading text without understanding — the item's own example |
 | `adhd_adult.difficulty_attention` "difficulty keeping your attention when doing boring/repetitive work" | HP:0000736 Short attention span | broad | **sibling terms, don't merge:** HP:0000736 is *distractibility and impulsivity*, HP:0031987 is *failure to sustain focus*. The ASRS construct is the former, so this row stays put while the PHQ-9 one moves |
+| `panas.hostile` "Hostile" | HP:0031473 Anger | related | "Hostile"/"Hostility" are **exact synonyms of Anger**, not of Irritability — found only by re-checking every row that used HP:0000737, not from the review |
+| `custom_affect_scale.irritated` "Irritated or angry **(towards something or someone)**" | HP:0000737 + HP:0031473 | related ×2 | near-synonyms in English, distinct in HPO: *Irritability* is an undirected lowered threshold, *Anger* is hostility **directed** at a provocation — which the parenthetical states outright |
 
 ## Trap 1 — lexical match ≠ semantic match
 
