@@ -14,8 +14,9 @@ HPO (phenotypic abnormalities); MONDO (diseases) and LOINC (assays) have their o
   `no_interest` (anhedonia), GAD-7 `nervous_anxious` (anxiety), Parkinson's gold-standard
   `bradykinesia`/`rigidity`/`tremor`.
 - **A questionnaire item whose content *is* a phenotype**, even if worded as self-report
-  ("Feeling down, depressed, or hopeless" → Depression). Map the phenotype; see
-  `predicate-rules.md` for the predicate.
+  ("Feeling down, depressed, or hopeless" → HP:5200273 *Pathological sadness*). Map the
+  phenotype at the **item's** granularity, not the syndrome the instrument screens for — see
+  the granularity trap in `predicate-rules.md`. Predicate: see `predicate-rules.md`.
 
 ## DON'T map (out of scope) — record the bucket and move on
 

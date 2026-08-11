@@ -38,24 +38,34 @@ pretending it is deterministic, and to make step 2 **airtight**.
    Take candidate ids + authoritative labels from the output. If the source description
    *contradicts* the lexical match (classic trap: "dizziness" vs HPO *Vertigo* = spinning),
    **flag it, don't auto-accept.**
-4. **Choose a predicate** per `references/predicate-rules.md` (exact / broad / narrow /
+4. **Inspect the term before committing to it** — `scripts/search_hpo.py <CURIE>` prints the
+   full definition, every synonym class, the editor comment and the is_a parents. A label is
+   not enough to judge a term: HPO *Depression* (HP:0000716) reads like a symptom but its exact
+   synonym is "Depressive episode", i.e. a syndrome that overstates a single questionnaire item.
+   Conversely the synonym list is often what *justifies* an `exactMatch` the label would never
+   suggest. Both directions are the "granularity trap" in `references/predicate-rules.md`. For
+   a **standard instrument**, also diff against an independent curation if one exists (see the
+   same file) — it catches omissions and judgment calls the validator cannot.
+5. **Choose a predicate** per `references/predicate-rules.md` (exact / broad / narrow /
    related, and the "A-or-B conflation" rule). When unsure, prefer the weaker predicate + a
-   comment.
-5. **Author the value condition (`when_value`), when the item should derive a phenotype.**
+   comment. Before reusing a term that was rejected elsewhere — or changing one — check the
+   **kind** of each column using it: a screener *item* and a reported *diagnosis* can share
+   wording and still need different terms, so never blanket-replace across the mapping files.
+6. **Author the value condition (`when_value`), when the item should derive a phenotype.**
    A term mapping only says the item is *about* a concept; a `when_value` says *which answers
    assert it* (and its absent pole). Follow `references/when-value.md`: pick the cut-point,
    write the present row and (usually) the `predicate_modifier: Not` absent row, and flag the
    threshold as **needs expert sign-off** -- the validator checks that it *parses*, never that
    it is clinically right. Leave `when_value` empty for a purely semantic mapping.
-6. **Emit a review artifact**, not a fait accompli -- one row per candidate in the format in
+7. **Emit a review artifact**, not a fait accompli -- one row per candidate in the format in
    `references/review-artifact.md`: proposal, rationale, alternatives, confidence, and an
    explicit split of *auto-verified* (code is real/current) vs *needs expert sign-off*
    (concept + predicate + `when_value` cut-point).
-7. **Run the deterministic gate.** Nothing ships until
+8. **Run the deterministic gate.** Nothing ships until
    `uv run b2ai-ingest validate-mappings --data-root <phenotype/>` is clean (existence,
    `owl:deprecated`, label match, structure, subject-column existence, `when_value` parses,
    `predicate_modifier ∈ {"", "Not"}`). This is the guarantee; treat a red gate as blocking.
-8. **Close the loop.** When an expert overrides a proposal, add the decision back into
+9. **Close the loop.** When an expert overrides a proposal, add the decision back into
    `references/scope-checklist.md`, `references/predicate-rules.md`, or
    `references/when-value.md` as a rule or worked example. Over time this shrinks the variance
    in step 1 -- the reason this skill exists.
