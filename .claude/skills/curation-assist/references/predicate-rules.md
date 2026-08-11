@@ -46,6 +46,8 @@ the ontology term is *narrower* than the column, not broader. Instead:
 | `dizziness` "lightheadedness or balance disturbance" | HP:0002321 Vertigo | related | **trap 1:** HPO *Vertigo* = spinning, which the source excludes — synonym match is misleading, so downgrade + comment |
 | `phq9.feeling_depressed` "Feeling down, depressed, or hopeless" | HP:5200273 Pathological sadness | exact | **trap 2:** *not* HP:0000716 *Depression*, whose exact synonym is "Depressive episode" — a syndrome, not one item. HP:5200273's exact synonyms ("Down in the dumps", "Feeling hopeless all the time") match the item verbatim |
 | `custom_affect_scale.sad_or_down` "Sad or down" | HP:5200273 Pathological sadness | related | same term, weaker predicate: one momentary 0–10 rating does not establish the excess in intensity/duration that makes sadness *pathological* |
+| `phq9.trouble_concentrate` "Trouble concentrating… reading the newspaper or watching television" | HP:0031987 Diminished ability to concentrate | exact | exact synonyms "Concentration problems"/"Poor concentration", and the HPO definition names re-reading text without understanding — the item's own example |
+| `adhd_adult.difficulty_attention` "difficulty keeping your attention when doing boring/repetitive work" | HP:0000736 Short attention span | broad | **sibling terms, don't merge:** HP:0000736 is *distractibility and impulsivity*, HP:0031987 is *failure to sustain focus*. The ASRS construct is the former, so this row stays put while the PHQ-9 one moves |
 
 ## Trap 1 — lexical match ≠ semantic match
 
@@ -93,6 +95,14 @@ So when a term turns out to be wrong for one row, **classify each other row usin
 changing it** — a find-and-replace across the mapping files would have broken the second row
 here. (Real example: PR #10 review, 5 symptom rows moved off HP:0000716, 2 diagnosis rows
 deliberately kept.)
+
+The same discipline applies when the two candidates are **siblings** rather than different
+levels. HP:0000736 *Short attention span* (distractibility + impulsivity) and HP:0031987
+*Diminished ability to concentrate* (failure to sustain focus) share a parent and read alike,
+but they are different constructs: the PHQ-9/PHQ-A "trouble concentrating" items belong to the
+second, while the ASRS inattention item belongs to the first. Three rows used HP:0000736; two
+moved and one stayed. **When you keep a row that a reviewer might expect to change, say so in
+its `comment`** — otherwise it reads as an oversight rather than a decision.
 
 ### Check whether the term is contested
 
