@@ -23,8 +23,8 @@
 #     type_hint: xsd:string
 subject_id	subject_label	predicate_id	object_id	object_label	mapping_justification	confidence	comment	predicate_modifier	when_value
 b2ai:phq9.no_interest	Little interest or pleasure in doing things	skos:exactMatch	HP:0012154	Anhedonia	semapv:ManualMappingCuration	0.95			
-b2ai:phq9.feeling_depressed	Feeling down, depressed, or hopeless	skos:broadMatch	HP:0000716	Depression	semapv:ManualMappingCuration	0.8	answer >=1 (at least 'Several days') asserts the phenotype present		>=1
-b2ai:phq9.feeling_depressed	Feeling down, depressed, or hopeless	skos:broadMatch	HP:0000716	Depression	semapv:ManualMappingCuration	0.8	answer ==0 ('Not at all') asserts the phenotype absent	Not	==0
+b2ai:phq9.feeling_depressed	Feeling down, depressed, or hopeless	skos:exactMatch	HP:5200273	Pathological sadness	semapv:ManualMappingCuration	0.95	item text matches HPO exact synonyms ('Down in the dumps', 'Feeling hopeless all the time'); answer >=1 (at least 'Several days') asserts the phenotype present		>=1
+b2ai:phq9.feeling_depressed	Feeling down, depressed, or hopeless	skos:exactMatch	HP:5200273	Pathological sadness	semapv:ManualMappingCuration	0.95	answer ==0 ('Not at all') asserts the phenotype absent	Not	==0
 b2ai:phq9.trouble_sleeping	Trouble falling/staying asleep, or sleeping too much	skos:broadMatch	HP:0002360	Sleep disturbance	semapv:ManualMappingCuration	0.8	item conflates insomnia and hypersomnia; Sleep disturbance subsumes both poles		
 b2ai:phq9.no_energy	Feeling tired or having little energy	skos:exactMatch	HP:0012378	Fatigue	semapv:ManualMappingCuration	0.95			
 b2ai:phq9.no_appetite	Poor appetite or overeating	skos:broadMatch	HP:0100738	Abnormal eating behavior	semapv:ManualMappingCuration	0.8	item conflates poor appetite and overeating; Abnormal eating behavior subsumes both poles		
@@ -55,11 +55,11 @@ b2ai:panas.hostile	Hostile	skos:relatedMatch	HP:0000737	Irritability	semapv:Manu
 b2ai:custom_affect_scale.agitated	Agitated (restless, fidgety, pacing, cannot sit still)	skos:relatedMatch	HP:0000713	Agitation	semapv:ManualMappingCuration	0.6	momentary-state affect rating (0-10); parenthetical adds restlessness (HP:0000711)		
 b2ai:custom_affect_scale.irritated	Irritated or angry (towards something or someone)	skos:relatedMatch	HP:0000737	Irritability	semapv:ManualMappingCuration	0.6	momentary-state affect rating		
 b2ai:custom_affect_scale.lack_of_pleasure	Lack of pleasure (in things you tend to enjoy)	skos:relatedMatch	HP:0012154	Anhedonia	semapv:ManualMappingCuration	0.6	momentary-state rating of lack of pleasure		
-b2ai:custom_affect_scale.sad_or_down	Sad or down	skos:relatedMatch	HP:0000716	Depression	semapv:ManualMappingCuration	0.6	momentary-state 'sad or down' rating, not a depression diagnosis		
+b2ai:custom_affect_scale.sad_or_down	Sad or down	skos:relatedMatch	HP:5200273	Pathological sadness	semapv:ManualMappingCuration	0.6	momentary-state affect rating (0-10); a single rating does not establish the excess in intensity/duration that makes sadness pathological		
 b2ai:custom_affect_scale.tired	Tired or fatigued	skos:relatedMatch	HP:0012378	Fatigue	semapv:ManualMappingCuration	0.6	momentary-state 'tired or fatigued' rating		
 b2ai:custom_affect_scale.worried	Worried or anxious	skos:relatedMatch	HP:0000739	Anxiety	semapv:ManualMappingCuration	0.6	momentary-state 'worried or anxious' rating		
 b2ai:vhi10.strain_voice	I feel as though I have to strain to produce voice	skos:relatedMatch	HP:0001618	Dysphonia	semapv:ManualMappingCuration	0.6	effortful phonation ('strain to produce voice'); no specific HPO term - VHI-10 is otherwise psychosocial-impact		
-b2ai:dsm5_adult.feeling_down	Feeling down, depressed, or hopeless	skos:exactMatch	HP:0000716	Depression	semapv:ManualMappingCuration	0.95			
+b2ai:dsm5_adult.feeling_down	Feeling down, depressed, or hopeless	skos:exactMatch	HP:5200273	Pathological sadness	semapv:ManualMappingCuration	0.95	item text matches HPO exact synonyms ('Down in the dumps', 'Feeling hopeless all the time')		
 b2ai:dsm5_adult.little_interest	Little interest or pleasure in doing things	skos:exactMatch	HP:0012154	Anhedonia	semapv:ManualMappingCuration	0.95			
 b2ai:dsm5_adult.feeling_nervous	Feeling nervous, anxious, frightened, worried, or on edge	skos:exactMatch	HP:0000739	Anxiety	semapv:ManualMappingCuration	0.95			
 b2ai:dsm5_adult.feeling_panic	Feeling panic or being frightened	skos:broadMatch	HP:0025269	Panic attack	semapv:ManualMappingCuration	0.8			
@@ -75,7 +75,7 @@ b2ai:dsm5_adult.sleep_quality	Problems with sleep that affected your sleep quali
 b2ai:dsm5_adult.sleeping_less	Sleeping less than usual, but still have a lot of energy	skos:exactMatch	HP:5200276	Decreased need for sleep	semapv:ManualMappingCuration	0.9	manic-type reduced sleep need		
 b2ai:dsm5_adult.social_phobia_2	Felt anxious, worried, or nervous about social situations	skos:exactMatch	HP:6000029	Social anxiety	semapv:ManualMappingCuration	0.9	representative of the DSM-5 social-phobia cluster (social_phobia_1..10 redundant)		
 b2ai:pediatric_hqa.peds_phqa_no_interest	Little interest or pleasure in doing things	skos:exactMatch	HP:0012154	Anhedonia	semapv:ManualMappingCuration	0.95			
-b2ai:pediatric_hqa.peds_phqa_feeling_depressed	Feeling down, depressed, irritable, or hopeless	skos:broadMatch	HP:0000716	Depression	semapv:ManualMappingCuration	0.8	item adds 'irritable'		
+b2ai:pediatric_hqa.peds_phqa_feeling_depressed	Feeling down, depressed, irritable, or hopeless	skos:broadMatch	HP:5200273	Pathological sadness	semapv:ManualMappingCuration	0.8	item adds 'irritable'		
 b2ai:pediatric_hqa.peds_phqa_trouble_sleeping	Trouble falling asleep, staying asleep, or sleeping too much	skos:broadMatch	HP:0002360	Sleep disturbance	semapv:ManualMappingCuration	0.8	conflates insomnia and hypersomnia		
 b2ai:pediatric_hqa.peds_phqa_no_energy	Feeling tired, or having little energy	skos:exactMatch	HP:0012378	Fatigue	semapv:ManualMappingCuration	0.95			
 b2ai:pediatric_hqa.peds_phqa_no_appetite	Poor appetite, weight loss, or overeating	skos:broadMatch	HP:0100738	Abnormal eating behavior	semapv:ManualMappingCuration	0.8	conflates poor appetite, weight loss, and overeating		
