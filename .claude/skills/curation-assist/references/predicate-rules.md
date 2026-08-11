@@ -32,6 +32,18 @@ the ontology term is *narrower* than the column, not broader. Instead:
 - **Split** into one `narrowMatch` row per sense (subject repeats, objects differ), **or**
 - **Retarget** to an ontology term that truly subsumes both.
 
+Which one? **Check the candidates' parents.** If they share a near parent, retargeting to it is
+cleaner (`no_appetite` → *Abnormal eating behavior*). If they sit in different branches, there
+is no honest subsumer and you must split: PHQ-9 `feeling_bad_self` conflates worthlessness
+(HP:0031469, under *Cognitive distortion*) with guilt (HP:6000011, under *Dysregulated negative
+emotional state*) — no near common parent, so two `narrowMatch` rows at 0.75.
+
+**A conflation is easy to miss when the `subject_label` is abbreviated.** That row read
+"Feeling bad about yourself - or that you are a failure", which looks single-sense; the data
+dictionary's actual text ends "…*or have let yourself or your family down*", which is the guilt
+half. Copy the full item text from the data dict before judging a column — and note that a
+`subject_label` is only a human aid, so the validator can never catch this for you.
+
 ## Worked examples (from real B2AI curation)
 
 | Source (description) | Object | Predicate | Why |
