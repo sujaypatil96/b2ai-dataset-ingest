@@ -48,6 +48,23 @@ behavioural escalation is HP:0000718 *Aggressive behavior*, which sits under *Di
 different branch, so HP:0031467 cannot reach it. Three senses, three `narrowMatch` rows;
 retargeting would have silently dropped the clause that makes it a PTSD item at all.
 
+**A parent can be structurally right and definitionally wrong.** The `is_a` check is necessary
+but not sufficient — also read the parent's *definition* and confirm it describes the grouping
+rather than just one of its children. `dsm5_adult.someone_hear_thoughts` ("someone could hear
+your thoughts, or… you could hear another person's thoughts") was mapped `broadMatch` to
+HP:5200419 *Disorder of thought control*, and the hierarchy genuinely backs that up: HP:0025777
+*Thought broadcasting* **is_a** HP:5200419. But HP:5200419's definition is "a false belief that
+another person… **controls** one's thoughts", i.e. delusion of control — which describes neither
+clause of the item, and does not even describe two of its own four children (*Thought echo* is a
+perception, *Thought blocking* is a cessation, neither is a belief about control). The class
+behaves as a grouping term for thought alienation while its text defines one specific delusion.
+Map the precise children instead.
+
+The lesson generalises past this term: when a parent looks like a convenient umbrella, check
+whether its definition was written for the group or inherited from one member. `search_hpo.py
+<CURIE>` prints definition and parents together so the two can be compared in one look — and it
+flags labels containing *disorder / syndrome / episode / disease*, which is what this one trips.
+
 **A conflation is easy to miss when the `subject_label` is abbreviated.** That row read
 "Feeling bad about yourself - or that you are a failure", which looks single-sense; the data
 dictionary's actual text ends "…*or have let yourself or your family down*", which is the guilt
