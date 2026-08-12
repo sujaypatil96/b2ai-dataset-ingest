@@ -65,6 +65,23 @@ whether its definition was written for the group or inherited from one member. `
 <CURIE>` prints definition and parents together so the two can be compared in one look — and it
 flags labels containing *disorder / syndrome / episode / disease*, which is what this one trips.
 
+**When a sense has no term at all, retarget — splitting would drop it.** The mirror of the rule
+above: there, a parent failed because it could not reach every sense; here, *splitting* fails
+because the ontology has no term for one of the senses, so a per-sense split silently loses it.
+`dsm5_adult.memory_issues` ("Problems with memory (learning new information) **or with location
+(finding your way home)**") is one yes/no answer covering memory and spatial orientation. HPO has
+no topographical-disorientation term — the nearest are *Left-right disorientation*,
+*Impaired visuospatial constructive cognition* and *Confusion*, none of which is wayfinding — so
+mapping the memory half to HP:0002354 asserts a specific deficit the answer does not establish.
+Retargeted to HP:0100543 *Cognitive impairment*, which subsumes both and whose own definition
+names "learning new things".
+
+So the full decision for a conflated column: **every sense has a term and they share no near
+parent → split; a sense has no term → retarget to a parent that covers all of them; no parent
+reaches every sense → split and state the gap in the `comment`.** Searching for the missing term
+and finding nothing is a result worth recording — write down what you searched, so the next
+curator does not repeat it and can recognise the gap as an upstream request.
+
 **A conflation is easy to miss when the `subject_label` is abbreviated.** That row read
 "Feeling bad about yourself - or that you are a failure", which looks single-sense; the data
 dictionary's actual text ends "…*or have let yourself or your family down*", which is the guilt
