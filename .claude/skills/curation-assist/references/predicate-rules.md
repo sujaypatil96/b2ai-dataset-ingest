@@ -82,6 +82,20 @@ reaches every sense → split and state the gap in the `comment`.** Searching fo
 and finding nothing is a result worth recording — write down what you searched, so the next
 curator does not repeat it and can recognise the gap as an upstream request.
 
+**First check whether the senses can co-occur — a disjunctive column cannot be split at all.**
+Everything above assumes the senses are *conjunctive*: worthlessness and guilt can both be true
+of one respondent, so each `narrowMatch` row is a legitimate partial claim. When the senses are
+**mutually exclusive** — "X **or its opposite**" — a one-sided row is not a partial claim but a
+coin flip, because a "yes" cannot be attributed to a pole. PHQ-9 `move_speak_slow` ("moving or
+speaking so slowly that other people could have noticed? **Or the opposite** — being so fidgety
+or restless…") is disjunctive. The restless pole even has a clean term (HP:0000711 *Restlessness*,
+exact synonym "Fidgetiness"), which makes a split look available — but mapping it would assert
+psychomotor agitation for respondents who endorsed the item because they had slowed down.
+Leave a disjunctive column unmapped unless a term genuinely subsumes both poles.
+
+So the very first question about a conflated column is not "split or retarget" but **"can these
+senses be true at the same time?"** — no is a hard stop.
+
 **A conflation is easy to miss when the `subject_label` is abbreviated.** That row read
 "Feeling bad about yourself - or that you are a failure", which looks single-sense; the data
 dictionary's actual text ends "…*or have let yourself or your family down*", which is the guilt
