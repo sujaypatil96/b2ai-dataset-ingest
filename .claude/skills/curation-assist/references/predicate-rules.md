@@ -32,6 +32,76 @@ the ontology term is *narrower* than the column, not broader. Instead:
 - **Split** into one `narrowMatch` row per sense (subject repeats, objects differ), **or**
 - **Retarget** to an ontology term that truly subsumes both.
 
+Which one? **Check the candidates' parents.** If they share a near parent, retargeting to it is
+cleaner (`no_appetite` → *Abnormal eating behavior*). If they sit in different branches, there
+is no honest subsumer and you must split: PHQ-9 `feeling_bad_self` conflates worthlessness
+(HP:0031469, under *Cognitive distortion*) with guilt (HP:6000011, under *Dysregulated negative
+emotional state*) — no near common parent, so two `narrowMatch` rows at 0.75.
+
+**A parent that covers *most* senses is not a subsumer.** This is the seductive failure: a
+plausible parent covers two of three senses, retargeting to it feels like the tidy answer, and
+the third sense disappears without a trace. Verify the candidate subsumes **every** sense before
+retargeting. `ptsd_adult.irritable` ("extremely irritable or angry to the point of yelling,
+fights, or destroying things") was proposed for HP:0031467 *Dysregulated negative emotional
+state* on exactly those grounds — it *is* the parent of both *Irritability* and *Anger*. But the
+behavioural escalation is HP:0000718 *Aggressive behavior*, which sits under *Disinhibition*, a
+different branch, so HP:0031467 cannot reach it. Three senses, three `narrowMatch` rows;
+retargeting would have silently dropped the clause that makes it a PTSD item at all.
+
+**A parent can be structurally right and definitionally wrong.** The `is_a` check is necessary
+but not sufficient — also read the parent's *definition* and confirm it describes the grouping
+rather than just one of its children. `dsm5_adult.someone_hear_thoughts` ("someone could hear
+your thoughts, or… you could hear another person's thoughts") was mapped `broadMatch` to
+HP:5200419 *Disorder of thought control*, and the hierarchy genuinely backs that up: HP:0025777
+*Thought broadcasting* **is_a** HP:5200419. But HP:5200419's definition is "a false belief that
+another person… **controls** one's thoughts", i.e. delusion of control — which describes neither
+clause of the item, and does not even describe two of its own four children (*Thought echo* is a
+perception, *Thought blocking* is a cessation, neither is a belief about control). The class
+behaves as a grouping term for thought alienation while its text defines one specific delusion.
+Map the precise children instead.
+
+The lesson generalises past this term: when a parent looks like a convenient umbrella, check
+whether its definition was written for the group or inherited from one member. `search_hpo.py
+<CURIE>` prints definition and parents together so the two can be compared in one look — and it
+flags labels containing *disorder / syndrome / episode / disease*, which is what this one trips.
+
+**When a sense has no term at all, retarget — splitting would drop it.** The mirror of the rule
+above: there, a parent failed because it could not reach every sense; here, *splitting* fails
+because the ontology has no term for one of the senses, so a per-sense split silently loses it.
+`dsm5_adult.memory_issues` ("Problems with memory (learning new information) **or with location
+(finding your way home)**") is one yes/no answer covering memory and spatial orientation. HPO has
+no topographical-disorientation term — the nearest are *Left-right disorientation*,
+*Impaired visuospatial constructive cognition* and *Confusion*, none of which is wayfinding — so
+mapping the memory half to HP:0002354 asserts a specific deficit the answer does not establish.
+Retargeted to HP:0100543 *Cognitive impairment*, which subsumes both and whose own definition
+names "learning new things".
+
+So the full decision for a conflated column: **every sense has a term and they share no near
+parent → split; a sense has no term → retarget to a parent that covers all of them; no parent
+reaches every sense → split and state the gap in the `comment`.** Searching for the missing term
+and finding nothing is a result worth recording — write down what you searched, so the next
+curator does not repeat it and can recognise the gap as an upstream request.
+
+**First check whether the senses can co-occur — a disjunctive column cannot be split at all.**
+Everything above assumes the senses are *conjunctive*: worthlessness and guilt can both be true
+of one respondent, so each `narrowMatch` row is a legitimate partial claim. When the senses are
+**mutually exclusive** — "X **or its opposite**" — a one-sided row is not a partial claim but a
+coin flip, because a "yes" cannot be attributed to a pole. PHQ-9 `move_speak_slow` ("moving or
+speaking so slowly that other people could have noticed? **Or the opposite** — being so fidgety
+or restless…") is disjunctive. The restless pole even has a clean term (HP:0000711 *Restlessness*,
+exact synonym "Fidgetiness"), which makes a split look available — but mapping it would assert
+psychomotor agitation for respondents who endorsed the item because they had slowed down.
+Leave a disjunctive column unmapped unless a term genuinely subsumes both poles.
+
+So the very first question about a conflated column is not "split or retarget" but **"can these
+senses be true at the same time?"** — no is a hard stop.
+
+**A conflation is easy to miss when the `subject_label` is abbreviated.** That row read
+"Feeling bad about yourself - or that you are a failure", which looks single-sense; the data
+dictionary's actual text ends "…*or have let yourself or your family down*", which is the guilt
+half. Copy the full item text from the data dict before judging a column — and note that a
+`subject_label` is only a human aid, so the validator can never catch this for you.
+
 ## Worked examples (from real B2AI curation)
 
 | Source (description) | Object | Predicate | Why |
@@ -40,12 +110,101 @@ the ontology term is *narrower* than the column, not broader. Instead:
 | `di_air_in` "trouble getting air in" | HP:0002094 Dyspnea | broad | item is a specific expression of the umbrella phenotype |
 | `pulmonary_hypertension` | HP:0002092 Pulmonary arterial hypertension | narrow | HPO term is the arterial subtype |
 | `no_appetite` "poor appetite **or** overeating" | HP:0100738 Abnormal eating behavior | broad | retargeted to a term that subsumes both poles |
+| `panic_disorder` (a disorder) | HP:0025269 Panic attack | broad | disorder → its core phenotype; HPO term is the manifestation the disorder subsumes (cf. `anxiety_disorder`→Anxiety, `epilepsy`→Seizure) |
+| `acid_reflux` "heart burn, GERD" | HP:0002020 Gastroesophageal reflux | exact | GERD is an exact synonym — a named disease *with* an exact HPO term stays exact |
 | `stroke` "stroke **and/or** aphasia" | HP:0001297 Stroke **+** HP:0002381 Aphasia | narrow ×2 | split; each sense is narrower than the column |
-| `dizziness` "lightheadedness or balance disturbance" | HP:0002321 Vertigo | related | **trap:** HPO *Vertigo* = spinning, which the source excludes — synonym match is misleading, so downgrade + comment |
+| `dizziness` "lightheadedness or balance disturbance" | HP:0002321 Vertigo | related | **trap 1:** HPO *Vertigo* = spinning, which the source excludes — synonym match is misleading, so downgrade + comment |
+| `phq9.feeling_depressed` "Feeling down, depressed, or hopeless" | HP:5200273 Pathological sadness | exact | **trap 2:** *not* HP:0000716 *Depression*, whose exact synonym is "Depressive episode" — a syndrome, not one item. HP:5200273's exact synonyms ("Down in the dumps", "Feeling hopeless all the time") match the item verbatim |
+| `custom_affect_scale.sad_or_down` "Sad or down" | HP:5200273 Pathological sadness | related | same term, weaker predicate: one momentary 0–10 rating does not establish the excess in intensity/duration that makes sadness *pathological* |
+| `phq9.trouble_concentrate` "Trouble concentrating… reading the newspaper or watching television" | HP:0031987 Diminished ability to concentrate | exact | exact synonyms "Concentration problems"/"Poor concentration", and the HPO definition names re-reading text without understanding — the item's own example |
+| `adhd_adult.difficulty_attention` "difficulty keeping your attention when doing boring/repetitive work" | HP:0000736 Short attention span | broad | **sibling terms, don't merge:** HP:0000736 is *distractibility and impulsivity*, HP:0031987 is *failure to sustain focus*. The ASRS construct is the former, so this row stays put while the PHQ-9 one moves |
+| `panas.hostile` "Hostile" | HP:0031473 Anger | related | "Hostile"/"Hostility" are **exact synonyms of Anger**, not of Irritability — found only by re-checking every row that used HP:0000737, not from the review |
+| `custom_affect_scale.irritated` "Irritated or angry **(towards something or someone)**" | HP:0000737 + HP:0031473 | related ×2 | near-synonyms in English, distinct in HPO: *Irritability* is an undirected lowered threshold, *Anger* is hostility **directed** at a provocation — which the parenthetical states outright |
 
-## The trap to always check
+## Trap 1 — lexical match ≠ semantic match
 
 If the ontology term matched only because a **word** matched (label/synonym), re-read the
 source **description**. If the clinical sense differs (dizziness≠vertigo), the lexical hit is
 wrong — downgrade to `relatedMatch` (or pick a better term / split), and never leave it as
-`exactMatch`. Lexical match ≠ semantic match.
+`exactMatch`.
+
+### State vs behaviour — a feeling word that implies an act
+
+Affect words often name an action ("hostile", "aggressive", "explosive"). An instrument that
+rates a **feeling** maps to the emotional-state term, never to the behaviour term, however
+strongly the word connotes the act. HPO keeps these in separate branches — states under
+HP:0100851 *Abnormal emotional state*, behaviours under HP:0000734 *Disinhibition* — so the
+choice is structural, not stylistic. PANAS `hostile` maps to HP:0031473 *Anger* (a state, with
+"Hostile"/"Hostility" as exact synonyms), **not** HP:0000718 *Aggressive behavior* (an act aimed
+at harming), because the data dictionary defines the item as "feeling hostile (angry or
+irritable)". The reverse also holds: `ptsd_adult.irritable` earns its HP:0000718 row precisely
+because the item *does* name acts — "yelling, fights, or destroying things".
+
+Reading the data-dictionary `description` is what settles it. The column name alone ("hostile")
+cannot tell you whether the instrument is asking about a feeling or an act.
+
+## Trap 2 — the granularity trap: a symptom-sounding label that denotes a *syndrome*
+
+Trap 1 is the right level, wrong sense. This one is the right *topic*, wrong **level**: the term
+names a syndrome/episode/disorder — a whole cluster of features — while your column is one item
+*of* that cluster. Mapping the item to it overstates what a single answer can assert.
+
+**Judge a term by its definition and synonyms, never by its label.** HPO `Depression`
+(HP:0000716) looks like a perfect hit for "Feeling down, depressed, or hopeless". But its exact
+synonym is **"Depressive episode"**, and its definition enumerates a full cluster — pessimism,
+pervasive shame, low self-worth, *"thoughts of suicide and engaging in suicidal behavior"*. That
+is a PHQ-9 **total score**, not PHQ-9 item 2.
+
+```
+uv run python .claude/skills/curation-assist/scripts/search_hpo.py HP:0000716
+```
+
+Inspect mode prints the full definition, every synonym class, the editor comment and the is_a
+parents, and warns when *episode / disorder / syndrome / disease* shows up in the label or exact
+synonyms. Treat that warning as "go read the definition", not as a verdict.
+
+**The same check promotes as well as demotes.** The synonym list is often what justifies an
+`exactMatch` the primary label would never suggest: HP:5200273 *Pathological sadness* reads
+nothing like the PHQ-9 item, but its **exact** synonyms include "Down in the dumps" and "Feeling
+hopeless all the time" — so that row is `exactMatch` 0.95, not `broadMatch` 0.8. Rule 1 above
+says exact synonyms count; this is the reminder to actually *look at the list*.
+
+### The column kind decides the granularity — never blanket-replace a term
+
+The identical source words map to **different** terms depending on what kind of column it is:
+
+| Column | Kind | Object | Why |
+| --- | --- | --- | --- |
+| `phq9.feeling_depressed` "Feeling down, depressed, or hopeless" | screener **item** | HP:5200273 Pathological sadness | one symptom, rated 0–3 |
+| `confounders.depression_major_depressive_disorder` "Depression or major depressive disorder" | reported **diagnosis** | HP:0000716 Depression | the column *is* the syndrome, so the syndrome-level term is correct |
+
+So when a term turns out to be wrong for one row, **classify each other row using it before
+changing it** — a find-and-replace across the mapping files would have broken the second row
+here. (Real example: PR #10 review, 5 symptom rows moved off HP:0000716, 2 diagnosis rows
+deliberately kept.)
+
+The same discipline applies when the two candidates are **siblings** rather than different
+levels. HP:0000736 *Short attention span* (distractibility + impulsivity) and HP:0031987
+*Diminished ability to concentrate* (failure to sustain focus) share a parent and read alike,
+but they are different constructs: the PHQ-9/PHQ-A "trouble concentrating" items belong to the
+second, while the ASRS inattention item belongs to the first. Three rows used HP:0000736; two
+moved and one stayed. **When you keep a row that a reviewer might expect to change, say so in
+its `comment`** — otherwise it reads as an oversight rather than a decision.
+
+### Check whether the term is contested
+
+Before leaning on a term for many rows, search the ontology's issue tracker. HP:0000716 is
+[proposed for renaming to *Depressive Episode*](https://github.com/obophenotype/human-phenotype-ontology/issues/11460)
+— filed precisely because "Mania and Depression lean towards a disease rather than a phenotype".
+A pending rename is two warnings at once: the term is semantically contested, and when the
+rename lands `validate-mappings` will fail every row whose `object_label` still says
+`Depression`. That failure is the guardrail working — but better to not build on sand.
+
+### Cross-check against an independent curation, when one exists
+
+For **standard instruments** (PHQ-9, GAD-7, MADRS, …) someone may have already curated
+item→HPO mappings. Diffing against one is a far stronger check than "does the code resolve",
+because it surfaces *omissions* and *judgment differences*, which no validator can catch.
+[`rorschach-rs`](https://github.com/SmartMonkey-git/rorschach-rs) (`src/presets/*.rs`) carries
+Robinson-group mappings for PHQ-9, GAD-7, ASRM, YMRS, MADRS and HAM-A. Treat a disagreement as
+a question to resolve, not an error — but resolve it explicitly.

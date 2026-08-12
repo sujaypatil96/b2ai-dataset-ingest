@@ -6,8 +6,8 @@
 ## Context
 
 The B2AI→HPO mappings (`mappings/*.sssom.tsv`, see [mapping-conventions](../mapping-conventions.md))
-are term→term: `b2ai:phq9.feeling_depressed` → `HP:0000716 Depression` records that an item is
-*about* depression. It does not assert a participant *has* depression — that depends on the
+are term→term: `b2ai:phq9.feeling_depressed` → `HP:5200273 Pathological sadness` records that an
+item is *about* that phenotype. It does not assert a participant *has* it — that depends on the
 answer, a 0–3 ordinal. Turning "answer ≥ threshold" into a present/absent `PhenotypicFeature`
 (the ordinal→present/absent policy deferred in the SDD and [ADR-0001](0001-name-architecture-tooling.md))
 requires a **conditional, value-gated** mapping.
@@ -55,23 +55,32 @@ report and are not yet independently checked (its branch is not in this repo).
    that `predicate_modifier ∈ {"", "Not"}`; it does **not** check the cut-point is clinically
    right. Threshold choice needs expert sign-off — the `curation-assist` skill authors it.
 
-## Worked example — `b2ai:phq9.feeling_depressed` → HP:0000716 Depression
+## Worked example — `b2ai:phq9.feeling_depressed` → HP:5200273 Pathological sadness
 
 Two SSSOM rows (the `when_value` extension column is declared in `extension_definitions`):
 
 ```
 subject_id                   predicate_id     object_id   predicate_modifier  when_value
-b2ai:phq9.feeling_depressed  skos:broadMatch  HP:0000716                      >=1
-b2ai:phq9.feeling_depressed  skos:broadMatch  HP:0000716  Not                 ==0
+b2ai:phq9.feeling_depressed  skos:exactMatch  HP:5200273                      >=1
+b2ai:phq9.feeling_depressed  skos:exactMatch  HP:5200273  Not                 ==0
 ```
 
-- Answer ≥ 1 ("Several days" … "Nearly every day") → emit `HP:0000716` **present**, with an
+- Answer ≥ 1 ("Several days" … "Nearly every day") → emit `HP:5200273` **present**, with an
   ECO:0006160 self-report `Evidence` and an onset `TimePoint`.
-- Answer `== 0` ("Not at all") → emit `HP:0000716` **excluded** (via `predicate_modifier: Not`).
+- Answer `== 0` ("Not at all") → emit `HP:5200273` **excluded** (via `predicate_modifier: Not`).
 - A blank cell satisfies neither condition → nothing is asserted.
 
 *(verified: our `parse_sssom` reads both `when_value` and `predicate_modifier` on these rows;
-sssom-py drops `when_value` but still returns the two Depression mappings and validates them.)*
+sssom-py drops `when_value` but still returns the two mappings and validates them.)*
+
+> **Amended 2026-08-11 (PR #10 review).** The worked example originally used
+> `skos:broadMatch` → `HP:0000716 Depression`. HP:0000716 denotes a depressive *episode* — its
+> exact synonym is "Depressive episode" and it is [proposed for renaming to
+> "Depressive Episode"](https://github.com/obophenotype/human-phenotype-ontology/issues/11460) —
+> so it overstates a single PHQ-9 item. The row now targets `HP:5200273 Pathological sadness`,
+> whose exact synonyms ("Down in the dumps", "Feeling hopeless all the time") match the item
+> text, which also upgrades the predicate to `skos:exactMatch`. The decision this ADR records —
+> carry the value-condition in SSSOM, execute it in the pipeline — is unchanged.
 
 ## Consequences
 
