@@ -80,6 +80,21 @@ source **description**. If the clinical sense differs (dizziness≠vertigo), the
 wrong — downgrade to `relatedMatch` (or pick a better term / split), and never leave it as
 `exactMatch`.
 
+### State vs behaviour — a feeling word that implies an act
+
+Affect words often name an action ("hostile", "aggressive", "explosive"). An instrument that
+rates a **feeling** maps to the emotional-state term, never to the behaviour term, however
+strongly the word connotes the act. HPO keeps these in separate branches — states under
+HP:0100851 *Abnormal emotional state*, behaviours under HP:0000734 *Disinhibition* — so the
+choice is structural, not stylistic. PANAS `hostile` maps to HP:0031473 *Anger* (a state, with
+"Hostile"/"Hostility" as exact synonyms), **not** HP:0000718 *Aggressive behavior* (an act aimed
+at harming), because the data dictionary defines the item as "feeling hostile (angry or
+irritable)". The reverse also holds: `ptsd_adult.irritable` earns its HP:0000718 row precisely
+because the item *does* name acts — "yelling, fights, or destroying things".
+
+Reading the data-dictionary `description` is what settles it. The column name alone ("hostile")
+cannot tell you whether the instrument is asking about a feeling or an act.
+
 ## Trap 2 — the granularity trap: a symptom-sounding label that denotes a *syndrome*
 
 Trap 1 is the right level, wrong sense. This one is the right *topic*, wrong **level**: the term
