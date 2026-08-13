@@ -118,8 +118,11 @@ def test_unmapped_questionnaire_is_recorded_not_silently_skipped(tmp_path):
         header=["participant_id", "gad_7_session_id", "nervous_anxious", "tough_to_work"],
         rows=[["p1", "s-aaa", "Several days", "Somewhat difficult"]],
     )
-    # An extra questionnaire on disk with no config.
-    (tmp_path / "questionnaire" / "panas.tsv").write_text("participant_id\tx\np1\t1\n")
+    # An extra questionnaire on disk with no config. Deliberately a name no config will ever
+    # claim — using a real instrument here breaks the test the day that instrument is configured.
+    (tmp_path / "questionnaire" / "not_a_configured_instrument.tsv").write_text(
+        "participant_id\tx\np1\t1\n"
+    )
     source = VoiceSource(root=tmp_path, config_dir=CONFIG_DIR)
     list(source.read())
-    assert "panas" in source.report.tables_unmapped
+    assert "not_a_configured_instrument" in source.report.tables_unmapped
