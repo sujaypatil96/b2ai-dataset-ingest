@@ -1,2 +1,2 @@
-participant_id	session_id	age	sex_assigned_at_birth	gender_identity
+participant_id	session_id	age	sex_at_birth	gender_identity
 ms-0001	ses-baseline	63	Male	Man
