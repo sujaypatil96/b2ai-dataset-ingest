@@ -5,8 +5,8 @@
 > This file is the **curation heuristic**: when to add a condition, how to pick the cut-point,
 > and how to write the present/absent pair. Experts: add worked examples as calls get settled.
 
-A term mapping (`b2ai:phq9.feeling_depressed → HP:0000716 Depression`) says the item is *about*
-depression. It does **not** say a participant *has* depression — that depends on the answer. A
+A term mapping (`b2ai:phq9.feeling_depressed → HP:5200273 Pathological sadness`) says the item is
+*about* that phenotype. It does **not** say a participant *has* it — that depends on the answer. A
 `when_value` is the gate that turns an answer into a present/absent `PhenotypicFeature`.
 
 ## When to add one (and when not to)
@@ -98,16 +98,18 @@ columns (it is **not** a duplicate):
 
 ```
 subject_id                   predicate_id     object_id   predicate_modifier  when_value
-b2ai:phq9.feeling_depressed  skos:broadMatch  HP:0000716                      >=1
-b2ai:phq9.feeling_depressed  skos:broadMatch  HP:0000716  Not                 ==0
+b2ai:phq9.feeling_depressed  skos:exactMatch  HP:5200273                      >=1
+b2ai:phq9.feeling_depressed  skos:exactMatch  HP:5200273  Not                 ==0
 ```
 
 - Present row: empty `predicate_modifier`, the "asserts present" condition.
 - Absent row: `predicate_modifier: Not` (→ `excluded=true`), the "asserts absent" condition.
 - Make the two conditions **mutually exclusive** (`>=1` vs `==0` can't both fire) so one answer
   never yields both present and absent for the same term.
-- The `predicate` stays the term-mapping predicate you chose in step 4 (e.g. `broadMatch`); the
-  condition rides alongside it, it does not replace it.
+- The `predicate` stays the term-mapping predicate you chose in step 4; the condition rides
+  alongside it, it does not replace it. Note that a **pair** like the one above is only available
+  to `exactMatch` — per the table above, `broadMatch` gets the present row alone and `narrowMatch`
+  the `Not` row alone.
 
 ## Guardrails
 
