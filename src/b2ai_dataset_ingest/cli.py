@@ -2,7 +2,12 @@
 
 Usage (once implemented):
 
-    b2ai-ingest voice --input data/phenotype --output out/ --target phenopacket
+    b2ai-ingest voice \\
+        --input data_synth/b2ai-voice-synthetic-phenotype/output/phenotype \\
+        --output out/ --target phenopacket
+
+Synthetic input lives under ``data_synth/``; ``data/`` holds the source datasets and may be
+owned by a separate account.
 """
 
 from __future__ import annotations

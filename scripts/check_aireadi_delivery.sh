@@ -4,9 +4,8 @@
 #
 # Runs LOCALLY and under your own credentials, by design:
 #   - it needs `az` logged in to the WashU subscription (Neurology-cbrain-openscientist)
-#   - the AI-READI license (WashU v2.0) §3.B restricts storage to institution-managed
-#     servers or cloud under a HIPAA BAA, and §3.C forbids handing Data to third-party
-#     model vendors. Do NOT run this in a cloud sandbox or CI runner.
+#   - the AI-READI Data License (WashU v2.0) §3.B expects storage on institution-managed
+#     systems, so this is not meant for a cloud sandbox or CI runner.
 #
 # Usage:
 #   scripts/check_aireadi_delivery.sh            # check only
@@ -59,14 +58,24 @@ fi
 
 command -v azcopy >/dev/null || { echo "error: azcopy not found (brew install azcopy)" >&2; exit 1; }
 
+# data/ may be owned by a separate account (see README, "Source vs synthetic data"). Fail
+# with a useful message rather than a bare EACCES from azcopy halfway through a transfer.
+if ! mkdir -p "$DEST" 2>/dev/null || [ ! -w "$DEST" ]; then
+  owner=$(stat -f '%Su' "$(dirname "$DEST")" 2>/dev/null || echo '?')
+  echo "error: cannot write to ${DEST} (parent owned by '${owner}')." >&2
+  echo "  data/ is locked to a separate owner. Re-run as that user, e.g.:" >&2
+  echo "    sudo -u ${owner} $0 --download" >&2
+  echo "  or set AIREADI_DEST=<writable path> to stage elsewhere." >&2
+  exit 1
+fi
+
 EXP=$(date -u -v+1d +%Y-%m-%dT%H:%M:%SZ)
 SAS=$(az storage container generate-sas --account-name "$ACCOUNT" --name "$CONTAINER" \
         --permissions rl --expiry "$EXP" --https-only --account-key "$KEY" -o tsv)
 
-mkdir -p "$DEST"
 echo "==> downloading to ${DEST}/"
 azcopy copy "https://${ACCOUNT}.blob.core.windows.net/${CONTAINER}?${SAS}" "$DEST" --recursive
 
 echo
-echo "Done. NOTE: ${DEST} holds real licensed participant data — it is gitignored and"
-echo "must not be committed, shared, or fed to any third-party model (license §3.C)."
+echo "Done. ${DEST} is gitignored; onward sharing and downstream use follow the"
+echo "AI-READI Data License (see §3.C)."

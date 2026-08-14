@@ -9,12 +9,12 @@
 #
 # WHY THIS IS A FETCH SCRIPT AND NOT CHECKED-IN DATA
 # --------------------------------------------------
-# The data is synthetic and contains no PHI, but §4.D of the WashU AI-READI Synthetic Data
-# License Agreement forbids republishing it "as a standalone downloadable dataset (e.g.,
-# via a public repository, zip archive, or code package)" without written consent from the
-# Licensor. This repo is public, so the data cannot be committed here. Each user fetches it
-# under their own acceptance of the license. (§1.B/C extend the same restrictions to
-# "Generated Data", so derived fixtures cannot be committed either.)
+# §4.D of the WashU AI-READI Synthetic Data License Agreement asks that the data not be
+# republished "as a standalone downloadable dataset (e.g., via a public repository, zip
+# archive, or code package)" without written consent from the Licensor. This repo is
+# public, so it is fetched rather than committed, and each user accepts the license
+# themselves. (§1.B/C extend the same terms to "Generated Data", so derived fixtures are
+# handled the same way.)
 #
 # USAGE
 # -----

@@ -1,5 +1,4 @@
-# Synthetic / downloaded input data (large; fetched via scripts/fetch_synthetic_data.sh)
-# NOTE: /data/ holds REAL, licensed, non-public data — never commit, never read it.
+# Source datasets (large; downloaded under their respective DUAs). Not committed.
 /data/*
 !/data/.gitkeep
 
