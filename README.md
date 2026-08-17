@@ -54,8 +54,46 @@ config/         per-dataset YAML mappings (config/voice/) + shared value sets
 mappings/       SSSOM term mappings: B2AI dataset terms (b2ai:) -> HPO, with a validator
 docs/           design docs (SDDs), ADRs, plans, mapping conventions
 tests/          fixtures + tests, incl. tests/data/multisession/ for time-course
-data/           (gitignored) synthetic input lands here — see scripts/fetch_synthetic_data.sh
+data_synth/     (gitignored) synthetic input — see scripts/fetch_*synthetic*.sh
+data/           (gitignored) source datasets, accessed under their DUAs
 ```
+
+### Source vs synthetic data
+
+Two input directories, with different handling:
+
+| | contents | used by the pipeline? |
+| --- | --- | --- |
+| `data_synth/` | synthetic Voice phenotype tables; synthetic AI-READI OMOP tables | yes, by default |
+| `data/` | the source datasets (B2AI-Voice, AI-READI `clinical_data`) | only in explicit runs |
+
+Everything routine — tests, fetch scripts, CLI examples — reads from `data_synth/`. The
+source datasets are used only when someone deliberately runs the pipeline against them.
+
+That split is what the data use agreements ask for. The AI-READI Data License (WashU v2.0)
+§3.C limits onward sharing, and §3.E extends the agreement's terms to derived outputs,
+including synthetic data generated from the source; the B2AI-Voice PhysioNet DUA is
+comparable. Developing against synthetic data keeps day-to-day work outside all of that.
+
+**Separating ownership (recommended).** Tooling that runs under your account is
+indistinguishable from you at the OS level, so the simplest way to keep routine work off
+`data/` is to give it a different owner:
+
+```bash
+sudo sysadminctl -addUser b2aidata -fullName "B2AI Source Data" -home /var/empty -shell /usr/bin/false
+sudo dscl . -create /Users/b2aidata IsHidden 1
+sudo chown -R b2aidata:staff data out      # out/ too — its contents derive from data/
+sudo chmod 700 data out                    # 700, not 750 — your account is in staff
+```
+
+Runs against the source data then go through that account, calling the venv binary
+directly (`uv run` will try to write caches into an unwritable home):
+
+```bash
+sudo -u b2aidata .venv/bin/b2ai-ingest voice --input data/... --output out/
+```
+
+Undo with `sudo chown -R "$USER":staff data out && sudo chmod 755 data out`.
 
 ### Term mappings to HPO (SSSOM)
 
@@ -76,7 +114,7 @@ uv run b2ai-ingest validate-mappings  # verify no HPO term is hallucinated / obs
 ```bash
 uv sync                       # create the env and install deps
 uv run b2ai-ingest --help     # CLI help
-scripts/fetch_synthetic_data.sh   # pull the public synthetic voice data into data/
+scripts/fetch_synthetic_data.sh   # pull the public synthetic voice data into data_synth/
 ```
 
 ## Development

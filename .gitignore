@@ -1,6 +1,9 @@
-# Synthetic / downloaded input data (large; fetched via scripts/fetch_synthetic_data.sh)
+# Source datasets (large; downloaded under their respective DUAs). Not committed.
 /data/*
 !/data/.gitkeep
+
+# Synthetic-data generator checkouts (cloned repos, not our source)
+/data_synth/
 
 # Real Bridge2AI-Voice PhysioNet download — credentialed access, HIPAA/PII-sensitive.
 # Must never be committed or pushed.
@@ -21,6 +24,9 @@ dist/
 
 # Output artifacts
 /out/
+
+# Browser-automation scratch (Playwright MCP page/console dumps)
+.playwright-mcp/
 
 # OS / editor
 .DS_Store

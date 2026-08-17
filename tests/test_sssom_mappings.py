@@ -22,9 +22,10 @@ MAPPING_FILES = default_mapping_files(REPO)
 
 # Candidate phenotype roots for the subject-existence check (first that exists wins): the
 # fetched synthetic tree (CI) or the local real-data dictionaries.
+# Synthetic only: the test suite reads from data_synth/, never from the source datasets
+# under data/ (which may be owned by a separate account and unreadable here anyway).
 DATA_ROOTS = [
-    REPO / "data" / "b2ai-voice-synthetic-phenotype" / "output" / "phenotype",
-    REPO / "physionet.org" / "files" / "b2ai-voice" / "3.1.0" / "phenotype",
+    REPO / "data_synth" / "b2ai-voice-synthetic-phenotype" / "output" / "phenotype",
 ]
 
 SSSOM_HEADER = (
