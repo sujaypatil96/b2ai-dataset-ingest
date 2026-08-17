@@ -28,12 +28,12 @@ ordinal_scale:
 
 # Per-item assay terms (column -> project-local OntologyClass).
 items:
-  avoiding_reminders: { id: "b2ai:ptsd_adult-avoiding_reminders", label: "Trying to avoid thoughts, feelings, or physical sensations that reminded you of a stressful experience?" }
-  emotionally_upset: { id: "b2ai:ptsd_adult-emotionally_upset", label: "Feeling very emotionally upset when something reminded you of a stressful experience?" }
-  feeling_jumpy: { id: "b2ai:ptsd_adult-feeling_jumpy", label: "Feeling jumpy or easily startled when you hear an unexpected noise?" }
-  flashbacks: { id: "b2ai:ptsd_adult-flashbacks", label: "Having \"flashbacks\", that is, you suddenly acted or felt as if a stressful experience from the past was happening all over again (for example, you reexperienced parts of a stressful experience by seeing, hearing, smelling, or physically feeling parts of the experience)?" }
-  irritable: { id: "b2ai:ptsd_adult-irritable", label: "Being extremely irritable or angry to the point where you yelled at other people, got into fights, or destroyed things?" }
-  losing_interest: { id: "b2ai:ptsd_adult-losing_interest", label: "Losing interest in activities you used to enjoy before having a stressful experience?" }
-  neg_emotional_state: { id: "b2ai:ptsd_adult-neg_emotional_state", label: "Having a very negative emotional state (for example, you were experiencing lots of fear, anger, guilt, shame, or horror) after a stressful experience?" }
-  super_alert: { id: "b2ai:ptsd_adult-super_alert", label: "Being \"super alert\", on guard, or constantly on the lookout for danger?" }
-  thinking_stressful_event: { id: "b2ai:ptsd_adult-thinking_stressful_event", label: "Thinking that a stressful event happened because you or someone else (who didn't directly harm you) did something wrong or didn't do everything possible to prevent it, or because of something about you?" }
+  avoiding_reminders: { id: "b2ai:ptsd_adult.avoiding_reminders", label: "Trying to avoid thoughts, feelings, or physical sensations that reminded you of a stressful experience?" }
+  emotionally_upset: { id: "b2ai:ptsd_adult.emotionally_upset", label: "Feeling very emotionally upset when something reminded you of a stressful experience?" }
+  feeling_jumpy: { id: "b2ai:ptsd_adult.feeling_jumpy", label: "Feeling jumpy or easily startled when you hear an unexpected noise?" }
+  flashbacks: { id: "b2ai:ptsd_adult.flashbacks", label: "Having \"flashbacks\", that is, you suddenly acted or felt as if a stressful experience from the past was happening all over again (for example, you reexperienced parts of a stressful experience by seeing, hearing, smelling, or physically feeling parts of the experience)?" }
+  irritable: { id: "b2ai:ptsd_adult.irritable", label: "Being extremely irritable or angry to the point where you yelled at other people, got into fights, or destroyed things?" }
+  losing_interest: { id: "b2ai:ptsd_adult.losing_interest", label: "Losing interest in activities you used to enjoy before having a stressful experience?" }
+  neg_emotional_state: { id: "b2ai:ptsd_adult.neg_emotional_state", label: "Having a very negative emotional state (for example, you were experiencing lots of fear, anger, guilt, shame, or horror) after a stressful experience?" }
+  super_alert: { id: "b2ai:ptsd_adult.super_alert", label: "Being \"super alert\", on guard, or constantly on the lookout for danger?" }
+  thinking_stressful_event: { id: "b2ai:ptsd_adult.thinking_stressful_event", label: "Thinking that a stressful event happened because you or someone else (who didn't directly harm you) did something wrong or didn't do everything possible to prevent it, or because of something about you?" }

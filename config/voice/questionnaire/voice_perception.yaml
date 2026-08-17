@@ -33,4 +33,4 @@ ordinal_scale:
 
 # Per-item assay terms (column -> project-local OntologyClass).
 items:
-  voice_quality_perception: { id: "b2ai:voice_perception-voice_quality_perception", label: "How would rate your voice quality today from 1-10?\n1 is the lowest quality and 10 is the best voice quality" }
+  voice_quality_perception: { id: "b2ai:voice_perception.voice_quality_perception", label: "How would rate your voice quality today from 1-10?\n1 is the lowest quality and 10 is the best voice quality" }

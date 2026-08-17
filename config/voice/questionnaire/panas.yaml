@@ -29,13 +29,13 @@ ordinal_scale:
 
 # Per-item assay terms (column -> project-local OntologyClass).
 items:
-  active: { id: "b2ai:panas-active", label: "Active" }
-  afraid: { id: "b2ai:panas-afraid", label: "Afraid" }
-  alert: { id: "b2ai:panas-alert", label: "Alert" }
-  ashamed: { id: "b2ai:panas-ashamed", label: "Ashamed" }
-  attentive: { id: "b2ai:panas-attentive", label: "Attentive" }
-  determined: { id: "b2ai:panas-determined", label: "Determined" }
-  hostile: { id: "b2ai:panas-hostile", label: "Hostile" }
-  inspired: { id: "b2ai:panas-inspired", label: "Inspired" }
-  nervous: { id: "b2ai:panas-nervous", label: "Nervous" }
-  upset: { id: "b2ai:panas-upset", label: "Upset" }
+  active: { id: "b2ai:panas.active", label: "Active" }
+  afraid: { id: "b2ai:panas.afraid", label: "Afraid" }
+  alert: { id: "b2ai:panas.alert", label: "Alert" }
+  ashamed: { id: "b2ai:panas.ashamed", label: "Ashamed" }
+  attentive: { id: "b2ai:panas.attentive", label: "Attentive" }
+  determined: { id: "b2ai:panas.determined", label: "Determined" }
+  hostile: { id: "b2ai:panas.hostile", label: "Hostile" }
+  inspired: { id: "b2ai:panas.inspired", label: "Inspired" }
+  nervous: { id: "b2ai:panas.nervous", label: "Nervous" }
+  upset: { id: "b2ai:panas.upset", label: "Upset" }
