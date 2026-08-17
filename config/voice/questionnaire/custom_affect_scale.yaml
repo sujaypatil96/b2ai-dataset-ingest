@@ -35,16 +35,16 @@ ordinal_scale:
 
 # Per-item assay terms (column -> project-local OntologyClass).
 items:
-  agitated: { id: "b2ai:custom_affect_scale-agitated", label: "Agitated (restless, fidgety, pacing, cannot sit still)" }
-  concentrated: { id: "b2ai:custom_affect_scale-concentrated", label: "Concentrated (not distracted or inattentive)" }
-  desire_to_escape: { id: "b2ai:custom_affect_scale-desire_to_escape", label: "Desire to escape (your thoughts and/or feelings)" }
-  energetic: { id: "b2ai:custom_affect_scale-energetic", label: "Energetic" }
-  irritated: { id: "b2ai:custom_affect_scale-irritated", label: "Irritated or angry (towards something or someone)" }
-  joyful: { id: "b2ai:custom_affect_scale-joyful", label: "Joyful" }
-  lack_of_pleasure: { id: "b2ai:custom_affect_scale-lack_of_pleasure", label: "Lack of pleasure (in things you tend to enjoy)" }
-  lonely: { id: "b2ai:custom_affect_scale-lonely", label: "Lonely or isolated" }
-  motivated: { id: "b2ai:custom_affect_scale-motivated", label: "Motivated or interested" }
-  relaxed: { id: "b2ai:custom_affect_scale-relaxed", label: "Relaxed or calm" }
-  sad_or_down: { id: "b2ai:custom_affect_scale-sad_or_down", label: "Sad or down" }
-  tired: { id: "b2ai:custom_affect_scale-tired", label: "Tired or fatigued" }
-  worried: { id: "b2ai:custom_affect_scale-worried", label: "Worried or anxious" }
+  agitated: { id: "b2ai:custom_affect_scale.agitated", label: "Agitated (restless, fidgety, pacing, cannot sit still)" }
+  concentrated: { id: "b2ai:custom_affect_scale.concentrated", label: "Concentrated (not distracted or inattentive)" }
+  desire_to_escape: { id: "b2ai:custom_affect_scale.desire_to_escape", label: "Desire to escape (your thoughts and/or feelings)" }
+  energetic: { id: "b2ai:custom_affect_scale.energetic", label: "Energetic" }
+  irritated: { id: "b2ai:custom_affect_scale.irritated", label: "Irritated or angry (towards something or someone)" }
+  joyful: { id: "b2ai:custom_affect_scale.joyful", label: "Joyful" }
+  lack_of_pleasure: { id: "b2ai:custom_affect_scale.lack_of_pleasure", label: "Lack of pleasure (in things you tend to enjoy)" }
+  lonely: { id: "b2ai:custom_affect_scale.lonely", label: "Lonely or isolated" }
+  motivated: { id: "b2ai:custom_affect_scale.motivated", label: "Motivated or interested" }
+  relaxed: { id: "b2ai:custom_affect_scale.relaxed", label: "Relaxed or calm" }
+  sad_or_down: { id: "b2ai:custom_affect_scale.sad_or_down", label: "Sad or down" }
+  tired: { id: "b2ai:custom_affect_scale.tired", label: "Tired or fatigued" }
+  worried: { id: "b2ai:custom_affect_scale.worried", label: "Worried or anxious" }

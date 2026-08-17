@@ -29,13 +29,13 @@ ordinal_scale:
 
 # Per-item assay terms (column -> project-local OntologyClass).
 items:
-  di_air_in: { id: "b2ai:dyspnea_index-di_air_in", label: "I have trouble getting air in" }
-  di_breathing_stresses_me: { id: "b2ai:dyspnea_index-di_breathing_stresses_me", label: "My breathing problem makes me feel stressed" }
-  di_breathing_worse_stress: { id: "b2ai:dyspnea_index-di_breathing_worse_stress", label: "My breathing gets worse with stress" }
-  di_effort_breathe: { id: "b2ai:dyspnea_index-di_effort_breathe", label: "It takes more effort to breathe than it used to" }
-  di_exercise: { id: "b2ai:dyspnea_index-di_exercise", label: "My shortness of breath gets worse with exercise or physical activity" }
-  di_restrict_personal_social_life: { id: "b2ai:dyspnea_index-di_restrict_personal_social_life", label: "My breathing problem causes me to restrict my personal and social life" }
-  di_sound_breathing_in: { id: "b2ai:dyspnea_index-di_sound_breathing_in", label: "I make sound/noise breathing in" }
-  di_strain: { id: "b2ai:dyspnea_index-di_strain", label: "I have to strain to breathe" }
-  di_tightness_throat: { id: "b2ai:dyspnea_index-di_tightness_throat", label: "I feel tightness in my throat when I am having my breathing problem" }
-  di_weather_changes: { id: "b2ai:dyspnea_index-di_weather_changes", label: "Changes in the weather affect my breathing problem" }
+  di_air_in: { id: "b2ai:dyspnea_index.di_air_in", label: "I have trouble getting air in" }
+  di_breathing_stresses_me: { id: "b2ai:dyspnea_index.di_breathing_stresses_me", label: "My breathing problem makes me feel stressed" }
+  di_breathing_worse_stress: { id: "b2ai:dyspnea_index.di_breathing_worse_stress", label: "My breathing gets worse with stress" }
+  di_effort_breathe: { id: "b2ai:dyspnea_index.di_effort_breathe", label: "It takes more effort to breathe than it used to" }
+  di_exercise: { id: "b2ai:dyspnea_index.di_exercise", label: "My shortness of breath gets worse with exercise or physical activity" }
+  di_restrict_personal_social_life: { id: "b2ai:dyspnea_index.di_restrict_personal_social_life", label: "My breathing problem causes me to restrict my personal and social life" }
+  di_sound_breathing_in: { id: "b2ai:dyspnea_index.di_sound_breathing_in", label: "I make sound/noise breathing in" }
+  di_strain: { id: "b2ai:dyspnea_index.di_strain", label: "I have to strain to breathe" }
+  di_tightness_throat: { id: "b2ai:dyspnea_index.di_tightness_throat", label: "I feel tightness in my throat when I am having my breathing problem" }
+  di_weather_changes: { id: "b2ai:dyspnea_index.di_weather_changes", label: "Changes in the weather affect my breathing problem" }

@@ -67,7 +67,7 @@ def test_multisession_end_to_end_roundtrip(multisession_dir: Path, tmp_path: Pat
     assert {"LOINC", "MONDO", "NCIT", "NCBITaxon", "UCUM", "b2ai"} <= declared
 
     # The precomputed VHI-10 total (vhi_10_calc_score=17) is emitted as a Measurement.
-    totals = [m for m in parsed.measurements if m.assay.id == "b2ai:vhi10-total"]
+    totals = [m for m in parsed.measurements if m.assay.id == "b2ai:vhi10.total"]
     assert len(totals) == 1
     assert totals[0].value.quantity.value == 17.0
 

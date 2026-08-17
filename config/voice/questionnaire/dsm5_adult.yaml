@@ -35,41 +35,41 @@ ordinal_scale:
 
 # Per-item assay terms (column -> project-local OntologyClass).
 items:
-  avoiding_situations: { id: "b2ai:dsm5_adult-avoiding_situations", label: "Avoiding situations that make you anxious?" }
-  drinking_more: { id: "b2ai:dsm5_adult-drinking_more", label: "Drinking at least 4 drinks of any kind of alcohol in a single day?" }
-  feeling_detached: { id: "b2ai:dsm5_adult-feeling_detached", label: "Feeling detached or distant from yourself, your body, your physical surroundings, or your memories?" }
-  feeling_down: { id: "b2ai:dsm5_adult-feeling_down", label: "Feeling down, depressed, or hopeless?" }
-  feeling_more_irritated: { id: "b2ai:dsm5_adult-feeling_more_irritated", label: "Feeling more irritated, grouchy, or angry than usual?" }
-  feeling_nervous: { id: "b2ai:dsm5_adult-feeling_nervous", label: "Feeling nervous, anxious, frightened, worried, or on edge?" }
-  feeling_panic: { id: "b2ai:dsm5_adult-feeling_panic", label: "Feeling panic or being frightened?" }
-  hearing_things: { id: "b2ai:dsm5_adult-hearing_things", label: "Hearing things other people couldn't hear, such as voices even when no one was around?" }
-  illness_not_taken_serious: { id: "b2ai:dsm5_adult-illness_not_taken_serious", label: "Feeling that your illnesses are not being taken seriously enough?" }
-  isolated: { id: "b2ai:dsm5_adult-isolated", label: "Not feeling close to other people or enjoying your relationships with them?" }
-  little_interest: { id: "b2ai:dsm5_adult-little_interest", label: "Little interest or pleasure in doing things?" }
-  medication_use: { id: "b2ai:dsm5_adult-medication_use", label: "Using any of the following medicines ON YOUR OWN, that is, without a doctor's prescription, in greater amounts or longer than prescribed [e.g., painkillers (like Vicodin), stimulants (like Ritalin or Adderall), sedatives or tranquilizers (like sleeping pills or Valium), or drugs like marijuana, cocaine or crack, club drugs (like ecstasy), hallucinogens (like LSD), heroin, inhalants or solvents (like glue), or methamphetamine (like speed)]?" }
-  memory_issues: { id: "b2ai:dsm5_adult-memory_issues", label: "Problems with memory (e.g., learning new information) or with location (e.g., finding your way home)?" }
-  no_purpose: { id: "b2ai:dsm5_adult-no_purpose", label: "Not knowing who you really are or what you want out of life?" }
-  q1_happy: { id: "b2ai:dsm5_adult-q1_happy", label: "Question 1" }
-  q2_self_confident: { id: "b2ai:dsm5_adult-q2_self_confident", label: "Question 2" }
-  q3_sleep: { id: "b2ai:dsm5_adult-q3_sleep", label: "Question 3" }
-  q4_talk: { id: "b2ai:dsm5_adult-q4_talk", label: "Question 4" }
-  q5_active: { id: "b2ai:dsm5_adult-q5_active", label: "Question 5" }
-  repeat_acts: { id: "b2ai:dsm5_adult-repeat_acts", label: "Feeling driven to perform certain behaviors or mental acts over and over again?" }
-  self_harm: { id: "b2ai:dsm5_adult-self_harm", label: "Thoughts of actually hurting yourself?" }
-  sleep_quality: { id: "b2ai:dsm5_adult-sleep_quality", label: "Problems with sleep that affected your sleep quality over all?" }
-  sleeping_less: { id: "b2ai:dsm5_adult-sleeping_less", label: "Sleeping less than usual, but still have a lot of energy?" }
-  smoking_more: { id: "b2ai:dsm5_adult-smoking_more", label: "Smoking any cigarettes, a cigar, or pipe, or using snuff or chewing tobacco?" }
-  social_phobia_1: { id: "b2ai:dsm5_adult-social_phobia_1", label: "felt moments of sudden terror, fear, or fright in social situations" }
-  social_phobia_10: { id: "b2ai:dsm5_adult-social_phobia_10", label: "needed help to cope with social situations (e.g., alcohol or medications, superstitious objects)" }
-  social_phobia_2: { id: "b2ai:dsm5_adult-social_phobia_2", label: "felt anxious, worried, or nervous about social situations" }
-  social_phobia_3: { id: "b2ai:dsm5_adult-social_phobia_3", label: "had thoughts of being rejected, humiliated, embarrassed, ridiculed, or offending others" }
-  social_phobia_4: { id: "b2ai:dsm5_adult-social_phobia_4", label: "felt a racing heart, sweaty, trouble breathing, faint, or shaky in social situations" }
-  social_phobia_5: { id: "b2ai:dsm5_adult-social_phobia_5", label: "felt tense muscles, felt on edge or restless, or had trouble relaxing in social situations" }
-  social_phobia_6: { id: "b2ai:dsm5_adult-social_phobia_6", label: "avoided, or did not approach or enter, social situations" }
-  social_phobia_7: { id: "b2ai:dsm5_adult-social_phobia_7", label: "left social situations early or participated only minimally (e.g., said little, avoided eye contact)" }
-  social_phobia_8: { id: "b2ai:dsm5_adult-social_phobia_8", label: "spent a lot of time preparing what to say or how to act in social situations" }
-  social_phobia_9: { id: "b2ai:dsm5_adult-social_phobia_9", label: "distracted myself to avoid thinking about social situations" }
-  someone_hear_thoughts: { id: "b2ai:dsm5_adult-someone_hear_thoughts", label: "Feeling that someone could hear your thoughts, or that you could hear what another person was thinking?" }
-  starting_more_projects: { id: "b2ai:dsm5_adult-starting_more_projects", label: "Starting lots more projects than usual or doing more risky things than usual?" }
-  unexplained_aches: { id: "b2ai:dsm5_adult-unexplained_aches", label: "Unexplained aches and pains (e.g., head, back, joints, abdomen, legs)?" }
-  unpleasant_thoughts: { id: "b2ai:dsm5_adult-unpleasant_thoughts", label: "Unpleasant thoughts, urges, or images that repeatedly enter your mind?" }
+  avoiding_situations: { id: "b2ai:dsm5_adult.avoiding_situations", label: "Avoiding situations that make you anxious?" }
+  drinking_more: { id: "b2ai:dsm5_adult.drinking_more", label: "Drinking at least 4 drinks of any kind of alcohol in a single day?" }
+  feeling_detached: { id: "b2ai:dsm5_adult.feeling_detached", label: "Feeling detached or distant from yourself, your body, your physical surroundings, or your memories?" }
+  feeling_down: { id: "b2ai:dsm5_adult.feeling_down", label: "Feeling down, depressed, or hopeless?" }
+  feeling_more_irritated: { id: "b2ai:dsm5_adult.feeling_more_irritated", label: "Feeling more irritated, grouchy, or angry than usual?" }
+  feeling_nervous: { id: "b2ai:dsm5_adult.feeling_nervous", label: "Feeling nervous, anxious, frightened, worried, or on edge?" }
+  feeling_panic: { id: "b2ai:dsm5_adult.feeling_panic", label: "Feeling panic or being frightened?" }
+  hearing_things: { id: "b2ai:dsm5_adult.hearing_things", label: "Hearing things other people couldn't hear, such as voices even when no one was around?" }
+  illness_not_taken_serious: { id: "b2ai:dsm5_adult.illness_not_taken_serious", label: "Feeling that your illnesses are not being taken seriously enough?" }
+  isolated: { id: "b2ai:dsm5_adult.isolated", label: "Not feeling close to other people or enjoying your relationships with them?" }
+  little_interest: { id: "b2ai:dsm5_adult.little_interest", label: "Little interest or pleasure in doing things?" }
+  medication_use: { id: "b2ai:dsm5_adult.medication_use", label: "Using any of the following medicines ON YOUR OWN, that is, without a doctor's prescription, in greater amounts or longer than prescribed [e.g., painkillers (like Vicodin), stimulants (like Ritalin or Adderall), sedatives or tranquilizers (like sleeping pills or Valium), or drugs like marijuana, cocaine or crack, club drugs (like ecstasy), hallucinogens (like LSD), heroin, inhalants or solvents (like glue), or methamphetamine (like speed)]?" }
+  memory_issues: { id: "b2ai:dsm5_adult.memory_issues", label: "Problems with memory (e.g., learning new information) or with location (e.g., finding your way home)?" }
+  no_purpose: { id: "b2ai:dsm5_adult.no_purpose", label: "Not knowing who you really are or what you want out of life?" }
+  q1_happy: { id: "b2ai:dsm5_adult.q1_happy", label: "Question 1" }
+  q2_self_confident: { id: "b2ai:dsm5_adult.q2_self_confident", label: "Question 2" }
+  q3_sleep: { id: "b2ai:dsm5_adult.q3_sleep", label: "Question 3" }
+  q4_talk: { id: "b2ai:dsm5_adult.q4_talk", label: "Question 4" }
+  q5_active: { id: "b2ai:dsm5_adult.q5_active", label: "Question 5" }
+  repeat_acts: { id: "b2ai:dsm5_adult.repeat_acts", label: "Feeling driven to perform certain behaviors or mental acts over and over again?" }
+  self_harm: { id: "b2ai:dsm5_adult.self_harm", label: "Thoughts of actually hurting yourself?" }
+  sleep_quality: { id: "b2ai:dsm5_adult.sleep_quality", label: "Problems with sleep that affected your sleep quality over all?" }
+  sleeping_less: { id: "b2ai:dsm5_adult.sleeping_less", label: "Sleeping less than usual, but still have a lot of energy?" }
+  smoking_more: { id: "b2ai:dsm5_adult.smoking_more", label: "Smoking any cigarettes, a cigar, or pipe, or using snuff or chewing tobacco?" }
+  social_phobia_1: { id: "b2ai:dsm5_adult.social_phobia_1", label: "felt moments of sudden terror, fear, or fright in social situations" }
+  social_phobia_10: { id: "b2ai:dsm5_adult.social_phobia_10", label: "needed help to cope with social situations (e.g., alcohol or medications, superstitious objects)" }
+  social_phobia_2: { id: "b2ai:dsm5_adult.social_phobia_2", label: "felt anxious, worried, or nervous about social situations" }
+  social_phobia_3: { id: "b2ai:dsm5_adult.social_phobia_3", label: "had thoughts of being rejected, humiliated, embarrassed, ridiculed, or offending others" }
+  social_phobia_4: { id: "b2ai:dsm5_adult.social_phobia_4", label: "felt a racing heart, sweaty, trouble breathing, faint, or shaky in social situations" }
+  social_phobia_5: { id: "b2ai:dsm5_adult.social_phobia_5", label: "felt tense muscles, felt on edge or restless, or had trouble relaxing in social situations" }
+  social_phobia_6: { id: "b2ai:dsm5_adult.social_phobia_6", label: "avoided, or did not approach or enter, social situations" }
+  social_phobia_7: { id: "b2ai:dsm5_adult.social_phobia_7", label: "left social situations early or participated only minimally (e.g., said little, avoided eye contact)" }
+  social_phobia_8: { id: "b2ai:dsm5_adult.social_phobia_8", label: "spent a lot of time preparing what to say or how to act in social situations" }
+  social_phobia_9: { id: "b2ai:dsm5_adult.social_phobia_9", label: "distracted myself to avoid thinking about social situations" }
+  someone_hear_thoughts: { id: "b2ai:dsm5_adult.someone_hear_thoughts", label: "Feeling that someone could hear your thoughts, or that you could hear what another person was thinking?" }
+  starting_more_projects: { id: "b2ai:dsm5_adult.starting_more_projects", label: "Starting lots more projects than usual or doing more risky things than usual?" }
+  unexplained_aches: { id: "b2ai:dsm5_adult.unexplained_aches", label: "Unexplained aches and pains (e.g., head, back, joints, abdomen, legs)?" }
+  unpleasant_thoughts: { id: "b2ai:dsm5_adult.unpleasant_thoughts", label: "Unpleasant thoughts, urges, or images that repeatedly enter your mind?" }
