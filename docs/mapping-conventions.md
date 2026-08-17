@@ -57,6 +57,14 @@ is *value-gated*: the pipeline derives a `PhenotypicFeature` from a participant'
   `b2ai:<table>.<column>` — `<table>` is the data-dict file stem (unique across the tree,
   e.g. `confounders`, `phq9`, `parkinsons_disease`), `<column>` the data-dict key; they split
   on the **first** dot (stems and column names never contain a dot).
+
+  **The same id names the same item everywhere — including the ETL configs' assay ids.** A
+  questionnaire config that mints `b2ai:phq9-no_interest` while the SSSOM subject is
+  `b2ai:phq9.no_interest` produces *two distinct IRIs for one item* (both expand under the
+  single `b2ai` Resource), and the derived `PhenotypicFeature`'s `Evidence.reference` can
+  then no longer be joined to the `Measurement` it was derived from. Use a dot, never a
+  dash. Enforced by `tests/test_config_mappings.py::test_config_b2ai_ids_use_dot_separator`
+  and `::test_gated_sssom_subjects_have_a_matching_config_assay`.
 - **Files.** One SSSOM/TSV per domain (`b2ai-voice-signs-symptoms`, `b2ai-voice-questionnaires`),
   each self-contained: a `#`-commented SSSOM YAML metadata header (`curie_map`, `license`,
   `subject_source`, `object_source` + pinned HPO `object_source_version`, `mapping_tool`) then a

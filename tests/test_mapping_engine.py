@@ -50,13 +50,13 @@ def test_precomputed_total_score():
         "table": "vhi10",
         "score": {
             "source_column": "vhi_10_calc_score",
-            "assay": {"id": "b2ai:vhi10-total", "label": "VHI-10 total"},
+            "assay": {"id": "b2ai:vhi10.total", "label": "VHI-10 total"},
             "unit": {"id": "UCUM:{score}", "label": "score"},
         },
     }
     engine = MappingEngine(mapping)
     [measurement] = engine.measurements({"vhi_10_calc_score": "17"})
-    assert measurement.assay.id == "b2ai:vhi10-total"
+    assert measurement.assay.id == "b2ai:vhi10.total"
     assert measurement.value_quantity.value == 17.0
 
 

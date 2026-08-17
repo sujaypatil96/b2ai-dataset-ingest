@@ -30,17 +30,17 @@ ordinal_scale:
 # Precomputed whole-instrument total (range 0-40).
 score:
   source_column: vhi_10_calc_score
-  assay: { id: "b2ai:vhi10-total", label: "Voice Handicap Index-10 total score" }
+  assay: { id: "b2ai:vhi10.total", label: "Voice Handicap Index-10 total score" }
   unit: { id: "UCUM:{score}", label: "score" }
 
 items:
-  voice_difficult_hear: { id: "b2ai:vhi10-voice_difficult_hear", label: "My voice makes it difficult for people to hear me" }
-  tough_to_understand: { id: "b2ai:vhi10-tough_to_understand", label: "People have difficulty understanding me in a noisy room" }
-  voice_restrict_social: { id: "b2ai:vhi10-voice_restrict_social", label: "My voice difficulties restrict personal and social life" }
-  left_out_convo: { id: "b2ai:vhi10-left_out_convo", label: "I feel left out of conversations because of my voice" }
-  voice_lose_income: { id: "b2ai:vhi10-voice_lose_income", label: "My voice problem causes me to lose income" }
-  strain_voice: { id: "b2ai:vhi10-strain_voice", label: "I feel as though I have to strain to produce voice" }
-  voice_clarity: { id: "b2ai:vhi10-voice_clarity", label: "The clarity of my voice is unpredictable" }
-  voice_upsetting: { id: "b2ai:vhi10-voice_upsetting", label: "My voice problem upsets me" }
-  voice_handicapped: { id: "b2ai:vhi10-voice_handicapped", label: "My voice makes me feel handicapped" }
-  ask_whats_wrong_voice: { id: "b2ai:vhi10-ask_whats_wrong_voice", label: "People ask, what is wrong with your voice?" }
+  voice_difficult_hear: { id: "b2ai:vhi10.voice_difficult_hear", label: "My voice makes it difficult for people to hear me" }
+  tough_to_understand: { id: "b2ai:vhi10.tough_to_understand", label: "People have difficulty understanding me in a noisy room" }
+  voice_restrict_social: { id: "b2ai:vhi10.voice_restrict_social", label: "My voice difficulties restrict personal and social life" }
+  left_out_convo: { id: "b2ai:vhi10.left_out_convo", label: "I feel left out of conversations because of my voice" }
+  voice_lose_income: { id: "b2ai:vhi10.voice_lose_income", label: "My voice problem causes me to lose income" }
+  strain_voice: { id: "b2ai:vhi10.strain_voice", label: "I feel as though I have to strain to produce voice" }
+  voice_clarity: { id: "b2ai:vhi10.voice_clarity", label: "The clarity of my voice is unpredictable" }
+  voice_upsetting: { id: "b2ai:vhi10.voice_upsetting", label: "My voice problem upsets me" }
+  voice_handicapped: { id: "b2ai:vhi10.voice_handicapped", label: "My voice makes me feel handicapped" }
+  ask_whats_wrong_voice: { id: "b2ai:vhi10.ask_whats_wrong_voice", label: "People ask, what is wrong with your voice?" }

@@ -30,21 +30,21 @@ ordinal_scale:
 
 # Per-item assay terms (column -> project-local OntologyClass).
 items:
-  avoidance: { id: "b2ai:adhd_adult-avoidance", label: "When you have a task that requires a lot of thought, how often do you avoid or delay getting started?" }
-  careless: { id: "b2ai:adhd_adult-careless", label: "How often do you make careless mistakes when you have to work on a boring or difficult project?" }
-  difficulty_attention: { id: "b2ai:adhd_adult-difficulty_attention", label: "How often do you have difficulty keeping your attention when you are doing boring or repetitive work?" }
-  difficulty_concentrating: { id: "b2ai:adhd_adult-difficulty_concentrating", label: "How often do you have difficulty concentrating on what people say to you, even when they are speaking to you directly?" }
-  difficulty_unwinding: { id: "b2ai:adhd_adult-difficulty_unwinding", label: "How often do you have difficulty unwinding and relaxing when you have time to yourself?" }
-  difficulty_waiting: { id: "b2ai:adhd_adult-difficulty_waiting", label: "How often do you have difficulty waiting your turn in situations when turn taking is required?" }
-  distracted: { id: "b2ai:adhd_adult-distracted", label: "How often are you distracted by activity or noise around you?" }
-  fidget: { id: "b2ai:adhd_adult-fidget", label: "How often do you fidget or squirm with your hands or feet when you have to sit down for a long time?" }
-  finish_other_sent: { id: "b2ai:adhd_adult-finish_other_sent", label: "When you're in a conversation, how often do you find yourself finishing the sentences of the people you are talking to, before they can finish them themselves?" }
-  interrupt_others: { id: "b2ai:adhd_adult-interrupt_others", label: "How often do you interrupt others when they are busy?" }
-  misplace: { id: "b2ai:adhd_adult-misplace", label: "How often do you misplace or have difficulty finding things at home or at work?" }
-  overly_active: { id: "b2ai:adhd_adult-overly_active", label: "How often do you feel overly active and compelled to do things, like you were driven by a motor?" }
-  remain_seated: { id: "b2ai:adhd_adult-remain_seated", label: "How often do you leave your seat in meetings or other situations in which you are expected to remain seated?" }
-  remembering_appt: { id: "b2ai:adhd_adult-remembering_appt", label: "How often do you have problems remembering appointments or obligations?" }
-  restless: { id: "b2ai:adhd_adult-restless", label: "How often do you feel restless or fidgety?" }
-  talking_too_much: { id: "b2ai:adhd_adult-talking_too_much", label: "How often do you find yourself talking too much when you are in social situations?" }
-  things_in_order: { id: "b2ai:adhd_adult-things_in_order", label: "How often do you have difficulty getting things in order when you have to do a task that requires organization?" }
-  wrapping_up: { id: "b2ai:adhd_adult-wrapping_up", label: "How often do you have trouble wrapping up the final details of a project, once the challenging parts have been done?" }
+  avoidance: { id: "b2ai:adhd_adult.avoidance", label: "When you have a task that requires a lot of thought, how often do you avoid or delay getting started?" }
+  careless: { id: "b2ai:adhd_adult.careless", label: "How often do you make careless mistakes when you have to work on a boring or difficult project?" }
+  difficulty_attention: { id: "b2ai:adhd_adult.difficulty_attention", label: "How often do you have difficulty keeping your attention when you are doing boring or repetitive work?" }
+  difficulty_concentrating: { id: "b2ai:adhd_adult.difficulty_concentrating", label: "How often do you have difficulty concentrating on what people say to you, even when they are speaking to you directly?" }
+  difficulty_unwinding: { id: "b2ai:adhd_adult.difficulty_unwinding", label: "How often do you have difficulty unwinding and relaxing when you have time to yourself?" }
+  difficulty_waiting: { id: "b2ai:adhd_adult.difficulty_waiting", label: "How often do you have difficulty waiting your turn in situations when turn taking is required?" }
+  distracted: { id: "b2ai:adhd_adult.distracted", label: "How often are you distracted by activity or noise around you?" }
+  fidget: { id: "b2ai:adhd_adult.fidget", label: "How often do you fidget or squirm with your hands or feet when you have to sit down for a long time?" }
+  finish_other_sent: { id: "b2ai:adhd_adult.finish_other_sent", label: "When you're in a conversation, how often do you find yourself finishing the sentences of the people you are talking to, before they can finish them themselves?" }
+  interrupt_others: { id: "b2ai:adhd_adult.interrupt_others", label: "How often do you interrupt others when they are busy?" }
+  misplace: { id: "b2ai:adhd_adult.misplace", label: "How often do you misplace or have difficulty finding things at home or at work?" }
+  overly_active: { id: "b2ai:adhd_adult.overly_active", label: "How often do you feel overly active and compelled to do things, like you were driven by a motor?" }
+  remain_seated: { id: "b2ai:adhd_adult.remain_seated", label: "How often do you leave your seat in meetings or other situations in which you are expected to remain seated?" }
+  remembering_appt: { id: "b2ai:adhd_adult.remembering_appt", label: "How often do you have problems remembering appointments or obligations?" }
+  restless: { id: "b2ai:adhd_adult.restless", label: "How often do you feel restless or fidgety?" }
+  talking_too_much: { id: "b2ai:adhd_adult.talking_too_much", label: "How often do you find yourself talking too much when you are in social situations?" }
+  things_in_order: { id: "b2ai:adhd_adult.things_in_order", label: "How often do you have difficulty getting things in order when you have to do a task that requires organization?" }
+  wrapping_up: { id: "b2ai:adhd_adult.wrapping_up", label: "How often do you have trouble wrapping up the final details of a project, once the challenging parts have been done?" }
