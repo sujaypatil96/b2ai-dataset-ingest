@@ -84,6 +84,12 @@ def test_unmapped_questionnaire_is_a_warning_not_error(tmp_path: Path):
         header=["participant_id", "gad_7_session_id", "nervous_anxious"],
         rows=[["p1", "s-a", "Not at all"]],
     )
-    (tmp_path / "questionnaire" / "panas.tsv").write_text("participant_id\tx\np1\t1\n")
+    # A name no config will ever claim — a real instrument here breaks once it is configured.
+    (tmp_path / "questionnaire" / "not_a_configured_instrument.tsv").write_text(
+        "participant_id\tx\np1\t1\n"
+    )
     report = validate_voice(tmp_path, CONFIG_DIR)
-    assert any(f.table == "panas" and f.level == "warning" for f in report.findings)
+    assert any(
+        f.table == "not_a_configured_instrument" and f.level == "warning"
+        for f in report.findings
+    )

@@ -1,0 +1,39 @@
+# Mapping: voice questionnaire/ptsd_adult.tsv -> Measurement (IR)
+# PTSD symptom self-report, 9 items, 0-4 (Not at all .. Extremely).
+#
+# Numeric choice values 0-4 in the data dict; `ordinal_scale` is the fallback only.
+#
+# No public per-item LOINC/NCIT code was verified for this instrument, so items use
+# project-local `b2ai:` codes -- the same documented stopgap as vhi10.yaml (see
+# ontology/resources.py). Replace them if verified public codes are found.
+#
+# This table ships no precomputed total, so no `score:` block (decision 2).
+#
+# HPO-gated columns (mappings/b2ai-voice-questionnaires.sssom.tsv): feeling_jumpy, super_alert, irritable, losing_interest.
+
+table: ptsd_adult
+produces: MeasurementObservation
+
+# Session-key candidates (first present wins): synthetic `session_id`, else the real
+# per-instrument column. See gad7.yaml for the rationale.
+session_columns: [session_id, ptsd_session_id]
+
+# Fallback answer->value map, used only when the companion data dict is unavailable.
+ordinal_scale:
+  "0=Not at all": 0
+  "1=A little bit": 1
+  "2=Moderately": 2
+  "3=Quite a bit": 3
+  "4=Extremely": 4
+
+# Per-item assay terms (column -> project-local OntologyClass).
+items:
+  avoiding_reminders: { id: "b2ai:ptsd_adult-avoiding_reminders", label: "Trying to avoid thoughts, feelings, or physical sensations that reminded you of a stressful experience?" }
+  emotionally_upset: { id: "b2ai:ptsd_adult-emotionally_upset", label: "Feeling very emotionally upset when something reminded you of a stressful experience?" }
+  feeling_jumpy: { id: "b2ai:ptsd_adult-feeling_jumpy", label: "Feeling jumpy or easily startled when you hear an unexpected noise?" }
+  flashbacks: { id: "b2ai:ptsd_adult-flashbacks", label: "Having \"flashbacks\", that is, you suddenly acted or felt as if a stressful experience from the past was happening all over again (for example, you reexperienced parts of a stressful experience by seeing, hearing, smelling, or physically feeling parts of the experience)?" }
+  irritable: { id: "b2ai:ptsd_adult-irritable", label: "Being extremely irritable or angry to the point where you yelled at other people, got into fights, or destroyed things?" }
+  losing_interest: { id: "b2ai:ptsd_adult-losing_interest", label: "Losing interest in activities you used to enjoy before having a stressful experience?" }
+  neg_emotional_state: { id: "b2ai:ptsd_adult-neg_emotional_state", label: "Having a very negative emotional state (for example, you were experiencing lots of fear, anger, guilt, shame, or horror) after a stressful experience?" }
+  super_alert: { id: "b2ai:ptsd_adult-super_alert", label: "Being \"super alert\", on guard, or constantly on the lookout for danger?" }
+  thinking_stressful_event: { id: "b2ai:ptsd_adult-thinking_stressful_event", label: "Thinking that a stressful event happened because you or someone else (who didn't directly harm you) did something wrong or didn't do everything possible to prevent it, or because of something about you?" }

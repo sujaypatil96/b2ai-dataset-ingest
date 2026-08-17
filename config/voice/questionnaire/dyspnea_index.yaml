@@ -1,0 +1,41 @@
+# Mapping: voice questionnaire/dyspnea_index.tsv -> Measurement (IR)
+# Dyspnea Index (DI), 10 items.
+#
+# String-coded frequency scale (never..always) with no numeric `value`, so items are
+# scored by choice position 0-4, matching the DI convention.
+#
+# No public per-item LOINC/NCIT code was verified for this instrument, so items use
+# project-local `b2ai:` codes -- the same documented stopgap as vhi10.yaml (see
+# ontology/resources.py). Replace them if verified public codes are found.
+#
+# This table ships no precomputed total, so no `score:` block (decision 2).
+#
+# HPO-gated columns (mappings/b2ai-voice-questionnaires.sssom.tsv): di_air_in, di_effort_breathe, di_exercise, di_sound_breathing_in, di_strain.
+
+table: dyspnea_index
+produces: MeasurementObservation
+
+# Session-key candidates (first present wins): synthetic `session_id`, else the real
+# per-instrument column. See gad7.yaml for the rationale.
+session_columns: [session_id, dyspnea_index_session_id]
+
+# Fallback answer->value map, used only when the companion data dict is unavailable.
+ordinal_scale:
+  "Never": 0
+  "Almost never": 1
+  "Sometimes": 2
+  "Almost always": 3
+  "Always": 4
+
+# Per-item assay terms (column -> project-local OntologyClass).
+items:
+  di_air_in: { id: "b2ai:dyspnea_index-di_air_in", label: "I have trouble getting air in" }
+  di_breathing_stresses_me: { id: "b2ai:dyspnea_index-di_breathing_stresses_me", label: "My breathing problem makes me feel stressed" }
+  di_breathing_worse_stress: { id: "b2ai:dyspnea_index-di_breathing_worse_stress", label: "My breathing gets worse with stress" }
+  di_effort_breathe: { id: "b2ai:dyspnea_index-di_effort_breathe", label: "It takes more effort to breathe than it used to" }
+  di_exercise: { id: "b2ai:dyspnea_index-di_exercise", label: "My shortness of breath gets worse with exercise or physical activity" }
+  di_restrict_personal_social_life: { id: "b2ai:dyspnea_index-di_restrict_personal_social_life", label: "My breathing problem causes me to restrict my personal and social life" }
+  di_sound_breathing_in: { id: "b2ai:dyspnea_index-di_sound_breathing_in", label: "I make sound/noise breathing in" }
+  di_strain: { id: "b2ai:dyspnea_index-di_strain", label: "I have to strain to breathe" }
+  di_tightness_throat: { id: "b2ai:dyspnea_index-di_tightness_throat", label: "I feel tightness in my throat when I am having my breathing problem" }
+  di_weather_changes: { id: "b2ai:dyspnea_index-di_weather_changes", label: "Changes in the weather affect my breathing problem" }

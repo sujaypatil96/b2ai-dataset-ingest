@@ -1,0 +1,59 @@
+# Mapping: voice questionnaire/leicester_cough_questionnaire.tsv -> Measurement (IR)
+# Leicester Cough Questionnaire (LCQ), 19 items.
+#
+# String-coded 7-point frequency scale with no numeric `value`, so items score by choice
+# position **0-6, running noneOfTheTime=0 -> allOfTheTime=6**.
+#
+# CAUTION for anyone adding a `when_value` gate: this is *not* the LCQ's own score. The
+# published LCQ is 1-7 per item with **higher = better** quality of life, and its items
+# are worded in both directions. Here, position 6 means 'all of the time' -- which is
+# worse for a symptom item (`lcq_sputum_phlegm`, `lcq_hoarse_voice`) but better for a
+# well-being item (`lcq_felt_in_control`, `lcq_energy`). Read the item wording before
+# assuming a high ordinal means a present phenotype.
+#
+# No public per-item LOINC/NCIT code was verified for this instrument, so items use
+# project-local `b2ai:` codes -- the same documented stopgap as vhi10.yaml (see
+# ontology/resources.py). Replace them if verified public codes are found.
+#
+# This table ships no precomputed total, so no `score:` block (decision 2).
+#
+# HPO-gated columns (mappings/b2ai-voice-questionnaires.sssom.tsv): lcq_bout, lcq_hoarse_voice, lcq_sputum_phlegm.
+
+table: leicester_cough_questionnaire
+produces: MeasurementObservation
+
+# Session-key candidates (first present wins): synthetic `session_id`, else the real
+# per-instrument column. See gad7.yaml for the rationale.
+session_columns: [session_id, leicester_cough_session_id]
+
+# Fallback answer->value map, used only when the companion data dict is unavailable.
+ordinal_scale:
+  "None of the time": 0
+  "Hardly any of the time": 1
+  "A little of the time": 2
+  "Some of the time": 3
+  "A good bit of the time": 4
+  "Most of the time": 5
+  "All of the time": 6
+
+# Per-item assay terms (column -> project-local OntologyClass).
+items:
+  lcq_anxious: { id: "b2ai:leicester_cough_questionnaire-lcq_anxious", label: "In the last 2 weeks, my cough has made me feel anxious" }
+  lcq_bout: { id: "b2ai:leicester_cough_questionnaire-lcq_bout", label: "In the last 2 weeks, how many times a day have you had a coughing bout?" }
+  lcq_chest_stomach_pains: { id: "b2ai:leicester_cough_questionnaire-lcq_chest_stomach_pains", label: "In the last 2 weeks, have you had chest or stomach pains as a result of your cough?" }
+  lcq_embarrassed: { id: "b2ai:leicester_cough_questionnaire-lcq_embarrassed", label: "How often during the last 2 weeks have you felt embarrassed by your coughing?" }
+  lcq_energy: { id: "b2ai:leicester_cough_questionnaire-lcq_energy", label: "In the last 2 weeks, have you had a lot of energy?" }
+  lcq_exposure_paint: { id: "b2ai:leicester_cough_questionnaire-lcq_exposure_paint", label: "In the last 2 weeks, exposure to paint or fumes has made me cough" }
+  lcq_fed_up: { id: "b2ai:leicester_cough_questionnaire-lcq_fed_up", label: "In the last 2 weeks, my cough has made me feel fed up" }
+  lcq_felt_in_control: { id: "b2ai:leicester_cough_questionnaire-lcq_felt_in_control", label: "In the last 2 weeks, have you felt in control of your cough?" }
+  lcq_frustrated: { id: "b2ai:leicester_cough_questionnaire-lcq_frustrated", label: "In the last 2 weeks, my cough has made me feel frustrated" }
+  lcq_hoarse_voice: { id: "b2ai:leicester_cough_questionnaire-lcq_hoarse_voice", label: "In the last 2 weeks, have you suffered from a hoarse voice as a result of your cough?" }
+  lcq_interfere_job: { id: "b2ai:leicester_cough_questionnaire-lcq_interfere_job", label: "In the last 2 weeks, my cough has interfered with my job or other daily tasks" }
+  lcq_interfere_life: { id: "b2ai:leicester_cough_questionnaire-lcq_interfere_life", label: "In the last 2 weeks, I felt that my cough interfered with the overall enjoyment of my life" }
+  lcq_interrupt_conversation: { id: "b2ai:leicester_cough_questionnaire-lcq_interrupt_conversation", label: "In the last 2 weeks, my cough has interrupted conversation or telephone calls" }
+  lcq_other_people: { id: "b2ai:leicester_cough_questionnaire-lcq_other_people", label: "In the last 2 weeks, have you been concerned that other people think something is wrong with you, because of your cough?" }
+  lcq_partner: { id: "b2ai:leicester_cough_questionnaire-lcq_partner", label: "In the last 2 weeks, I feel that my cough has annoyed my partner, family, or friends" }
+  lcq_serious_illness: { id: "b2ai:leicester_cough_questionnaire-lcq_serious_illness", label: "In the last 2 weeks, have you worried that your cough may indicate serious illness?" }
+  lcq_sleep: { id: "b2ai:leicester_cough_questionnaire-lcq_sleep", label: "In the last 2 weeks, has your cough disturbed your sleep?" }
+  lcq_sputum_phlegm: { id: "b2ai:leicester_cough_questionnaire-lcq_sputum_phlegm", label: "In the last 2 weeks, have you been bothered by sputum (phlegm) production when you cough?" }
+  lcq_tired: { id: "b2ai:leicester_cough_questionnaire-lcq_tired", label: "In the last 2 weeks, have you been tired because of your cough?" }

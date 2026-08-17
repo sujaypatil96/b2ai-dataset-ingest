@@ -18,7 +18,13 @@ columns:
   age:
     target: Individual.age_iso8601
     transform: years_to_iso8601           # e.g. "63" / "54.0" -> "P63Y" / "P54Y"
-  sex_assigned_at_birth:
+  # `sex_at_birth`, NOT `sex_assigned_at_birth`. Both exist in the real b2aiprep release and
+  # they look interchangeable, but only this one is populated: 908/916 rows vs 84/916. Reading
+  # the sparse column left 51 of 833 emitted phenopackets with a known sex. Where both are
+  # filled they agree, except for 25 rows where `sex_assigned_at_birth` is
+  # "Prefer not to answer" -- a later re-ask the participant declined, which this column does
+  # not reflect. Only 2 rows carry `sex_assigned_at_birth` and no `sex_at_birth`.
+  sex_at_birth:
     target: Individual.sex
     # Source stores the display label; codes are accepted too for robustness.
     value_map:

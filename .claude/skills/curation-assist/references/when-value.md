@@ -5,8 +5,8 @@
 > This file is the **curation heuristic**: when to add a condition, how to pick the cut-point,
 > and how to write the present/absent pair. Experts: add worked examples as calls get settled.
 
-A term mapping (`b2ai:phq9.feeling_depressed → HP:0000716 Depression`) says the item is *about*
-depression. It does **not** say a participant *has* depression — that depends on the answer. A
+A term mapping (`b2ai:phq9.feeling_depressed → HP:5200273 Pathological sadness`) says the item is
+*about* that phenotype. It does **not** say a participant *has* it — that depends on the answer. A
 `when_value` is the gate that turns an answer into a present/absent `PhenotypicFeature`.
 
 ## When to add one (and when not to)
@@ -37,6 +37,51 @@ wrong cut-point. Default reasoning, to be confirmed by a domain expert:
 Flag the cut-point as **needs expert sign-off** in the review artifact, separately from the
 (auto-verified) ontology code.
 
+## The predicate decides *which poles* you may assert
+
+"Only assert the pole you can defend" is not a case-by-case feel — for a hierarchical predicate
+it follows from the direction you already chose in `predicate-rules.md`. Endorsement travels
+**up** the hierarchy; denial travels **down**.
+
+| Predicate | Present (`>=1`) | Absent (`==0`) | Why |
+| --- | --- | --- | --- |
+| `exactMatch` | ✅ | ✅ | item ≡ phenotype, so both directions carry |
+| `broadMatch` (object broader) | ✅ | ❌ | denying the specific item cannot exclude the umbrella — the participant may have it via another child |
+| `narrowMatch` (object narrower) | ❌ | ✅ | endorsing the broad item cannot say *which* narrow sense; denying it denies all of them |
+| `relatedMatch` | ❌ | ❌ | only partial overlap — neither direction is sound; leave ungated |
+
+Worked examples from the GAD-7/PHQ-9 pass:
+
+- `phq9.trouble_sleeping` → HP:0002360 *Sleep disturbance* (broad). "Not at all" rules out
+  insomnia and hypersomnia but not sleep apnea or a parasomnia, both children of the same term —
+  so present-only.
+- `phq9.feeling_bad_self` → HP:0031469 *Low self-esteem* + HP:6000011 *Guilt* (narrow ×2).
+  A `>=1` answer cannot say which half of the conflated item was endorsed, so asserting either
+  would be a coin flip; a `==0` answer denies both — so absent-only, on both rows.
+- `vhi10.strain_voice` → HP:0001618 *Dysphonia* (related). Left ungated: HPO has no term for
+  effortful phonation (searched "strained voice", "vocal strain", "vocal fatigue", "phonation",
+  "effortful speech" — no hits), and a relatedMatch cannot carry either pole.
+
+**A conflation-retarget `broadMatch` is still a `broadMatch`.** `no_appetite` → *Abnormal eating
+behavior* was retargeted so the term subsumes *both* poles of the item, which makes the present
+pole sound; it does not make the absent pole sound, because the term keeps its other children.
+
+**Consequence: the predicate is now load-bearing for output.** Before this, a wrong
+`broad`/`narrow` direction was a metadata blemish; now it decides whether a participant's
+phenopacket says "present" or "excluded". When authoring a gate, re-read the object's definition
+and confirm the direction before trusting it — `gad7_anxiety.afraid_of_things` → HP:0033845
+*Sense of impending doom* is labelled `broadMatch`, but its own `comment` argues the HPO term is
+*stronger* than the item ("life-threatening or tragic" vs "something awful"), which is the
+narrow direction. That row is held ungated until the direction is settled.
+
+### Absent-only rows: keep the semantic row, add the `Not` row
+
+For an absent-only gate, do **not** simply put `predicate_modifier: Not` on the existing row.
+`predicate_modifier` is SSSOM-core, and an SSSOM-core consumer drops `when_value` — so a lone
+negated row reads as "this mapping does *not* hold" and the semantic mapping is lost. Leave the
+ungated row in place and add the `Not`/`==0` row beside it, the same shape as a present/absent
+pair (the validator's duplicate key includes both columns, so this is not a duplicate).
+
 ## Writing the rows
 
 Declare the slot once in the file's SSSOM metadata:
@@ -53,16 +98,18 @@ columns (it is **not** a duplicate):
 
 ```
 subject_id                   predicate_id     object_id   predicate_modifier  when_value
-b2ai:phq9.feeling_depressed  skos:broadMatch  HP:0000716                      >=1
-b2ai:phq9.feeling_depressed  skos:broadMatch  HP:0000716  Not                 ==0
+b2ai:phq9.feeling_depressed  skos:exactMatch  HP:5200273                      >=1
+b2ai:phq9.feeling_depressed  skos:exactMatch  HP:5200273  Not                 ==0
 ```
 
 - Present row: empty `predicate_modifier`, the "asserts present" condition.
 - Absent row: `predicate_modifier: Not` (→ `excluded=true`), the "asserts absent" condition.
 - Make the two conditions **mutually exclusive** (`>=1` vs `==0` can't both fire) so one answer
   never yields both present and absent for the same term.
-- The `predicate` stays the term-mapping predicate you chose in step 4 (e.g. `broadMatch`); the
-  condition rides alongside it, it does not replace it.
+- The `predicate` stays the term-mapping predicate you chose in step 4; the condition rides
+  alongside it, it does not replace it. Note that a **pair** like the one above is only available
+  to `exactMatch` — per the table above, `broadMatch` gets the present row alone and `narrowMatch`
+  the `Not` row alone.
 
 ## Guardrails
 

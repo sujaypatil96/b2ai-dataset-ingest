@@ -1,0 +1,36 @@
+# Mapping: voice questionnaire/voice_perception.tsv -> Measurement (IR)
+# Self-rated voice quality, a single 1-10 item.
+#
+# One item; numeric choice values 1-10, so the emitted ordinal is the rating itself.
+#
+# No public per-item LOINC/NCIT code was verified for this instrument, so items use
+# project-local `b2ai:` codes -- the same documented stopgap as vhi10.yaml (see
+# ontology/resources.py). Replace them if verified public codes are found.
+#
+# This table ships no precomputed total, so no `score:` block (decision 2).
+#
+# HPO-gated columns (mappings/b2ai-voice-questionnaires.sssom.tsv): voice_quality_perception (relatedMatch -- ungated by design).
+
+table: voice_perception
+produces: MeasurementObservation
+
+# Session-key candidates (first present wins): synthetic `session_id`, else the real
+# per-instrument column. See gad7.yaml for the rationale.
+session_columns: [session_id, voice_perception_session_id]
+
+# Fallback answer->value map, used only when the companion data dict is unavailable.
+ordinal_scale:
+  "1": 1
+  "2": 2
+  "3": 3
+  "4": 4
+  "5": 5
+  "6": 6
+  "7": 7
+  "8": 8
+  "9": 9
+  "10": 10
+
+# Per-item assay terms (column -> project-local OntologyClass).
+items:
+  voice_quality_perception: { id: "b2ai:voice_perception-voice_quality_perception", label: "How would rate your voice quality today from 1-10?\n1 is the lowest quality and 10 is the best voice quality" }
