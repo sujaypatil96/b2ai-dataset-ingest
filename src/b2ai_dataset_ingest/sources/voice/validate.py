@@ -100,8 +100,7 @@ def _validate_demographics(root: Path, config_dir: Path, report: ValidationRepor
         return
     report.tables_checked.append(table)
     _check_dict_vs_header(tsv, header, table, report)
-    mapped = [c for c in (mapping.get("columns") or {})]
-    _check_columns_present(mapped, header, table, report)
+    _check_alternative_columns_present(mapping.get("columns") or {}, header, table, report)
 
 
 def _validate_diagnosis(root: Path, config_dir: Path, report: ValidationReport) -> None:
@@ -193,6 +192,28 @@ def _check_columns_present(
     missing = [c for c in mapped if c not in header]
     if missing:
         report.error(table, f"mapped column(s) absent from header: {', '.join(missing)}")
+
+
+def _check_alternative_columns_present(
+    columns: dict[str, dict], header: list[str], table: str, report: ValidationReport
+) -> None:
+    """Columns sharing an IR target are *alternatives*: at least one must be present.
+
+    Demographics maps two source columns to ``Individual.sex`` — a preferred column and a
+    fallback — because releases differ in which they ship (the real b2aiprep tables carry
+    both; the public synthetic tables carry only ``sex_assigned_at_birth``). Requiring every
+    mapped column to exist would make one of those two releases fail validation no matter
+    which single column the config named. The reader resolves the value by declaration
+    order, so a release shipping either column is fine; only a target with *no* source
+    column at all is a contract error.
+    """
+    by_target: dict[str, list[str]] = {}
+    for column, spec in columns.items():
+        by_target.setdefault((spec or {}).get("target", ""), []).append(column)
+    for target, cols in sorted(by_target.items()):
+        if not any(c in header for c in cols):
+            alternatives = ", ".join(sorted(cols))
+            report.error(table, f"no source column for {target or '?'} (tried: {alternatives})")
 
 
 def _check_choice_coverage(

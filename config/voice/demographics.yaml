@@ -18,13 +18,22 @@ columns:
   age:
     target: Individual.age_iso8601
     transform: years_to_iso8601           # e.g. "63" / "54.0" -> "P63Y" / "P54Y"
-  # `sex_at_birth`, NOT `sex_assigned_at_birth`. Both exist in the real b2aiprep release and
-  # they look interchangeable, but only this one is populated: 908/916 rows vs 84/916. Reading
-  # the sparse column left 51 of 833 emitted phenopackets with a known sex. Where both are
-  # filled they agree, except for 25 rows where `sex_assigned_at_birth` is
-  # "Prefer not to answer" -- a later re-ask the participant declined, which this column does
-  # not reflect. Only 2 rows carry `sex_assigned_at_birth` and no `sex_at_birth`.
-  sex_at_birth:
+  # Sex is carried by two columns, and BOTH are mapped -- declaration order is the
+  # precedence rule. `individual_fields` iterates `columns` in order and a later non-empty
+  # value overwrites an earlier one, so `sex_assigned_at_birth` is the fallback and
+  # `sex_at_birth` wins wherever it is filled.
+  #
+  # Why prefer `sex_at_birth`: in the real b2aiprep release it is populated 908/916 rows vs
+  # 84/916 for `sex_assigned_at_birth`; reading only the sparse column left 51 of 833
+  # phenopackets with a known sex. Where both are filled they agree, except for 25 rows
+  # where `sex_assigned_at_birth` is "Prefer not to answer" -- a later re-ask the
+  # participant declined, which that column does not reflect.
+  #
+  # Why keep `sex_assigned_at_birth`: 2 real rows carry it and no `sex_at_birth`, and the
+  # public synthetic release ships ONLY this column -- dropping it made `b2ai-ingest
+  # validate` fail against the synthetic tree and left `Individual.sex` permanently unset
+  # there. See tests/test_config_mappings.py::test_mapped_columns_exist_in_synthetic_data.
+  sex_assigned_at_birth: &sex_at_birth_mapping
     target: Individual.sex
     # Source stores the display label; codes are accepted too for robustness.
     value_map:
@@ -38,3 +47,5 @@ columns:
       unknown: UNKNOWN_SEX
       "Prefer not to answer": UNKNOWN_SEX
       noAnswer: UNKNOWN_SEX
+  # Same recodes; listed second so a filled `sex_at_birth` takes precedence.
+  sex_at_birth: *sex_at_birth_mapping
