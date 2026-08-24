@@ -160,11 +160,22 @@ def _evidence(evidence) -> pp.Evidence:
 def _time_element(time: TimePoint | None) -> pp.TimeElement | None:
     """Pick the richest available representation; None when nothing is known.
 
-    timestamp > age > ontology_class. A bare session label with no recognized term
-    (e.g. a stray UUID session) yields no TimeElement rather than a fabricated one.
+    interval > timestamp > age > ontology_class. An interval outranks a timestamp because a
+    bounded period is the *stronger* claim: it is what scopes a phenotype asserted from a
+    questionnaire with a recall window (see mapping/hpo_rules.scoped_onset). A bare session
+    label with no recognized term (e.g. a stray UUID session) yields no TimeElement rather
+    than a fabricated one.
     """
     if time is None:
         return None
+    if time.interval_start and time.interval_end:
+        interval = pp.TimeInterval()
+        try:
+            interval.start.FromJsonString(time.interval_start)
+            interval.end.FromJsonString(time.interval_end)
+            return pp.TimeElement(interval=interval)
+        except ValueError:
+            logger.warning("bad observation interval; falling back")
     if time.timestamp:
         element = pp.TimeElement()
         try:

@@ -46,10 +46,16 @@ Common keys: `table` / `table_group` (which source table[s]), `keyed_by`
 
 Separate from the ETL configs above, `mappings/` holds **SSSOM** files that map Bridge2AI-Voice
 dataset *terms* to the Human Phenotype Ontology (HPO). These are a standalone, shareable
-term-to-term artifact. A row with an empty `when_value` is a pure semantic mapping (the item is
-*about* the HPO concept) and produces no output. A row that carries a **`when_value`** condition
-is *value-gated*: the pipeline derives a `PhenotypicFeature` from a participant's answer (see
-"Conditional (value-gated) mappings" below and [ADR-0002](adr/0002-conditional-hpo-mapping.md)).
+term-to-term artifact: a row says the item is *about* the HPO concept, and nothing more. It
+never asserts that a participant *has* it — that depends on the answer, and is a separate,
+weaker, instrument-specific claim that lives in `mappings/derivations/*.yaml` (see
+"Deriving features from answers" below and
+[ADR-0003](adr/0003-separate-derivation-from-mapping.md)).
+
+**The two layers are deliberately not the same file.** A mapping holds for everyone, forever,
+independent of any instrument; an interpretation is contingent on the instrument's scale,
+scoring rule and recall window. They were fused until 2026-08-24, when a clinical review asked
+that they be separated — see the ADR for the two defects that made the fusion untenable.
 
 - **Namespace.** Dataset terms use the project-local `b2ai:` CURIE prefix (canonical expansions
   live in `src/b2ai_dataset_ingest/ontology/curie_map.py`, derived from the emitter's
@@ -93,27 +99,42 @@ is *value-gated*: the pipeline derives a `PhenotypicFeature` from a participant'
   validator. Rationale: LLM-proposed ontology codes are unreliable and must be machine-checked
   before they ship (the same reason the ETL configs' MONDO/LOINC/NCIT terms are verified).
 
-### Conditional (value-gated) mappings
+### Deriving features from answers
 
 A term→term mapping records that an item is *about* an HPO concept; it does not assert a
-participant *has* it — that depends on the answer. Two optional columns turn a mapping into a
-value-gated one that derives a `PhenotypicFeature` (per [ADR-0002](adr/0002-conditional-hpo-mapping.md)):
+participant *has* it. That step lives in **`mappings/derivations/<instrument>.yaml`**, one file
+per instrument, keyed by the same `b2ai:<table>.<column>` subject id. See
+[`mappings/derivations/README.md`](../mappings/derivations/README.md) for the file shape and
+[ADR-0003](adr/0003-separate-derivation-from-mapping.md) for why it is a separate layer.
+
+Each rule names a `subject_id`/`object_id` pair and gives up to two poles:
 
 - **`when_value`** — a condition on the participant's answer. Grammar: comparisons `>=1`, `<=3`,
   `>0`, `<2`, `==0`, `!=0`; string equality `== "Checked"`; membership `in {1,2,3}` /
   `in {"a","b"}`; and `&` conjunction (`>=1 & <=3`). Numeric conditions are evaluated against the
   same **ordinal score** the emitted Measurement carries (resolved from the data dict's
-  `choices`); string conditions against the raw cell (case-insensitively). An **empty**
-  `when_value` is an inert semantic mapping — additive, changing no output.
-- **`predicate_modifier`** — `Not` marks the **absent** pole (→ phenopacket
-  `PhenotypicFeature.excluded = true`); empty marks present. No other value is allowed.
+  `choices`); string conditions against the raw cell (case-insensitively).
+- **`unauthorable`** — instead of a condition: a recorded decision *not* to derive this pole,
+  with a reason from the closed set (`conflated-superset`, `conflated-sense`,
+  `baseline-relative`, `intensity-qualified`) and a `note` saying why. A declined pole is
+  explicit; a missing one is a gap.
+
+The instrument's **`recall_window`** and **`scoring_reference`** sit at the top of the file,
+because they are properties of the instrument, not of any one item.
+
+**A derivation may not invent a mapping.** Every rule's `(subject_id, object_id)` pair must
+exist as a row in `mappings/*.sssom.tsv`; `b2ai-ingest validate-mappings` fails with
+`unanchored-rule` otherwise. That check is what stops the two layers from drifting apart.
+The validator also rejects `when_value`/`predicate_modifier` *inside* a mapping set
+(`interpretation-in-mapping`), so the fusion cannot come back by accident.
 
 #### Choosing a cut-point
 
 Two things bear on a `when_value`, and they are not the same:
 
 1. **The instrument's own scoring rule** — what its designers count as a positive endorsement
-   (e.g. the ASRS scores its hyperactivity items positive only at *Often*/*Very Often*).
+   (e.g. the ASRS scores its Part A hyperactivity items positive only at *Often*/*Very Often*).
+   Cite it in the file's `scoring_reference` so it can be checked rather than trusted.
 2. **What the HPO term itself requires** — `HP:5200273` *Pathological sadness* is defined as
    sadness "excessive in intensity, duration, or resistance to self-regulation", which a single
    rare day does not meet whatever the instrument says.
@@ -136,7 +157,7 @@ bottom ("Slight — rare, less than a day or two"), so its 2 is phq9's 1. Settin
 looks like harmonization and is the opposite: it drops the DSM-5 bar to "rare, less than a day or
 two" while leaving PHQ-9 at "several days".
 
-The third cannot be aligned with either: PTSD rates *severity*, not frequency, and no answer on
+The third cannot be aligned with either: PCL-5 rates *severity*, not frequency, and no answer on
 that scale is equivalent to "several days".
 
 **This is a curator judgment, not a machine check.** An earlier automated test required every
@@ -144,68 +165,78 @@ instrument gating a term to share one `when_value` string; it was removed becaus
 false in both directions — equal integers are not equal severities, and non-commensurable scales
 (frequency vs severity) have no equal labels to compare.
 
-#### When an absent pole is justified
+**A single item is not a construct.** Where an instrument scores a construct from several items
+(ASRS Part A is 4-of-6), a one-item rule overstates what the instrument supports. That objection
+belongs in the derivation file — `adhd_adult.yaml` carries it as an `open_question` — not in the
+term mapping, which is unaffected either way.
+
+#### The absent pole, and why nothing is emitted today
 
 `excluded = true` is a strong claim, and an **unqualified** one: a phenopacket carries no time
 scope on an excluded feature unless it has an `onset`. Emitted from a two-week item, it does not
 say "absent over the last fortnight" — it says the participant does not have the phenotype.
 
-So author a `Not` row only when the item's lowest answer denies that the phenotype **ever
-occurred**. Three ways that fails:
+Two independent gates therefore apply.
 
-- **Bounded recall.** "Not at all *in the past two weeks*" denies a fortnight, not a life. This is
-  the dominant case — see *Recall windows* below; it currently disqualifies nearly every absent
-  pole in the file.
-- **Baseline-relative items.** "Feeling more irritated… *than usual*" — a participant who is
-  always irritable answers `0`, which means *not worse than usual*, not *not irritable*.
-- **Intensity- or behaviour-qualified items.** "Being extremely irritable *to the point where you
-  yelled, got into fights, or destroyed things*" — `0` denies the escalation, not the emotion. It
-  can support `HP:0000718` *Aggressive behavior* (whose HPO definition names those very acts) but
-  not `HP:0000737` *Irritability*.
+**Gate 1 — is the pole authorable at all?** Only if the item's lowest answer denies the
+phenotype rather than something narrower. Three ways that fails, each a reason code:
 
-A **conflated** "A or B" item is *not* a failure on its own: `0` denies both senses, so an absent
-pole is admissible even where the present pole cannot be attributed to one sense (see
-`phq9.feeling_bad_self`) — provided it clears the three tests above.
+- **`baseline-relative`.** "Feeling more irritated… *than usual*" — a participant who is always
+  irritable answers `0`, which means *not worse than usual*, not *not irritable*.
+- **`intensity-qualified`.** "Being extremely irritable *to the point where you yelled, got into
+  fights, or destroyed things*" — `0` denies the escalation, not the emotion.
+- **`conflated-superset`.** A `broadMatch` object subsumes more than the item asks about, so a
+  `0` cannot exclude it (a PHQ-9 sleep `0` rules out insomnia and hypersomnia, not sleep apnea).
 
-The clean case is a lifetime item — "have you *ever* experienced X?" — where "no" is a genuine
-lifetime denial. No gated instrument in this dataset is phrased that way.
+A **conflated** "A or B" item is not a failure on its own: `0` denies both senses, so an absent
+pole is admissible even where the *present* pole cannot be attributed to one sense (see
+`phq9.feeling_bad_self`, whose present pole is `unauthorable: conflated-sense` while its absent
+pole is authored).
 
-**Recall windows.** Nearly every gated item asks about a bounded period, so `0` means *not during
-that window* rather than *absent* — and the window does not survive into the output, because a
-derived feature gets no `TimeElement` when the session id is an opaque hash. An `excluded = true`
-built from a two-week item therefore reads as unqualified absence.
+**Gate 2 — can the assertion be bounded?** Nearly every item asks about a fixed period, so `0`
+means *not during that window*:
 
-| Instrument | Window in the data dict | Published instrument |
-| --- | --- | --- |
-| PHQ-9, GAD-7, Leicester Cough | two weeks | two weeks |
-| DSM-5 adult | mostly absent (paraphrased out) | two weeks |
-| ASRS (`adhd_adult`) | none | past 6 months |
-| PTSD (`ptsd_adult`) | none | past month |
-| Dyspnea Index | none | no window found — unverified |
+| Instrument | Window in the data dict | Published instrument | `source` |
+| --- | --- | --- | --- |
+| PHQ-9, GAD-7, Leicester Cough | two weeks | two weeks | `data_dict` |
+| DSM-5 adult | only on `little_interest` | two weeks | `published_instrument` |
+| ASRS (`adhd_adult`) | none | past 6 months | `published_instrument` |
+| PCL-5 (`ptsd_adult`) | none | past month | `published_instrument` |
+| Dyspnea Index | none | none found | `unverified` |
 
-**The data dict is not authoritative here.** Three instruments record no window, but ASRS and PTSD
-are bounded in their published form, so the omission is a gap in the dict rather than a property
-of the instrument. Never infer that an item is unbounded from the dict's silence.
+**The data dict is not authoritative here.** Three instruments record no window, but ASRS and
+PCL-5 are bounded in their published form, so the omission is a gap in the dict rather than a
+property of the instrument. Never infer that an item is unbounded from the dict's silence — and
+note that `unverified` means *unknown*, not *unbounded*.
 
-**So there is no unbounded category to fall back on.** Of the 26 absent poles in this file, 24 sit
-on instruments that are certainly bounded and the remaining 2 (Dyspnea Index) are merely
-unconfirmed. Every `excluded = true` the pipeline emits therefore rests on a scoped answer, and
-none of that scope reaches the output.
+So `hpo_rules.scoped_onset` turns the window into a concrete interval —
+`[observation − window, observation]` — and an absent feature is emitted **only** when that
+succeeds. It needs both a known window and a session observation time. Bridge2AI-Voice 3.1.0
+session ids are opaque hashes with no timestamp, so today it succeeds for no session and **no
+`excluded` feature is emitted at all**. Skips are counted as `absent_features_unscoped` and
+printed in the ingest summary ("absent poles withheld: N"), never dropped silently.
 
-*Undecided:* whether absent poles should be authored at all until the window can be represented
-(via `PhenotypicFeature.onset`, or by not emitting `excluded` from bounded items). This is the
-whole mechanism, not an edge case, so it is deferred rather than settled.
+This is a *data* blocker, not a policy choice. The curation stays in the files, correctly
+conditioned; the moment session timestamps exist, absence becomes representable — as a GA4GH
+`TimeElement.interval` on the feature's `onset` — with no re-curation and no code change.
+`tests/test_hpo_rules.py::test_absent_pole_is_emitted_once_the_window_can_be_scoped` pins that
+path.
 
-Declare `when_value` once in the file's SSSOM `extension_definitions` metadata; a present/absent
-pair repeats the same `subject_id`/`predicate_id`/`object_id` and differs only in
-`predicate_modifier` + `when_value` (so it is **not** a duplicate). Each derived feature is
-stamped with provenance: a human-readable `description` and a GA4GH `Evidence` whose
-`evidenceCode` is `ECO:0006160` ("self-reported patient statement … in automatic assertion") with
-an `ExternalReference` back to the source item — self-report-derived phenotypes stay
-distinguishable from clinician-observed findings. The validator checks only that `when_value`
-**parses** and `predicate_modifier ∈ {"", "Not"}`; whether a cut-point is *clinically* right is a
-curator judgment (see the `curation-assist` skill). The apply path lives in
-`mapping/hpo_rules.py` (loader + derivation) and `mapping/conditions.py` (the grammar); the reader
-runs it during questionnaire ingestion. Note the reference `sssom-py` parser **drops**
-`when_value` on load, so the pipeline reads mappings with the column-preserving `parse_sssom`
-in `mapping/sssom_io.py`.
+Present poles are deliberately **not** gated this way. Presence is existential over the window
+("had this on several days in a fortnight" is a defensible positive claim); absence is universal
+over a life.
+
+#### Provenance on every derived feature
+
+Each derived feature is stamped with a human-readable `description` (source item, instrument,
+pole, cut-point, recall window, confidence) and a GA4GH `Evidence` whose `evidenceCode` is
+`ECO:0006160` ("self-reported patient statement … in automatic assertion") with an
+`ExternalReference` back to the source item — self-report-derived phenotypes stay
+distinguishable from clinician-observed findings.
+
+The validator checks that `when_value` **parses**, that a pole declares exactly one of
+`when_value`/`unauthorable`, and that reasons and windows come from their closed sets; whether a
+cut-point is *clinically* right is a curator judgment (see the `curation-assist` skill). The
+apply path lives in `mapping/derivations.py` (rule model + loader), `mapping/hpo_rules.py`
+(scoping + derivation) and `mapping/conditions.py` (the grammar); the reader runs it during
+questionnaire ingestion.

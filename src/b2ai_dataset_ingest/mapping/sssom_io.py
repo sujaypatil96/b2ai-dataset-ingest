@@ -1,11 +1,15 @@
 """Read the B2AI -> HPO SSSOM/TSV mapping files, preserving every column.
 
 This is the in-repo, dependency-light (stdlib + PyYAML) SSSOM/TSV reader shared by the
-*validator* (:mod:`b2ai_dataset_ingest.ontology.sssom_validate`) and the *apply path*
-(:mod:`b2ai_dataset_ingest.mapping.hpo_rules`). It exists because the reference ``sssom-py``
-parser **drops** extension columns on load (retaining only ``extension_definitions`` in the
-metadata), so it cannot carry the ``when_value`` condition; :func:`parse_sssom` keeps all
-columns, including ``when_value`` and ``predicate_modifier`` (ADR-0002 decision 5).
+*validator* (:mod:`b2ai_dataset_ingest.ontology.sssom_validate`) and the derivation validator
+(:mod:`b2ai_dataset_ingest.ontology.derivations_validate`), which reads the mapping sets to
+check that every derivation rule is anchored to a real mapping row.
+
+It keeps **every** column, unlike the reference ``sssom-py`` parser, which drops non-core
+columns on load. The mapping sets carry no extension columns since ADR-0003 moved
+interpretation to ``mappings/derivations/``, but preserving them is what lets
+``sssom_validate`` *detect* a stray ``when_value``/``predicate_modifier`` and reject it
+rather than silently ignoring it.
 """
 
 from __future__ import annotations

@@ -1,0 +1,172 @@
+# Derivation rules for the DSM-5 Level 1 Cross-Cutting Symptom Measure (Adult).
+# See README.md and docs/adr/0003-*.md.
+instrument: dsm5_adult
+label: DSM-5 Self-Rated Level 1 Cross-Cutting Symptom Measure — Adult
+recall_window:
+  iso8601: P2W
+  text: during the past two weeks
+  source: published_instrument
+  note: >-
+    The data dictionary paraphrases the stem out of every item but `little_interest`.
+    The published instrument is bounded at two weeks; never infer that an item is
+    unbounded from the dictionary's silence.
+scoring_reference: >-
+  American Psychiatric Association. DSM-5 Self-Rated Level 1 Cross-Cutting Symptom
+  Measure — Adult. In: Diagnostic and Statistical Manual of Mental Disorders, 5th ed.
+  Scoring: a rating of *mild* (2) or greater on any item within a domain warrants further
+  inquiry, EXCEPT the substance use, suicidal ideation, and psychosis domains, where
+  *slight* (1) or greater warrants inquiry. That exception is why `hearing_things` gates
+  at >=1 and every other item at >=2.
+cut_point_note: >-
+  Compare answer LABELS, not integers, across instruments. This scale has an extra rung at
+  the bottom ("Slight — rare, less than a day or two"), so its 2 ("Mild — several days") is
+  the same severity as the PHQ-9's 1 ("Several days"). Setting both to >=1 would look like
+  harmonization and be the opposite.
+rules:
+  - subject_id: b2ai:dsm5_adult.feeling_down
+    object_id: HP:5200273
+    object_label: Pathological sadness
+    confidence: 0.95
+    present:
+      when_value: ">=2"
+      note: "'Mild (Several days)' or greater"
+    absent:
+      when_value: "==0"
+      note: "'None (Not at all)'"
+
+  - subject_id: b2ai:dsm5_adult.little_interest
+    object_id: HP:0012154
+    object_label: Anhedonia
+    confidence: 0.95
+    present:
+      when_value: ">=2"
+      note: "'Mild (Several days)' or greater"
+    absent:
+      when_value: "==0"
+      note: "'None (Not at all)'"
+
+  - subject_id: b2ai:dsm5_adult.feeling_nervous
+    object_id: HP:0000739
+    object_label: Anxiety
+    confidence: 0.95
+    present:
+      when_value: ">=2"
+      note: "'Mild (Several days)' or greater"
+    absent:
+      when_value: "==0"
+      note: "'None (Not at all)'"
+
+  - subject_id: b2ai:dsm5_adult.feeling_panic
+    object_id: HP:0025269
+    object_label: Panic attack
+    confidence: 0.8
+    present:
+      when_value: ">=2"
+      note: "'Mild (Several days)' or greater"
+    absent:
+      unauthorable: conflated-superset
+      note: A low answer cannot exclude a term that is broader than the item.
+
+  - subject_id: b2ai:dsm5_adult.hearing_things
+    object_id: HP:0008765
+    object_label: Auditory hallucination
+    confidence: 0.95
+    present:
+      when_value: ">=1"
+      note: >-
+        'Slight' or greater — the psychosis domain's lowered threshold, per the scoring
+        reference above.
+    absent:
+      when_value: "==0"
+      note: "'None (Not at all)'"
+
+  - subject_id: b2ai:dsm5_adult.someone_hear_thoughts
+    object_id: HP:0025777
+    object_label: Thought broadcasting
+    confidence: 0.75
+    present:
+      unauthorable: conflated-sense
+      note: >-
+        The item conflates an outbound sense ("someone could hear your thoughts" =
+        thought broadcasting) with an inbound one ("you could hear what another person
+        was thinking"); an endorsement cannot say which was meant.
+    absent:
+      when_value: "==0"
+      note: A 0 denies both senses, so it excludes the broadcasting sense.
+
+  - subject_id: b2ai:dsm5_adult.memory_issues
+    object_id: HP:0100543
+    object_label: Cognitive impairment
+    confidence: 0.8
+    present:
+      when_value: ">=2"
+      note: "'Mild (Several days)' or greater"
+    absent:
+      unauthorable: conflated-superset
+      note: A low answer cannot exclude a term that is broader than the item.
+
+  - subject_id: b2ai:dsm5_adult.unexplained_aches
+    object_id: HP:0012531
+    object_label: Pain
+    confidence: 0.8
+    present:
+      when_value: ">=2"
+      note: "'Mild (Several days)' or greater"
+    absent:
+      unauthorable: conflated-superset
+      note: A low answer cannot exclude a term that is broader than the item.
+
+  - subject_id: b2ai:dsm5_adult.repeat_acts
+    object_id: HP:0000722
+    object_label: Compulsive behaviors
+    confidence: 0.9
+    present:
+      when_value: ">=2"
+      note: "'Mild (Several days)' or greater"
+    absent:
+      when_value: "==0"
+      note: "'None (Not at all)'"
+
+  - subject_id: b2ai:dsm5_adult.feeling_detached
+    object_id: HP:5200217
+    object_label: Depersonalization
+    confidence: 0.9
+    present:
+      when_value: ">=2"
+      note: "'Mild (Several days)' or greater"
+    absent:
+      when_value: "==0"
+      note: "'None (Not at all)'"
+
+  - subject_id: b2ai:dsm5_adult.sleep_quality
+    object_id: HP:0002360
+    object_label: Sleep disturbance
+    confidence: 0.8
+    present:
+      when_value: ">=2"
+      note: "'Mild (Several days)' or greater"
+    absent:
+      unauthorable: conflated-superset
+      note: A low answer cannot exclude a term that is broader than the item.
+
+  - subject_id: b2ai:dsm5_adult.sleeping_less
+    object_id: HP:5200276
+    object_label: Decreased need for sleep
+    confidence: 0.9
+    present:
+      when_value: ">=2"
+      note: "'Mild (Several days)' or greater"
+    absent:
+      when_value: "==0"
+      note: "'None (Not at all)'"
+
+  - subject_id: b2ai:dsm5_adult.social_phobia_2
+    object_id: HP:6000029
+    object_label: Social anxiety
+    confidence: 0.9
+    present:
+      when_value: ">=2"
+      note: "'Half of the time' or more on this item's 0-4 Never..All-of-the-time scale"
+    absent:
+      when_value: "==0"
+      note: "'Never'"

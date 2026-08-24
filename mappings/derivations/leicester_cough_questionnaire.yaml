@@ -1,0 +1,46 @@
+# Derivation rules for the Leicester Cough Questionnaire (LCQ).
+# See README.md and docs/adr/0003-*.md.
+instrument: leicester_cough_questionnaire
+label: Leicester Cough Questionnaire (LCQ)
+recall_window:
+  iso8601: P2W
+  text: in the last 2 weeks
+  source: data_dict
+scoring_reference: >-
+  Birring SS, Prudon B, Carr AJ, Singh SJ, Morgan MDL, Pavord ID. Development of a symptom
+  specific health status measure for patients with chronic cough: Leicester Cough
+  Questionnaire (LCQ). Thorax. 2003;58(4):339-343. Items run 0-6 with 0 = "None of the
+  time"; >=3 ("Some of the time" or more) is the endorsement bar used below.
+rules:
+  - subject_id: b2ai:leicester_cough_questionnaire.lcq_bout
+    object_id: HP:0012735
+    object_label: Cough
+    confidence: 0.8
+    present:
+      when_value: ">=3"
+      note: "'Some of the time' or more"
+    absent:
+      unauthorable: conflated-superset
+      note: A low answer cannot exclude a term that is broader than the item.
+
+  - subject_id: b2ai:leicester_cough_questionnaire.lcq_hoarse_voice
+    object_id: HP:0001609
+    object_label: Hoarse voice
+    confidence: 0.95
+    present:
+      when_value: ">=3"
+      note: "'Some of the time' or more"
+    absent:
+      when_value: "==0"
+      note: "'None of the time'"
+
+  - subject_id: b2ai:leicester_cough_questionnaire.lcq_sputum_phlegm
+    object_id: HP:0031245
+    object_label: Productive cough
+    confidence: 0.95
+    present:
+      when_value: ">=3"
+      note: "'Some of the time' or more"
+    absent:
+      when_value: "==0"
+      note: "'None of the time'"

@@ -1,0 +1,73 @@
+# Derivation rules for the Dyspnea Index (DI).
+# See README.md and docs/adr/0003-*.md.
+instrument: dyspnea_index
+label: Dyspnea Index (DI)
+recall_window:
+  iso8601: null
+  text: null
+  source: unverified
+  note: >-
+    No recall window was found in the data dictionary OR in the published instrument. A null
+    window is NOT the same as an unbounded one — it means we do not know, so absent poles on
+    this instrument stay unresolvable for the same reason the bounded instruments' do, and
+    will not be emitted until the window is confirmed.
+scoring_reference: >-
+  Gartner-Schmidt JL, Shembel AC, Zullo TG, Rosen CA. Development and validation of the
+  Dyspnea Index (DI): a severity index for upper airway-related dyspnea. J Voice. 2014.
+  Items run 0-4 on a Never..Always frequency scale; >=2 ("Sometimes" or more) is the
+  endorsement bar used below. Volume/page numbers are unconfirmed — verify before citing.
+rules:
+  - subject_id: b2ai:dyspnea_index.di_air_in
+    object_id: HP:0002094
+    object_label: Dyspnea
+    confidence: 0.8
+    present:
+      when_value: ">=2"
+      note: "'Sometimes' or more"
+    absent:
+      unauthorable: conflated-superset
+      note: A low answer cannot exclude a term that is broader than the item.
+
+  - subject_id: b2ai:dyspnea_index.di_effort_breathe
+    object_id: HP:0002094
+    object_label: Dyspnea
+    confidence: 0.8
+    present:
+      when_value: ">=2"
+      note: "'Sometimes' or more"
+    absent:
+      unauthorable: conflated-superset
+      note: A low answer cannot exclude a term that is broader than the item.
+
+  - subject_id: b2ai:dyspnea_index.di_strain
+    object_id: HP:0002094
+    object_label: Dyspnea
+    confidence: 0.8
+    present:
+      when_value: ">=2"
+      note: "'Sometimes' or more"
+    absent:
+      unauthorable: conflated-superset
+      note: A low answer cannot exclude a term that is broader than the item.
+
+  - subject_id: b2ai:dyspnea_index.di_exercise
+    object_id: HP:0002875
+    object_label: Exertional dyspnea
+    confidence: 0.95
+    present:
+      when_value: ">=2"
+      note: "'Sometimes' or more"
+    absent:
+      when_value: "==0"
+      note: "'Never'"
+
+  - subject_id: b2ai:dyspnea_index.di_sound_breathing_in
+    object_id: HP:0010307
+    object_label: Stridor
+    confidence: 0.95
+    present:
+      when_value: ">=2"
+      note: "'Sometimes' or more"
+    absent:
+      when_value: "==0"
+      note: "'Never'"

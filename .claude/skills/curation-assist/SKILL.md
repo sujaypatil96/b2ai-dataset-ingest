@@ -51,20 +51,22 @@ pretending it is deterministic, and to make step 2 **airtight**.
    comment. Before reusing a term that was rejected elsewhere — or changing one — check the
    **kind** of each column using it: a screener *item* and a reported *diagnosis* can share
    wording and still need different terms, so never blanket-replace across the mapping files.
-6. **Author the value condition (`when_value`), when the item should derive a phenotype.**
-   A term mapping only says the item is *about* a concept; a `when_value` says *which answers
-   assert it* (and its absent pole). Follow `references/when-value.md`: pick the cut-point,
-   write the present row and (usually) the `predicate_modifier: Not` absent row, and flag the
-   threshold as **needs expert sign-off** -- the validator checks that it *parses*, never that
-   it is clinically right. Leave `when_value` empty for a purely semantic mapping.
+6. **Author a derivation rule, when the item should derive a phenotype -- in a separate
+   file.** A term mapping only says the item is *about* a concept; whether a given *answer*
+   asserts it belongs in `mappings/derivations/<instrument>.yaml`, never in the SSSOM row
+   (ADR-0003). Follow `references/when-value.md`: pick the cut-point, author the `present`
+   and/or `absent` pole, declare a pole you decline as `unauthorable` with a reason, and flag
+   the threshold as **needs expert sign-off** -- the validator checks that it *parses*, never
+   that it is clinically right. An item with no derivation rule is a perfectly good mapping.
 7. **Emit a review artifact**, not a fait accompli -- one row per candidate in the format in
    `references/review-artifact.md`: proposal, rationale, alternatives, confidence, and an
    explicit split of *auto-verified* (code is real/current) vs *needs expert sign-off*
    (concept + predicate + `when_value` cut-point).
 8. **Run the deterministic gate.** Nothing ships until
    `uv run b2ai-ingest validate-mappings --data-root <phenotype/>` is clean (existence,
-   `owl:deprecated`, label match, structure, subject-column existence, `when_value` parses,
-   `predicate_modifier ∈ {"", "Not"}`). This is the guarantee; treat a red gate as blocking.
+   `owl:deprecated`, label match, structure, subject-column existence, and -- for the
+   derivation rules -- that every rule is anchored to a real mapping row and its `when_value`
+   parses). This is the guarantee; treat a red gate as blocking.
 9. **Close the loop.** When an expert overrides a proposal, add the decision back into
    `references/scope-checklist.md`, `references/predicate-rules.md`, or
    `references/when-value.md` as a rule or worked example. Over time this shrinks the variance
@@ -76,10 +78,14 @@ pretending it is deterministic, and to make step 2 **airtight**.
   be out of HPO scope -- say so; don't invent a code.
 - `exactMatch` only when the source term is a verbatim ontology label or **exact** synonym;
   otherwise broad/narrow/related.
-- A green validator means *the codes are real and correctly labelled*, and that any
-  `when_value` **parses** -- it does **not** mean the concept, the predicate, or the
-  cut-point is right. Keep the human sign-off visible; don't let "the validator passed" stand
-  in for review.
+- A green validator means *the codes are real and correctly labelled*, that every derivation
+  rule is anchored to a mapping row, and that any `when_value` **parses** -- it does **not**
+  mean the concept, the predicate, or the cut-point is right. Keep the human sign-off visible;
+  don't let "the validator passed" stand in for review.
+- **Never put interpretation in a mapping set.** `when_value` and `predicate_modifier` are
+  rejected there. `predicate_modifier: Not` negates *the mapping* per the SSSOM spec ("subject
+  is **not** a predicate match to object"), not the phenotype -- using it for absence asserts a
+  contradiction. Absence is a derivation-rule `absent` pole (ADR-0003).
 - `mapping_justification` stays `semapv:ManualMappingCuration` -- these are curated, and the
   files should say so.
 

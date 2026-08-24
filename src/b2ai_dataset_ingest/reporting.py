@@ -35,8 +35,11 @@ class IngestReport:
 
     measurements_emitted: int = 0
     diseases_emitted: int = 0
-    #: HPO PhenotypicFeatures derived from value-gated (``when_value``) SSSOM mappings.
+    #: HPO PhenotypicFeatures derived from mappings/derivations/*.yaml rules.
     features_derived: int = 0
+    #: Absent-pole rules that matched but were skipped because their recall window could not
+    #: be resolved to an interval (ADR-0003) — an unscoped `excluded` is never emitted.
+    absent_features_unscoped: int = 0
     #: Rows collapsed by "last non-empty wins" within a resolved (participant, session) group.
     rows_merged: int = 0
 
@@ -80,6 +83,11 @@ class IngestReport:
             + (f" ({', '.join(self.tables_read)})" if self.tables_read else ""),
             f"  rows merged:         {self.rows_merged}",
         ]
+        if self.absent_features_unscoped:
+            lines.append(
+                f"  absent poles withheld: {self.absent_features_unscoped}"
+                " (no observation time to bound the exclusion; ADR-0003)"
+            )
         if self.tables_unmapped:
             lines.append(f"  tables not mapped:   {', '.join(sorted(self.tables_unmapped))}")
         if self.tables_missing:

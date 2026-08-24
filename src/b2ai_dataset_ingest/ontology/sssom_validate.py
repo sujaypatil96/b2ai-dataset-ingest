@@ -33,7 +33,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from b2ai_dataset_ingest.mapping.conditions import ConditionParseError, parse_condition
 from b2ai_dataset_ingest.mapping.loaders import load_data_dict
 from b2ai_dataset_ingest.mapping.sssom_io import (
     MetadataError,
@@ -56,8 +55,11 @@ ALLOWED_PREDICATES = frozenset(
     }
 )
 REQUIRED_COLUMNS = ("subject_id", "predicate_id", "object_id", "mapping_justification")
-#: The only SSSOM predicate_modifier we emit — ``Not`` -> phenopacket ``excluded`` (ADR-0002).
-ALLOWED_MODIFIERS = frozenset({"", "Not"})
+#: Interpretation columns banished to ``mappings/derivations/*.yaml`` by ADR-0003. They are
+#: rejected rather than ignored: ``predicate_modifier: Not`` negates *the mapping* ("subject is
+#: not a predicate match to object"), so a present/absent pair on one triple is a contradiction,
+#: not an encoding of phenotype absence.
+FORBIDDEN_COLUMNS = ("predicate_modifier", "when_value")
 _RELEASE_DATE = re.compile(r"(\d{4}-\d{2}-\d{2})")
 
 
@@ -180,7 +182,7 @@ def _check_row(
     row: dict[str, str],
     fname: str,
     file_prefixes: set[str],
-    seen: set[tuple[str, str, str, str, str]],
+    seen: set[tuple[str, str, str]],
 ) -> Iterable[Finding]:
     subj = row.get("subject_id", "").strip()
     pred = row.get("predicate_id", "").strip()
@@ -219,26 +221,20 @@ def _check_row(
         except ValueError:
             yield err("bad-confidence", f"confidence {conf!r} is not a number")
 
-    # Conditional-mapping columns (ADR-0002): the absent pole is expressed with the standard
-    # predicate_modifier: Not; the value gate is a parseable when_value expression. The
-    # validator checks structure only — a cut-point being *clinically* right needs a curator.
-    modifier = row.get("predicate_modifier", "").strip()
-    if modifier not in ALLOWED_MODIFIERS:
-        yield err(
-            "bad-predicate-modifier",
-            f"predicate_modifier {modifier!r} not in {sorted(ALLOWED_MODIFIERS)}",
-        )
-    when_value = row.get("when_value", "").strip()
-    if when_value:
-        try:
-            parse_condition(when_value)
-        except ConditionParseError as exc:
-            yield err("bad-when-value", f"when_value {when_value!r} does not parse: {exc}")
+    # A mapping set records what an item is ABOUT; how an ANSWER is interpreted belongs in
+    # mappings/derivations/*.yaml (ADR-0003). Re-adding either column here would reintroduce
+    # the contradiction it was removed for.
+    for column in FORBIDDEN_COLUMNS:
+        if row.get(column, "").strip():
+            yield err(
+                "interpretation-in-mapping",
+                f"{column!r} does not belong in a mapping set; move it to "
+                f"mappings/derivations/ (ADR-0003)",
+            )
 
-    # Duplicate detection keys on the whole conditional identity, so a present/absent pair
-    # (same subject/predicate/object, differing predicate_modifier + when_value) is allowed.
+    # One triple, one row. There is no longer a present/absent pair to exempt.
     if subj and pred and obj:
-        key = (subj, pred, obj, modifier, when_value)
+        key = (subj, pred, obj)
         if key in seen:
             yield err("duplicate", f"duplicate mapping {key}")
         seen.add(key)
@@ -336,7 +332,7 @@ def validate_paths(
     result.ontology_checked = adapter is not None
     result.subjects_checked = data_root is not None
 
-    seen: set[tuple[str, str, str, str, str]] = set()  # cross-file duplicate detection
+    seen: set[tuple[str, str, str]] = set()  # cross-file duplicate detection
     for path in paths:
         fname = path.name
         try:

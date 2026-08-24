@@ -102,29 +102,30 @@ def test_config_b2ai_ids_use_dot_separator(path: Path):
     assert not dashed, f"{path.name} uses '-' in b2ai ids: {dashed}"
 
 
-def test_gated_sssom_subjects_have_a_matching_config_assay():
-    """Every value-gated SSSOM subject should name an item some config also emits.
+def test_derivation_subjects_have_a_matching_config_assay():
+    """Every derivation-rule subject should name an item some config also emits.
 
     This is the join that makes provenance usable: the derived feature's evidence points at
-    the same CURIE as the Measurement's assay. Subjects from tables that are not ingested
-    (e.g. signs/symptoms tables with no questionnaire config) are out of scope here.
+    the same CURIE as the Measurement's assay. Reads mappings/derivations/ (not the SSSOM
+    files) because that is where the answer->feature rules live since ADR-0003; subjects from
+    tables that are not ingested are out of scope here.
     """
-    from b2ai_dataset_ingest.mapping.sssom_io import parse_sssom
-    from b2ai_dataset_ingest.ontology.sssom_validate import default_mapping_files
+    from b2ai_dataset_ingest.mapping.derivations import load_derivation_rules
 
     config_ids: set[str] = set()
     for cfg in VOICE_CONFIGS:
         config_ids |= {m.group(0) for m in B2AI_ID.finditer(cfg.read_text())}
 
     config_tables = {i.split(":", 1)[1].split(".", 1)[0] for i in config_ids}
+    index = load_derivation_rules()
+    assert index, "no derivation rules loaded — the join below would pass vacuously"
+
     orphans = []
-    for path in default_mapping_files(CONFIG_DIR.parent):
-        _, rows = parse_sssom(path)
-        for row in rows:
-            subject = row.get("subject_id", "")
-            if not row.get("when_value") or not subject.startswith("b2ai:"):
-                continue  # ungated rows are pure semantics, not tied to an emitted assay
-            table = subject.split(":", 1)[1].split(".", 1)[0]
-            if table in config_tables and subject not in config_ids:
-                orphans.append(subject)
-    assert not orphans, f"gated subjects with no matching config assay id: {sorted(set(orphans))}"
+    for table, columns in index.items():
+        if table not in config_tables:
+            continue
+        for rules in columns.values():
+            for rule in rules:
+                if rule.subject_id not in config_ids:
+                    orphans.append(rule.subject_id)
+    assert not orphans, f"derivation subjects with no config assay id: {sorted(set(orphans))}"

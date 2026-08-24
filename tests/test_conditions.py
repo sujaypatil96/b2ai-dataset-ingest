@@ -1,4 +1,4 @@
-"""The ``when_value`` condition grammar: parsing and evaluation (ADR-0002)."""
+"""The ``when_value`` condition grammar: parsing and evaluation (ADR-0002, ADR-0003)."""
 
 import pytest
 

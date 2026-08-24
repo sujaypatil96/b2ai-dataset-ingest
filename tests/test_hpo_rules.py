@@ -1,82 +1,17 @@
-"""Value-gated B2AI -> HPO rules: loading conditional mappings and deriving features."""
-
-import logging
-from pathlib import Path
+"""Deriving PhenotypicFeatures from answers — including the absent-pole scoping gate."""
 
 from b2ai_dataset_ingest.mapping.conditions import parse_condition
+from b2ai_dataset_ingest.mapping.derivations import DerivationRule, RecallWindow
 from b2ai_dataset_ingest.mapping.hpo_rules import (
     SELF_REPORT_EVIDENCE,
-    ConditionalRule,
     derive_features,
-    load_conditional_rules,
+    scoped_onset,
 )
 from b2ai_dataset_ingest.model import TimePoint
 from b2ai_dataset_ingest.reporting import IngestReport
 
-HEADER = (
-    "# curie_map:\n"
-    "#   b2ai: https://github.com/sujaypatil96/b2ai-dataset-ingest#\n"
-    "#   HP: http://purl.obolibrary.org/obo/HP_\n"
-    "#   skos: http://www.w3.org/2004/02/skos/core#\n"
-    "#   semapv: https://w3id.org/semapv/vocab/\n"
-    "# license: https://creativecommons.org/publicdomain/zero/1.0/\n"
-)
-COLS = (
-    "subject_id\tsubject_label\tpredicate_id\tobject_id\tobject_label\t"
-    "mapping_justification\tconfidence\tpredicate_modifier\twhen_value"
-)
-
-
-def _row(subject, obj, *, modifier="", when="", label="x", obj_label="Depression", conf="0.8"):
-    return "\t".join(
-        [subject, label, "skos:broadMatch", obj, obj_label,
-         "semapv:ManualMappingCuration", conf, modifier, when]
-    )
-
-
-def _write(tmp_path: Path, rows: list[str]) -> Path:
-    path = tmp_path / "q.sssom.tsv"
-    path.write_text(HEADER + COLS + "\n" + "\n".join(rows) + "\n")
-    return path
-
-
-# ------------------------------------------------------------------------- loading
-
-
-def test_only_rows_with_when_value_become_rules(tmp_path: Path):
-    path = _write(
-        tmp_path,
-        [
-            _row("b2ai:phq9.feeling_depressed", "HP:0000716", when=">=1"),
-            _row("b2ai:phq9.feeling_depressed", "HP:0000716", modifier="Not", when="==0"),
-            _row("b2ai:phq9.no_interest", "HP:0012154"),  # inert (no when_value) -> ignored
-        ],
-    )
-    index = load_conditional_rules([path])
-    assert set(index["phq9"]) == {"feeling_depressed"}  # no_interest carried no condition
-    rules = index["phq9"]["feeling_depressed"]
-    assert {r.when_value for r in rules} == {">=1", "==0"}
-    assert [r.excluded for r in sorted(rules, key=lambda r: r.when_value)] == [True, False]
-
-
-def test_malformed_rows_are_skipped_with_warning(tmp_path: Path, caplog):
-    path = _write(
-        tmp_path,
-        [
-            _row("not-a-b2ai-subject", "HP:0000716", when=">=1"),
-            _row("b2ai:phq9.thoughts_death", "MONDO:0000001", when=">=1"),  # non-HPO object
-            _row("b2ai:phq9.no_energy", "HP:0012378", when="totally bogus"),  # unparseable
-        ],
-    )
-    with caplog.at_level(logging.WARNING):
-        index = load_conditional_rules([path])
-    assert index == {}  # every row rejected
-    assert "malformed subject" in caplog.text
-    assert "non-HPO object" in caplog.text
-    assert "unparseable when_value" in caplog.text
-
-
-# ---------------------------------------------------------------------- derivation
+TWO_WEEKS = RecallWindow(iso8601="P2W", text="over the last 2 weeks", source="data_dict")
+NO_WINDOW = RecallWindow(iso8601=None, text=None, source="unverified")
 
 _SCALE = {"Not at all": 0, "Several days": 1, "Nearly every day": 3}
 
@@ -86,22 +21,64 @@ def _RESOLVE(column: str, raw: str) -> int | None:
     return _SCALE.get(raw)
 
 
-def _rule(**kw) -> ConditionalRule:
+def _rule(**kw) -> DerivationRule:
     defaults = dict(
         subject_id="b2ai:phq9.feeling_depressed",
         table="phq9",
         column="feeling_depressed",
-        object_id="HP:0000716",
-        object_label="Depression",
-        predicate_id="skos:broadMatch",
-        predicate_modifier="",
+        object_id="HP:5200273",
+        object_label="Pathological sadness",
+        pole="present",
         condition=parse_condition(">=1"),
         when_value=">=1",
-        subject_label="Feeling down, depressed, or hopeless",
+        window=TWO_WEEKS,
+        instrument_label="PHQ-9",
         confidence="0.8",
     )
     defaults.update(kw)
-    return ConditionalRule(**defaults)
+    return DerivationRule(**defaults)
+
+
+def _absent(**kw) -> DerivationRule:
+    return _rule(pole="absent", condition=parse_condition("==0"), when_value="==0", **kw)
+
+
+# -------------------------------------------------------------------- absence scoping
+
+
+def test_scoped_onset_needs_both_a_timestamp_and_a_window():
+    """Either half missing means the absence cannot be bounded, so it must not be asserted."""
+    dated = TimePoint(session_id="s", timestamp="2026-03-01T00:00:00Z")
+    assert scoped_onset(dated, NO_WINDOW) is None  # window unknown
+    assert scoped_onset(TimePoint(session_id="s"), TWO_WEEKS) is None  # no observation time
+    assert scoped_onset(None, TWO_WEEKS) is None
+
+
+def test_scoped_onset_builds_the_interval_the_answer_actually_covers():
+    dated = TimePoint(session_id="s", timestamp="2026-03-01T00:00:00Z")
+    onset = scoped_onset(dated, TWO_WEEKS)
+    assert onset.interval_start == "2026-02-15T00:00:00Z"
+    assert onset.interval_end == "2026-03-01T00:00:00Z"
+    assert onset.session_id == "s"  # the rest of the TimePoint is preserved
+
+
+def test_scoped_onset_handles_calendar_months_and_short_months():
+    dated = TimePoint(session_id="s", timestamp="2026-03-31T00:00:00Z")
+    six = scoped_onset(dated, RecallWindow(iso8601="P6M", text=None, source="published_instrument"))
+    assert six.interval_start == "2025-09-30T00:00:00Z"
+    one = scoped_onset(dated, RecallWindow(iso8601="P1M", text=None, source="published_instrument"))
+    assert one.interval_start == "2026-02-28T00:00:00Z"  # clamped, not an error
+
+
+def test_scoped_onset_rejects_unusable_inputs():
+    dated = TimePoint(session_id="s", timestamp="2026-03-01T00:00:00Z")
+    prose = RecallWindow(iso8601="2 weeks", text=None, source="data_dict")
+    assert scoped_onset(dated, prose) is None
+    undated = TimePoint(session_id="s", timestamp="last tuesday")
+    assert scoped_onset(undated, TWO_WEEKS) is None
+
+
+# ------------------------------------------------------------------------ derivation
 
 
 def test_present_pole_derives_feature_with_provenance():
@@ -111,27 +88,48 @@ def test_present_pole_derives_feature_with_provenance():
     [feature] = derive_features(
         {"feeling_depressed": "Several days"}, rules, _RESOLVE, time, report
     )
-    assert feature.type.id == "HP:0000716"
+    assert feature.type.id == "HP:5200273"
     assert feature.excluded is False
     assert feature.onset is time
     assert report.features_derived == 1
     # Provenance: a human-readable description + an ECO self-report Evidence to the source item.
     assert "feeling_depressed" in feature.description
     assert ">=1" in feature.description
+    assert "over the last 2 weeks" in feature.description  # the window is stated, not implied
     [evidence] = feature.evidence
     assert evidence.evidence_code == SELF_REPORT_EVIDENCE
     assert evidence.reference.id == "b2ai:phq9.feeling_depressed"
     assert evidence.reference.reference.endswith("#phq9.feeling_depressed")
 
 
-def test_absent_pole_sets_excluded():
-    rules = {
-        "feeling_depressed": [
-            _rule(predicate_modifier="Not", condition=parse_condition("==0"), when_value="==0")
-        ]
-    }
-    [feature] = derive_features({"feeling_depressed": "Not at all"}, rules, _RESOLVE)
+def test_absent_pole_is_skipped_and_counted_when_it_cannot_be_scoped():
+    """ADR-0003: an `excluded` with no bounded period reads as lifetime absence, so it is
+    withheld rather than published unqualified. This is the case for every real session
+    today — Bridge2AI-Voice session ids are opaque hashes with no timestamp."""
+    rules = {"feeling_depressed": [_absent()]}
+    report = IngestReport()
+    features = derive_features(
+        {"feeling_depressed": "Not at all"}, rules, _RESOLVE, TimePoint(session_id="ses-x"), report
+    )
+    assert features == []
+    assert report.absent_features_unscoped == 1
+    assert report.features_derived == 0
+
+
+def test_absent_pole_is_emitted_once_the_window_can_be_scoped():
+    """The path forward: give the session a timestamp and the same rule derives a *bounded*
+    exclusion, with no change to the curation."""
+    rules = {"feeling_depressed": [_absent()]}
+    time = TimePoint(session_id="ses-baseline", timestamp="2026-03-01T00:00:00Z")
+    report = IngestReport()
+    [feature] = derive_features(
+        {"feeling_depressed": "Not at all"}, rules, _RESOLVE, time, report
+    )
     assert feature.excluded is True
+    assert feature.onset.interval_start == "2026-02-15T00:00:00Z"
+    assert feature.onset.interval_end == "2026-03-01T00:00:00Z"
+    assert report.absent_features_unscoped == 0
+    assert report.features_derived == 1
 
 
 def test_blank_and_unmatched_cells_assert_nothing():
@@ -142,13 +140,9 @@ def test_blank_and_unmatched_cells_assert_nothing():
 
 
 def test_present_and_absent_rules_are_mutually_exclusive_by_answer():
-    rules = {
-        "feeling_depressed": [
-            _rule(),
-            _rule(predicate_modifier="Not", condition=parse_condition("==0"), when_value="==0"),
-        ]
-    }
-    [present] = derive_features({"feeling_depressed": "Several days"}, rules, _RESOLVE)
+    rules = {"feeling_depressed": [_rule(), _absent()]}
+    dated = TimePoint(session_id="s", timestamp="2026-03-01T00:00:00Z")
+    [present] = derive_features({"feeling_depressed": "Several days"}, rules, _RESOLVE, dated)
     assert present.excluded is False
-    [absent] = derive_features({"feeling_depressed": "Not at all"}, rules, _RESOLVE)
+    [absent] = derive_features({"feeling_depressed": "Not at all"}, rules, _RESOLVE, dated)
     assert absent.excluded is True

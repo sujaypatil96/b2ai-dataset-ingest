@@ -1,7 +1,16 @@
 # ADR-0002: Conditional HPO mapping — carry the value-condition in SSSOM, execute in the pipeline
 
-- **Status:** Accepted
+- **Status:** Partly superseded by [ADR-0003](0003-separate-derivation-from-mapping.md)
 - **Date:** 2026-07-23
+
+> **Superseded 2026-08-24.** Decisions **1** (`when_value` as an SSSOM extension column) and
+> **3** (the absent pole via `predicate_modifier: Not`) were reversed by ADR-0003 after a
+> clinical review. Two reasons: SSSOM's `predicate_modifier: Not` negates *the mapping*
+> ("subject is **not** a predicate match to object"), not the phenotype — so the present/absent
+> pair asserted a contradiction, and decision 3's "phenopackets-native negation" was a
+> misreading of the slot; and an `excluded = true` derived from a two-week item published as
+> unqualified lifetime absence. Interpretation now lives in `mappings/derivations/*.yaml`.
+> Decisions **2**, **4**, **5** and **6** stand and are still the implementation.
 
 ## Context
 

@@ -1,0 +1,56 @@
+# Derivation rules for the ASRS (Adult ADHD Self-Report Scale).
+# See README.md and docs/adr/0003-*.md.
+instrument: adhd_adult
+label: Adult ADHD Self-Report Scale (ASRS v1.1)
+recall_window:
+  iso8601: P6M
+  text: over the past 6 months
+  source: published_instrument
+  note: >-
+    The data dictionary records no window; the published ASRS is bounded at six months.
+scoring_reference: >-
+  Kessler RC, Adler L, Ames M, et al. The World Health Organization Adult ADHD Self-Report
+  Scale (ASRS): a short screening scale for use in the general population. Psychol Med.
+  2005;35(2):245-256. ASRS Part A scores the hyperactivity/impulsivity items positive only
+  at "Often"/"Very Often" (>=3), which is the cut-point used below.
+open_question: >-
+  Raised in clinical review (Sek Won Kong, 2026-08-24): the ASRS establishes a construct
+  from Part A as a whole (4 of 6 items above their item-specific cut-points), not from any
+  single item. Each rule below therefore derives a construct-level HPO term from one item,
+  which overstates what the instrument supports. Deciding whether to (a) drop these three,
+  (b) require the Part A 4-of-6 rule, or (c) keep them at reduced confidence is deferred to
+  its own change — this file exists so that decision has somewhere to live that is not the
+  term mapping. The term mappings themselves (`b2ai:adhd_adult.* -> HP:*`) are unaffected.
+rules:
+  - subject_id: b2ai:adhd_adult.difficulty_attention
+    object_id: HP:0000736
+    object_label: Short attention span
+    confidence: 0.8
+    present:
+      when_value: ">=3"
+      note: "'Often' or 'Very Often' — the ASRS Part A cut-point"
+    absent:
+      unauthorable: conflated-superset
+      note: A low answer cannot exclude a term that is broader than the item.
+
+  - subject_id: b2ai:adhd_adult.overly_active
+    object_id: HP:0000752
+    object_label: Hyperactivity
+    confidence: 0.8
+    present:
+      when_value: ">=3"
+      note: "'Often' or 'Very Often' — the ASRS Part A cut-point"
+    absent:
+      unauthorable: conflated-superset
+      note: A low answer cannot exclude a term that is broader than the item.
+
+  - subject_id: b2ai:adhd_adult.interrupt_others
+    object_id: HP:0100710
+    object_label: Impulsivity
+    confidence: 0.8
+    present:
+      when_value: ">=3"
+      note: "'Often' or 'Very Often' — the ASRS Part A cut-point"
+    absent:
+      unauthorable: conflated-superset
+      note: A low answer cannot exclude a term that is broader than the item.

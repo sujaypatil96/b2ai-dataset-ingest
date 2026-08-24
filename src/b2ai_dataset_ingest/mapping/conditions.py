@@ -1,12 +1,13 @@
-"""The ``when_value`` condition grammar — parse and evaluate value-gated mappings.
+"""The ``when_value`` condition grammar — parse and evaluate a derivation rule's gate.
 
-A B2AI -> HPO SSSOM row can carry a ``when_value`` extension column that turns the
-*term-to-term* mapping into a *value-gated* one: the HPO ``PhenotypicFeature`` is asserted
-only for answers that satisfy the condition (see ADR-0002 and ``docs/mapping-conventions.md``).
-This module is the **definition + evaluation** layer for that column; it does not touch SSSOM
-I/O or the IR (that is :mod:`b2ai_dataset_ingest.mapping.hpo_rules`).
+A rule in ``mappings/derivations/*.yaml`` gives each pole a ``when_value``: the HPO
+``PhenotypicFeature`` is asserted only for answers that satisfy the condition (see ADR-0003
+and ``docs/mapping-conventions.md``). This module is the **definition + evaluation** layer for
+that field; it does not touch rule loading or the IR (that is
+:mod:`b2ai_dataset_ingest.mapping.derivations` and
+:mod:`b2ai_dataset_ingest.mapping.hpo_rules`).
 
-Grammar (one ``when_value`` cell):
+Grammar (one ``when_value``):
 
 - **Comparison** — ``>=1``, ``<=3``, ``>0``, ``<2``, ``==0``, ``!=0``. Numeric operand.
 - **String equality** — ``== "Checked"`` / ``!= "Unchecked"`` (single or double quotes; a
@@ -93,8 +94,9 @@ def parse_condition(text: str) -> ValueCondition:
     """Parse a ``when_value`` expression into a :class:`ValueCondition`.
 
     Raises :class:`ConditionParseError` for an empty or malformed expression. Callers that
-    treat an *absent* condition as "no gate" should check for an empty string first — an empty
-    ``when_value`` is an inert semantic mapping, not a condition, and is never parsed here.
+    treat an *absent* condition as "no gate" should check for an empty string first — a pole
+    with no ``when_value`` derives nothing (it is ``unauthorable``, or simply not declared)
+    and is never parsed here.
     """
     raw = text.strip()
     if not raw:

@@ -87,7 +87,7 @@ def test_emit_phenotypic_feature_and_hp_resource():
 
 
 def test_derived_feature_renders_provenance_and_declares_resources():
-    # A value-gated, self-report-derived feature (ADR-0002): excluded pole + ECO Evidence +
+    # A self-report-derived feature (ADR-0003): excluded pole + ECO Evidence +
     # an ExternalReference to the b2ai source item; both new prefixes must get a Resource.
     participant = Participant(
         individual=Individual(id="p5"),

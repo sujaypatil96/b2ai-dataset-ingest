@@ -44,6 +44,12 @@ class TimePoint(BaseModel):
     ontology_class: OntologyTerm | None = Field(
         None, description="Ontology term for the timepoint/visit, if used."
     )
+    interval_start: str | None = Field(
+        None, description="ISO-8601 datetime opening a bounded observation period."
+    )
+    interval_end: str | None = Field(
+        None, description="ISO-8601 datetime closing a bounded observation period."
+    )
 
 
 class Individual(BaseModel):
@@ -111,7 +117,7 @@ class PhenotypicFeatureObservation(BaseModel):
     severity: OntologyTerm | None = None
     onset: TimePoint | None = None
     description: str | None = Field(
-        None, description="Human-readable provenance (source item, predicate, when_value)."
+        None, description="Human-readable provenance (source item, pole, cut-point, window)."
     )
     evidence: list[Evidence] = Field(
         default_factory=list, description="Evidence codes/refs — e.g. an ECO self-report code."

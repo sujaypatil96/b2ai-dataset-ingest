@@ -6,8 +6,8 @@ The voice ``phenotype/`` tree is a set of TSVs keyed by ``participant_id`` +
     demographics/   -> Individual
     diagnosis/      -> DiseaseObservation (per-condition file basename -> MONDO)
     questionnaire/  -> MeasurementObservation (per-item ordinals + precomputed totals), and
-                       PhenotypicFeatureObservation for items with a value-gated B2AI -> HPO
-                       ``when_value`` mapping (see mapping/hpo_rules.py, ADR-0002)
+                       PhenotypicFeatureObservation for items with a derivation rule
+                       (see mappings/derivations/, mapping/hpo_rules.py, ADR-0003)
 
 Audio/derived-feature tables (``task/``) are referenced, not ingested.
 
@@ -36,12 +36,12 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
-from b2ai_dataset_ingest.mapping.engine import MappingEngine
-from b2ai_dataset_ingest.mapping.hpo_rules import (
-    ConditionalRule,
-    derive_features,
-    load_conditional_rules,
+from b2ai_dataset_ingest.mapping.derivations import (
+    DerivationRule,
+    load_derivation_rules,
 )
+from b2ai_dataset_ingest.mapping.engine import MappingEngine
+from b2ai_dataset_ingest.mapping.hpo_rules import derive_features
 from b2ai_dataset_ingest.mapping.loaders import (
     is_placeholder,
     load_data_dict,
@@ -103,14 +103,14 @@ class VoiceSource(Source):
         super().__init__(root, config_dir)
         #: Aggregate, PHI-safe counts for the most recent :meth:`read`. The CLI prints it.
         self.report = IngestReport()
-        #: SSSOM files carrying B2AI -> HPO ``when_value`` rules; None -> the shipped defaults.
+        #: Derivation-rule files (``mappings/derivations/*.yaml``); None -> shipped defaults.
         self._mappings = list(mappings) if mappings is not None else None
-        self._hpo_rules: dict[str, dict[str, list[ConditionalRule]]] | None = None
+        self._hpo_rules: dict[str, dict[str, list[DerivationRule]]] | None = None
 
-    def _conditional_rules(self) -> dict[str, dict[str, list[ConditionalRule]]]:
-        """Value-gated B2AI -> HPO rules, loaded once and indexed ``table -> column -> [rules]``."""
+    def _derivation_rules(self) -> dict[str, dict[str, list[DerivationRule]]]:
+        """Answer -> HPO derivation rules, loaded once, indexed ``table -> column -> [rules]``."""
         if self._hpo_rules is None:
-            self._hpo_rules = load_conditional_rules(self._mappings)
+            self._hpo_rules = load_derivation_rules(self._mappings)
         return self._hpo_rules
 
     def read(self) -> Iterable[Participant]:
@@ -251,10 +251,10 @@ class VoiceSource(Source):
             groups = _group_by(
                 rows, lambda r: (r.get("participant_id", ""), r.get(session_col, ""))
             )
-        # Value-gated B2AI -> HPO rules for this table's columns (empty if none authored). The
+        # Answer -> HPO derivation rules for this table's columns (empty if none authored). The
         # resolver reuses the engine's ordinal resolution so a condition (`>=1`) is evaluated
         # against the same score the emitted Measurement carries.
-        table_rules = self._conditional_rules().get(table, {})
+        table_rules = self._derivation_rules().get(table, {})
         resolve_ordinal = functools.partial(engine.ordinal_value, data_dict=data_dict)
         for (participant_id, _key), prows in groups.items():
             session_id = prows[0].get(session_col, "") if session_col else ""

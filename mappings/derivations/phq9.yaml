@@ -1,0 +1,106 @@
+# Derivation rules for the PHQ-9. See README.md and docs/adr/0003-*.md.
+instrument: phq9
+label: Patient Health Questionnaire-9 (PHQ-9)
+recall_window:
+  iso8601: P2W
+  text: over the last 2 weeks
+  source: data_dict
+scoring_reference: >-
+  Kroenke K, Spitzer RL, Williams JBW. The PHQ-9: validity of a brief depression severity
+  measure. J Gen Intern Med. 2001;16(9):606-613. Item-level endorsement is any answer above
+  "Not at all".
+rules:
+  - subject_id: b2ai:phq9.no_interest
+    object_id: HP:0012154
+    object_label: Anhedonia
+    confidence: 0.95
+    present:
+      when_value: ">=1"
+      note: at least 'Several days'
+    absent:
+      when_value: "==0"
+      note: "'Not at all'"
+
+  - subject_id: b2ai:phq9.feeling_depressed
+    object_id: HP:5200273
+    object_label: Pathological sadness
+    confidence: 0.95
+    present:
+      when_value: ">=1"
+      note: at least 'Several days'
+    absent:
+      when_value: "==0"
+      note: "'Not at all'"
+
+  - subject_id: b2ai:phq9.trouble_sleeping
+    object_id: HP:0002360
+    object_label: Sleep disturbance
+    confidence: 0.8
+    present:
+      when_value: ">=1"
+      note: at least 'Several days'
+    absent:
+      unauthorable: conflated-superset
+      note: >-
+        A 0 rules out only insomnia and hypersomnia, not the term's other children
+        (e.g. sleep apnea), so it cannot exclude the broader phenotype.
+
+  - subject_id: b2ai:phq9.no_energy
+    object_id: HP:0012378
+    object_label: Fatigue
+    confidence: 0.95
+    present:
+      when_value: ">=1"
+      note: at least 'Several days'
+    absent:
+      when_value: "==0"
+      note: "'Not at all'"
+
+  - subject_id: b2ai:phq9.no_appetite
+    object_id: HP:0100738
+    object_label: Abnormal eating behavior
+    confidence: 0.8
+    present:
+      when_value: ">=1"
+      note: at least 'Several days'
+    absent:
+      unauthorable: conflated-superset
+      note: >-
+        A 0 rules out only poor appetite and overeating, not the term's other children,
+        so it cannot exclude the broader phenotype.
+
+  - subject_id: b2ai:phq9.trouble_concentrate
+    object_id: HP:0031987
+    object_label: Diminished ability to concentrate
+    confidence: 0.95
+    present:
+      when_value: ">=1"
+      note: at least 'Several days'
+    absent:
+      when_value: "==0"
+      note: "'Not at all'"
+
+  - subject_id: b2ai:phq9.feeling_bad_self
+    object_id: HP:0031469
+    object_label: Low self-esteem
+    confidence: 0.75
+    present:
+      unauthorable: conflated-sense
+      note: >-
+        A >=1 answer cannot say which half of "feeling bad about yourself / a failure /
+        let your family down" was endorsed.
+    absent:
+      when_value: "==0"
+      note: "'Not at all' denies both senses, so it excludes the worthlessness sense."
+
+  - subject_id: b2ai:phq9.feeling_bad_self
+    object_id: HP:6000011
+    object_label: Guilt
+    confidence: 0.75
+    present:
+      unauthorable: conflated-sense
+      note: >-
+        A >=1 answer cannot say which half of the conflated item was endorsed.
+    absent:
+      when_value: "==0"
+      note: "'Not at all' denies both senses, so it excludes the guilt sense."

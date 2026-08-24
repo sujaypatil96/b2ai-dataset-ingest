@@ -104,13 +104,16 @@ def validate_mappings(
     ),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Log details."),
 ) -> None:
-    """Validate the B2AI -> HPO SSSOM mappings (no hallucinated / drifted HPO terms).
+    """Validate the B2AI -> HPO mappings and their derivation rules.
 
-    Structural checks always run. The HPO existence/label check runs when oaklib + the HPO
-    SQLite are available (install the ``validation`` extra); ``--strict-ontology`` makes their
-    absence an error. Subject columns are checked only when ``--data-root`` is given. Exits
-    non-zero if any error is found.
+    Two layers, checked together: the SSSOM mapping sets (no hallucinated / drifted HPO terms,
+    no interpretation columns) and ``mappings/derivations/*.yaml`` (every rule anchored to a
+    real mapping row, every condition parseable). Structural checks always run. The HPO
+    existence/label check runs when oaklib + the HPO SQLite are available (install the
+    ``validation`` extra); ``--strict-ontology`` makes their absence an error. Subject columns
+    are checked only when ``--data-root`` is given. Exits non-zero if any error is found.
     """
+    from b2ai_dataset_ingest.ontology.derivations_validate import validate_derivations
     from b2ai_dataset_ingest.ontology.sssom_validate import default_mapping_files, validate_paths
 
     logging.basicConfig(
@@ -124,7 +127,11 @@ def validate_mappings(
     result = validate_paths(
         files, data_root=data_root, check_ontology=True if strict_ontology else None
     )
+    rule_files = sorted((mappings / "derivations").glob("*.yaml"))
+    findings, n_rules = validate_derivations(rule_files or None, mapping_paths=files)
+    result.findings.extend(findings)
     typer.echo(result.render())
+    typer.echo(f"checked {n_rules} derivation rules in {len(rule_files)} file(s)")
     if result.errors:
         raise typer.Exit(code=1)
 

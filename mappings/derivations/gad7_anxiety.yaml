@@ -1,0 +1,57 @@
+# Derivation rules for the GAD-7. See README.md and docs/adr/0003-*.md.
+instrument: gad7_anxiety
+label: Generalized Anxiety Disorder 7-item scale (GAD-7)
+recall_window:
+  iso8601: P2W
+  text: over the last 2 weeks
+  source: data_dict
+scoring_reference: >-
+  Spitzer RL, Kroenke K, Williams JBW, Löwe B. A brief measure for assessing generalized
+  anxiety disorder: the GAD-7. Arch Intern Med. 2006;166(10):1092-1097. Item-level
+  endorsement is any answer above "Not at all".
+rules:
+  - subject_id: b2ai:gad7_anxiety.nervous_anxious
+    object_id: HP:0000739
+    object_label: Anxiety
+    confidence: 0.95
+    present:
+      when_value: ">=1"
+      note: at least 'Several days'
+    absent:
+      when_value: "==0"
+      note: "'Not at all'"
+
+  - subject_id: b2ai:gad7_anxiety.easily_agitated
+    object_id: HP:0000737
+    object_label: Irritability
+    confidence: 0.95
+    present:
+      when_value: ">=1"
+      note: at least 'Several days'
+    absent:
+      when_value: "==0"
+      note: "'Not at all'"
+
+  - subject_id: b2ai:gad7_anxiety.hard_to_sit_still
+    object_id: HP:0000711
+    object_label: Restlessness
+    confidence: 0.95
+    present:
+      when_value: ">=1"
+      note: at least 'Several days'
+    absent:
+      when_value: "==0"
+      note: "'Not at all'"
+
+  - subject_id: b2ai:gad7_anxiety.worry_too_much
+    object_id: HP:0025771
+    object_label: Ruminations
+    confidence: 0.8
+    present:
+      when_value: ">=1"
+      note: at least 'Several days'
+    absent:
+      unauthorable: conflated-superset
+      note: >-
+        Not worrying too much about different things does not exclude ruminations on
+        other themes.

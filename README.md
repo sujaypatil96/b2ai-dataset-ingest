@@ -52,6 +52,7 @@ src/b2ai_dataset_ingest/
   ontology/     MONDO/HPO/LOINC term helpers
 config/         per-dataset YAML mappings (config/voice/) + shared value sets
 mappings/       SSSOM term mappings: B2AI dataset terms (b2ai:) -> HPO, with a validator
+                  derivations/  answer -> PhenotypicFeature rules, one YAML per instrument
 docs/           design docs (SDDs), ADRs, plans, mapping conventions
 tests/          fixtures + tests, incl. tests/data/multisession/ for time-course
 data_synth/     (gitignored) synthetic input — see scripts/fetch_*synthetic*.sh
@@ -99,10 +100,18 @@ Undo with `sudo chown -R "$USER":staff data out && sudo chmod 755 data out`.
 
 `mappings/` holds [SSSOM](https://mapping-commons.github.io/sssom/) files mapping Bridge2AI-Voice
 dataset terms (a project-local `b2ai:` namespace) to the Human Phenotype Ontology — a standalone,
-shareable artifact, separate from the ETL configs and not yet consumed by the emitter. Every HPO
-code is machine-verified against a pinned HPO release (via oaklib) so nothing is hallucinated;
-`b2ai-ingest validate-mappings` (and CI) enforce it. See
+shareable artifact, separate from the ETL configs. A row records that an item is *about* an HPO
+concept and nothing more. Every HPO code is machine-verified against a pinned HPO release (via
+oaklib) so nothing is hallucinated; `b2ai-ingest validate-mappings` (and CI) enforce it. See
 [docs/mapping-conventions.md](docs/mapping-conventions.md#term-mappings-to-hpo-sssom).
+
+How a participant's *answer* becomes a `PhenotypicFeature` — cut-points, recall windows, and the
+present/absent poles — is a separate layer in
+[`mappings/derivations/`](mappings/derivations/README.md), one YAML per instrument, validated by
+the same command. Keeping the two apart is
+[ADR-0003](docs/adr/0003-separate-derivation-from-mapping.md); it is why no `excluded = true`
+feature is emitted today (an exclusion with no bounded period reads as lifetime absence, and
+Bridge2AI-Voice sessions carry no timestamp to bound it against).
 
 ```bash
 uv sync --extra validation            # install oaklib (the offline HPO backend)
