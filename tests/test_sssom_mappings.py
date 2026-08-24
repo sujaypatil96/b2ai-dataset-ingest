@@ -239,35 +239,3 @@ def test_exact_synonym_warns_but_related_synonym_errors(tmp_path: Path):
     result = validate_paths([path], check_ontology=True)
     assert {f.code for f in result.warnings} & {"noncanonical-label"}
     assert "label-mismatch" in {f.code for f in result.errors}
-
-
-def test_one_cut_point_per_hpo_term():
-    """An HPO term must be gated at the same threshold by every instrument mapping it.
-
-    Two instruments gating one term differently (e.g. HP:0012154 at >=1 from PHQ-9 but >=2
-    from DSM-5) let a single phenopacket assert that term both present and excluded, with
-    no onset to order the two. Checked per pole: present rows must agree with each other,
-    and `Not` rows with each other.
-    """
-    import collections
-
-    from b2ai_dataset_ingest.mapping.sssom_io import parse_sssom
-
-    present: dict[str, set[str]] = collections.defaultdict(set)
-    absent: dict[str, set[str]] = collections.defaultdict(set)
-    for path in MAPPING_FILES:
-        _, rows = parse_sssom(path)
-        for row in rows:
-            when = (row.get("when_value") or "").strip()
-            if not when:
-                continue
-            bucket = absent if (row.get("predicate_modifier") or "").strip() == "Not" else present
-            bucket[row["object_id"]].add(when)
-
-    conflicts = {
-        term: sorted(cuts)
-        for bucket in (present, absent)
-        for term, cuts in bucket.items()
-        if len(cuts) > 1
-    }
-    assert not conflicts, f"HPO terms gated at conflicting cut-points: {conflicts}"

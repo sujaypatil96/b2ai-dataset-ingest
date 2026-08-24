@@ -108,6 +108,42 @@ value-gated one that derives a `PhenotypicFeature` (per [ADR-0002](adr/0002-cond
 - **`predicate_modifier`** — `Not` marks the **absent** pole (→ phenopacket
   `PhenotypicFeature.excluded = true`); empty marks present. No other value is allowed.
 
+#### Choosing a cut-point
+
+Two things bear on a `when_value`, and they are not the same:
+
+1. **The instrument's own scoring rule** — what its designers count as a positive endorsement
+   (e.g. the ASRS scores its hyperactivity items positive only at *Often*/*Very Often*).
+2. **What the HPO term itself requires** — `HP:5200273` *Pathological sadness* is defined as
+   sadness "excessive in intensity, duration, or resistance to self-regulation", which a single
+   rare day does not meet whatever the instrument says.
+
+They usually agree. **Where they conflict, weight (2)**: the assertion being emitted is about the
+HPO term, not about the questionnaire.
+
+**Compare answer labels, never the integers.** Two instruments can gate the same HPO term at the
+same *severity* while using different numbers, because their scales differ in length and in kind.
+`HP:0012154` *Anhedonia* is gated three ways:
+
+| Item | Scale | Cut-point | Answer it fires at |
+| --- | --- | --- | --- |
+| `phq9.no_interest` | frequency, 0–3 | `>=1` | "Several days" |
+| `dsm5_adult.little_interest` | frequency, 0–4 | `>=2` | "Mild (**Several days**)" |
+| `ptsd_adult.losing_interest` | **severity**, 0–4 | `>=2` | "Moderately" |
+
+The first two are the same severity at different integers — `dsm5_adult` has an extra rung at the
+bottom ("Slight — rare, less than a day or two"), so its 2 is phq9's 1. Setting both to `>=1`
+looks like harmonization and is the opposite: it drops the DSM-5 bar to "rare, less than a day or
+two" while leaving PHQ-9 at "several days".
+
+The third cannot be aligned with either: PTSD rates *severity*, not frequency, and no answer on
+that scale is equivalent to "several days".
+
+**This is a curator judgment, not a machine check.** An earlier automated test required every
+instrument gating a term to share one `when_value` string; it was removed because that premise is
+false in both directions — equal integers are not equal severities, and non-commensurable scales
+(frequency vs severity) have no equal labels to compare.
+
 Declare `when_value` once in the file's SSSOM `extension_definitions` metadata; a present/absent
 pair repeats the same `subject_id`/`predicate_id`/`object_id` and differs only in
 `predicate_modifier` + `when_value` (so it is **not** a duplicate). Each derived feature is
