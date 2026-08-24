@@ -108,6 +108,58 @@ value-gated one that derives a `PhenotypicFeature` (per [ADR-0002](adr/0002-cond
 - **`predicate_modifier`** — `Not` marks the **absent** pole (→ phenopacket
   `PhenotypicFeature.excluded = true`); empty marks present. No other value is allowed.
 
+#### When an absent pole is justified
+
+`excluded = true` is a strong claim, and an **unqualified** one: a phenopacket carries no time
+scope on an excluded feature unless it has an `onset`. Emitted from a two-week item, it does not
+say "absent over the last fortnight" — it says the participant does not have the phenotype.
+
+So author a `Not` row only when the item's lowest answer denies that the phenotype **ever
+occurred**. Three ways that fails:
+
+- **Bounded recall.** "Not at all *in the past two weeks*" denies a fortnight, not a life. This is
+  the dominant case — see *Recall windows* below; it currently disqualifies nearly every absent
+  pole in the file.
+- **Baseline-relative items.** "Feeling more irritated… *than usual*" — a participant who is
+  always irritable answers `0`, which means *not worse than usual*, not *not irritable*.
+- **Intensity- or behaviour-qualified items.** "Being extremely irritable *to the point where you
+  yelled, got into fights, or destroyed things*" — `0` denies the escalation, not the emotion. It
+  can support `HP:0000718` *Aggressive behavior* (whose HPO definition names those very acts) but
+  not `HP:0000737` *Irritability*.
+
+A **conflated** "A or B" item is *not* a failure on its own: `0` denies both senses, so an absent
+pole is admissible even where the present pole cannot be attributed to one sense (see
+`phq9.feeling_bad_self`) — provided it clears the three tests above.
+
+The clean case is a lifetime item — "have you *ever* experienced X?" — where "no" is a genuine
+lifetime denial. No gated instrument in this dataset is phrased that way.
+
+**Recall windows.** Nearly every gated item asks about a bounded period, so `0` means *not during
+that window* rather than *absent* — and the window does not survive into the output, because a
+derived feature gets no `TimeElement` when the session id is an opaque hash. An `excluded = true`
+built from a two-week item therefore reads as unqualified absence.
+
+| Instrument | Window in the data dict | Published instrument |
+| --- | --- | --- |
+| PHQ-9, GAD-7, Leicester Cough | two weeks | two weeks |
+| DSM-5 adult | mostly absent (paraphrased out) | two weeks |
+| ASRS (`adhd_adult`) | none | past 6 months |
+| PTSD (`ptsd_adult`) | none | past month |
+| Dyspnea Index | none | no window found — unverified |
+
+**The data dict is not authoritative here.** Three instruments record no window, but ASRS and PTSD
+are bounded in their published form, so the omission is a gap in the dict rather than a property
+of the instrument. Never infer that an item is unbounded from the dict's silence.
+
+**So there is no unbounded category to fall back on.** Of the 26 absent poles in this file, 24 sit
+on instruments that are certainly bounded and the remaining 2 (Dyspnea Index) are merely
+unconfirmed. Every `excluded = true` the pipeline emits therefore rests on a scoped answer, and
+none of that scope reaches the output.
+
+*Undecided:* whether absent poles should be authored at all until the window can be represented
+(via `PhenotypicFeature.onset`, or by not emitting `excluded` from bounded items). This is the
+whole mechanism, not an edge case, so it is deferred rather than settled.
+
 Declare `when_value` once in the file's SSSOM `extension_definitions` metadata; a present/absent
 pair repeats the same `subject_id`/`predicate_id`/`object_id` and differs only in
 `predicate_modifier` + `when_value` (so it is **not** a duplicate). Each derived feature is
