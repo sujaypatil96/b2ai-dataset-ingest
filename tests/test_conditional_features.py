@@ -1,7 +1,7 @@
 """Reader -> value-gated HPO PhenotypicFeatures, end to end (ADR-0002).
 
 Exercises the whole apply path against a hermetic PHQ-9 slice and an injected SSSOM mapping
-carrying the worked-example present/absent condition, then round-trips through the emitter.
+carrying the worked-example value gate, then round-trips through the emitter.
 """
 
 from pathlib import Path
@@ -29,23 +29,18 @@ _MAPPING_HEADER = """\
 
 _COLS = [
     "subject_id", "subject_label", "predicate_id", "object_id", "object_label",
-    "mapping_justification", "confidence", "predicate_modifier", "when_value",
+    "mapping_justification", "confidence", "when_value",
 ]
 
 
-def _mapping_row(modifier: str, when: str) -> str:
+def _mapping_row(when: str) -> str:
     return "\t".join(
         ["b2ai:phq9.feeling_depressed", "Feeling down", "skos:broadMatch", "HP:0000716",
-         "Depression", "semapv:ManualMappingCuration", "0.8", modifier, when]
+         "Depression", "semapv:ManualMappingCuration", "0.8", when]
     )
 
 
-_MAPPING = (
-    _MAPPING_HEADER
-    + "\t".join(_COLS) + "\n"
-    + _mapping_row("", ">=1") + "\n"        # present pole
-    + _mapping_row("Not", "==0") + "\n"     # absent pole
-)
+_MAPPING = _MAPPING_HEADER + "\t".join(_COLS) + "\n" + _mapping_row(">=1") + "\n"
 
 
 def _build_dataset(root: Path) -> Path:
@@ -54,7 +49,7 @@ def _build_dataset(root: Path) -> Path:
     (qdir / "phq9.tsv").write_text(
         "participant_id\tsession_id\tfeeling_depressed\n"
         "p1\tses-baseline\tSeveral days\n"   # -> present at baseline
-        "p1\tses-followup\tNot at all\n"     # -> excluded at followup
+        "p1\tses-followup\tNot at all\n"     # below the gate -> nothing asserted
         "p2\tses-baseline\t\n"               # blank -> nothing asserted
     )
     mapping = root / "b2ai-voice-questionnaires.sssom.tsv"
@@ -67,7 +62,7 @@ def _source(tmp_path: Path) -> VoiceSource:
     return VoiceSource(root=tmp_path, config_dir=CONFIG_DIR, mappings=[mapping])
 
 
-def test_present_and_absent_features_across_sessions(tmp_path: Path):
+def test_only_answers_above_the_gate_derive_features(tmp_path: Path):
     source = _source(tmp_path)
     participants = {p.individual.id: p for p in source.read()}
 
@@ -75,16 +70,16 @@ def test_present_and_absent_features_across_sessions(tmp_path: Path):
     by_session = {
         (f.onset.session_id if f.onset else None): f for f in p1.phenotypic_features
     }
-    assert set(by_session) == {"ses-baseline", "ses-followup"}
+    # "Not at all" at followup is below the gate: it asserts nothing, present *or* absent.
+    assert set(by_session) == {"ses-baseline"}
     assert by_session["ses-baseline"].type.id == "HP:0000716"
     assert by_session["ses-baseline"].excluded is False
-    assert by_session["ses-followup"].excluded is True  # "Not at all" -> absent pole
 
     # A blank answer asserts nothing.
     assert participants["p2"].phenotypic_features == []
 
-    # The report counts the two derived features.
-    assert source.report.features_derived == 2
+    # The report counts the one derived feature.
+    assert source.report.features_derived == 1
 
 
 def test_derived_feature_carries_self_report_evidence(tmp_path: Path):
@@ -104,7 +99,7 @@ def test_derived_features_roundtrip_through_emitter(tmp_path: Path):
     assert written == 2
 
     parsed = Parse((tmp_path / "out" / "p1.json").read_text(), pp.Phenopacket())
-    assert len(parsed.phenotypic_features) == 2
+    assert len(parsed.phenotypic_features) == 1
     declared = {r.namespace_prefix for r in parsed.meta_data.resources}
     # The self-report provenance pulls in ECO + the b2ai source-item reference + HP.
     assert {"HP", "ECO", "b2ai"} <= declared

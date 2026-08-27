@@ -53,18 +53,19 @@ pretending it is deterministic, and to make step 2 **airtight**.
    wording and still need different terms, so never blanket-replace across the mapping files.
 6. **Author the value condition (`when_value`), when the item should derive a phenotype.**
    A term mapping only says the item is *about* a concept; a `when_value` says *which answers
-   assert it* (and its absent pole). Follow `references/when-value.md`: pick the cut-point,
-   write the present row and (usually) the `predicate_modifier: Not` absent row, and flag the
-   threshold as **needs expert sign-off** -- the validator checks that it *parses*, never that
-   it is clinically right. Leave `when_value` empty for a purely semantic mapping.
+   assert it is present*. Follow `references/when-value.md`: pick the cut-point, add the column
+   to the row you already wrote, and flag the threshold as **needs expert sign-off** -- the
+   validator checks that it *parses*, never that it is clinically right. Leave `when_value`
+   empty for a purely semantic mapping. **Only presence is ever asserted** (absent poles were
+   withdrawn on clinical review), and only `exactMatch`/`broadMatch` rows may carry a gate.
 7. **Emit a review artifact**, not a fait accompli -- one row per candidate in the format in
    `references/review-artifact.md`: proposal, rationale, alternatives, confidence, and an
    explicit split of *auto-verified* (code is real/current) vs *needs expert sign-off*
    (concept + predicate + `when_value` cut-point).
 8. **Run the deterministic gate.** Nothing ships until
    `uv run b2ai-ingest validate-mappings --data-root <phenotype/>` is clean (existence,
-   `owl:deprecated`, label match, structure, subject-column existence, `when_value` parses,
-   `predicate_modifier ∈ {"", "Not"}`). This is the guarantee; treat a red gate as blocking.
+   `owl:deprecated`, label match, structure, subject-column existence, `when_value` parses and
+   sits on a gateable predicate). This is the guarantee; treat a red gate as blocking.
 9. **Close the loop.** When an expert overrides a proposal, add the decision back into
    `references/scope-checklist.md`, `references/predicate-rules.md`, or
    `references/when-value.md` as a rule or worked example. Over time this shrinks the variance

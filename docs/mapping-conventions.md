@@ -77,7 +77,10 @@ is *value-gated*: the pipeline derives a `PhenotypicFeature` from a participant'
   single checkbox meaning two distinct concepts, e.g. `pneumothorax_atelectasis`) do **not**
   `broadMatch` to just one sense — that inverts the direction. Either split into one
   `narrowMatch` row per sense, or retarget to a term that truly subsumes both (e.g.
-  `no_appetite` "poor appetite or overeating" → `Abnormal eating behavior`).
+  `no_appetite` "poor appetite or overeating" → `Abnormal eating behavior`). **Direction is
+  decided by the concepts, not by how close the wording looks**: if the HPO term is the stronger,
+  more specific phenomenon (`Sense of impending doom` vs the item's "something awful might
+  happen"), it is a `narrowMatch`, however near-synonymous the two read.
 - **No hallucinated terms.** Every `object_id` was found by *searching HPO itself* (not guessed)
   and is re-verified by `ontology/sssom_validate.py`: it must exist and not be **deprecated**
   (checked against HPO's `owl:deprecated` flag via `adapter.obsoletes()`, not merely the
@@ -96,7 +99,7 @@ is *value-gated*: the pipeline derives a `PhenotypicFeature` from a participant'
 ### Conditional (value-gated) mappings
 
 A term→term mapping records that an item is *about* an HPO concept; it does not assert a
-participant *has* it — that depends on the answer. Two optional columns turn a mapping into a
+participant *has* it — that depends on the answer. One optional column turns a mapping into a
 value-gated one that derives a `PhenotypicFeature` (per [ADR-0002](adr/0002-conditional-hpo-mapping.md)):
 
 - **`when_value`** — a condition on the participant's answer. Grammar: comparisons `>=1`, `<=3`,
@@ -105,8 +108,15 @@ value-gated one that derives a `PhenotypicFeature` (per [ADR-0002](adr/0002-cond
   same **ordinal score** the emitted Measurement carries (resolved from the data dict's
   `choices`); string conditions against the raw cell (case-insensitively). An **empty**
   `when_value` is an inert semantic mapping — additive, changing no output.
-- **`predicate_modifier`** — `Not` marks the **absent** pole (→ phenopacket
-  `PhenotypicFeature.excluded = true`); empty marks present. No other value is allowed.
+- **Only presence is asserted.** There is no `predicate_modifier` column and no
+  `excluded = true`: see *Why absence is not asserted* below. The validator **errors**
+  (`withdrawn-column`) if the column reappears.
+- **Only `skos:exactMatch` and `skos:broadMatch` rows may carry a `when_value`.** Deriving "the
+  participant has this phenotype" from an endorsement is sound only when the HPO term is the same
+  as, or broader than, what the item asked. A `narrowMatch` row says the HPO term is one sub-sense
+  of the item, and an endorsement cannot say which sense was meant; a `relatedMatch` row says
+  neither concept subsumes the other. Both stay inert semantic mappings. Validator:
+  `ungateable-predicate`.
 
 #### Choosing a cut-point
 
@@ -144,36 +154,15 @@ instrument gating a term to share one `when_value` string; it was removed becaus
 false in both directions — equal integers are not equal severities, and non-commensurable scales
 (frequency vs severity) have no equal labels to compare.
 
-#### When an absent pole is justified
+#### Why absence is not asserted
 
 `excluded = true` is a strong claim, and an **unqualified** one: a phenopacket carries no time
-scope on an excluded feature unless it has an `onset`. Emitted from a two-week item, it does not
-say "absent over the last fortnight" — it says the participant does not have the phenotype.
+scope on an excluded feature unless it has an `onset`, and a derived feature gets no `TimeElement`
+when the session id is an opaque hash. Emitted from a two-week item it does not say "absent over
+the last fortnight" — it says the participant does not have the phenotype.
 
-So author a `Not` row only when the item's lowest answer denies that the phenotype **ever
-occurred**. Three ways that fails:
-
-- **Bounded recall.** "Not at all *in the past two weeks*" denies a fortnight, not a life. This is
-  the dominant case — see *Recall windows* below; it currently disqualifies nearly every absent
-  pole in the file.
-- **Baseline-relative items.** "Feeling more irritated… *than usual*" — a participant who is
-  always irritable answers `0`, which means *not worse than usual*, not *not irritable*.
-- **Intensity- or behaviour-qualified items.** "Being extremely irritable *to the point where you
-  yelled, got into fights, or destroyed things*" — `0` denies the escalation, not the emotion. It
-  can support `HP:0000718` *Aggressive behavior* (whose HPO definition names those very acts) but
-  not `HP:0000737` *Irritability*.
-
-A **conflated** "A or B" item is *not* a failure on its own: `0` denies both senses, so an absent
-pole is admissible even where the present pole cannot be attributed to one sense (see
-`phq9.feeling_bad_self`) — provided it clears the three tests above.
-
-The clean case is a lifetime item — "have you *ever* experienced X?" — where "no" is a genuine
-lifetime denial. No gated instrument in this dataset is phrased that way.
-
-**Recall windows.** Nearly every gated item asks about a bounded period, so `0` means *not during
-that window* rather than *absent* — and the window does not survive into the output, because a
-derived feature gets no `TimeElement` when the session id is an opaque hash. An `excluded = true`
-built from a two-week item therefore reads as unqualified absence.
+Nearly every gated item asks about a bounded period, so its lowest answer means *not during that
+window*:
 
 | Instrument | Window in the data dict | Published instrument |
 | --- | --- | --- |
@@ -185,25 +174,28 @@ built from a two-week item therefore reads as unqualified absence.
 
 **The data dict is not authoritative here.** Three instruments record no window, but ASRS and PTSD
 are bounded in their published form, so the omission is a gap in the dict rather than a property
-of the instrument. Never infer that an item is unbounded from the dict's silence.
+of the instrument. Never infer that an item is unbounded from the dict's silence. The clean case
+would be a lifetime item — "have you *ever* experienced X?" — and no gated instrument in this
+dataset is phrased that way.
 
-**So there is no unbounded category to fall back on.** Of the 26 absent poles in this file, 24 sit
-on instruments that are certainly bounded and the remaining 2 (Dyspnea Index) are merely
-unconfirmed. Every `excluded = true` the pipeline emits therefore rests on a scoped answer, and
-none of that scope reaches the output.
+**So the absent pole was withdrawn set-wide** on clinical review (2026-08-24), which reached the
+same conclusion independently: *"'Not at all' only indicates that the symptom was not reported
+during the past two weeks. It does not establish that the phenotype is absent more generally."*
+All 26 `predicate_modifier: Not` rows are gone, along with the column and the code that read it
+([ADR-0002](adr/0002-conditional-hpo-mapping.md), *Amended 2026-08-27*). A low answer now asserts
+nothing at all — the same as a blank cell.
 
-*Undecided:* whether absent poles should be authored at all until the window can be represented
-(via `PhenotypicFeature.onset`, or by not emitting `excluded` from bounded items). This is the
-whole mechanism, not an edge case, so it is deferred rather than settled.
+Reinstating absence needs a way to carry the instrument's recall window into the output (via
+`PhenotypicFeature.onset`, or a term that is genuinely unbounded), not just a column.
 
-Declare `when_value` once in the file's SSSOM `extension_definitions` metadata; a present/absent
-pair repeats the same `subject_id`/`predicate_id`/`object_id` and differs only in
-`predicate_modifier` + `when_value` (so it is **not** a duplicate). Each derived feature is
+Declare `when_value` once in the file's SSSOM `extension_definitions` metadata; one
+`subject_id`/`predicate_id`/`object_id` triple carries at most one row, and a repeat is a
+duplicate however its `when_value` differs. Each derived feature is
 stamped with provenance: a human-readable `description` and a GA4GH `Evidence` whose
 `evidenceCode` is `ECO:0006160` ("self-reported patient statement … in automatic assertion") with
 an `ExternalReference` back to the source item — self-report-derived phenotypes stay
 distinguishable from clinician-observed findings. The validator checks only that `when_value`
-**parses** and `predicate_modifier ∈ {"", "Not"}`; whether a cut-point is *clinically* right is a
+**parses** and sits on a gateable predicate; whether a cut-point is *clinically* right is a
 curator judgment (see the `curation-assist` skill). The apply path lives in
 `mapping/hpo_rules.py` (loader + derivation) and `mapping/conditions.py` (the grammar); the reader
 runs it during questionnaire ingestion. Note the reference `sssom-py` parser **drops**

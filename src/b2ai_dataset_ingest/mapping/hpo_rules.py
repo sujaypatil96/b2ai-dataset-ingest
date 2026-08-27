@@ -14,8 +14,9 @@ Two steps:
   :class:`~b2ai_dataset_ingest.model.core.PhenotypicFeatureObservation`\\s. Each derived feature
   carries provenance: a human-readable description and a GA4GH ``Evidence`` with an ECO
   self-report code and an ``ExternalReference`` to the source item — so a questionnaire-derived
-  phenotype is never mistaken for a clinician-observed finding. The absent pole is expressed
-  with ``predicate_modifier: Not`` (-> ``excluded = True``), not an invented column.
+  phenotype is never mistaken for a clinician-observed finding. Only **presence** is derived:
+  a questionnaire's lowest answer denies the symptom within the instrument's recall window,
+  not the phenotype (see docs/mapping-conventions.md).
 
 The loader is **tolerant**, mirroring the rest of the reader: a malformed ``when_value`` or a
 non-HPO object is logged (by subject — mapping metadata, never PHI) and skipped, because
@@ -56,9 +57,6 @@ SELF_REPORT_EVIDENCE = OntologyTerm(
     label="self-reported patient statement evidence used in automatic assertion",
 )
 
-#: Only ``predicate_modifier: Not`` flips a feature to excluded; everything else asserts present.
-_NEGATION_MODIFIER = "Not"
-
 
 @dataclass(frozen=True)
 class ConditionalRule:
@@ -70,16 +68,10 @@ class ConditionalRule:
     object_id: str  # HP:XXXXXXX
     object_label: str
     predicate_id: str
-    predicate_modifier: str  # "" (present) or "Not" (excluded)
     condition: ValueCondition
     when_value: str  # raw expression, kept for provenance
     subject_label: str = ""
     confidence: str = ""
-
-    @property
-    def excluded(self) -> bool:
-        """True when this rule asserts the *absent* pole (``predicate_modifier: Not``)."""
-        return self.predicate_modifier == _NEGATION_MODIFIER
 
 
 # --------------------------------------------------------------------------- loading
@@ -137,7 +129,6 @@ def _rule_from_row(row: dict[str, str], fname: str) -> ConditionalRule | None:
         object_id=object_id,
         object_label=(row.get("object_label") or "").strip(),
         predicate_id=(row.get("predicate_id") or "").strip(),
-        predicate_modifier=(row.get("predicate_modifier") or "").strip(),
         condition=condition,
         when_value=when_value,
         subject_label=(row.get("subject_label") or "").strip(),
@@ -181,7 +172,6 @@ def _feature_from_rule(
 ) -> PhenotypicFeatureObservation:
     return PhenotypicFeatureObservation(
         type=OntologyTerm(id=rule.object_id, label=rule.object_label or None),
-        excluded=rule.excluded,
         onset=time,
         description=_describe(rule),
         evidence=[
@@ -199,11 +189,10 @@ def _feature_from_rule(
 
 def _describe(rule: ConditionalRule) -> str:
     """Human-readable provenance: source item, label, predicate, when_value, confidence."""
-    pole = "absent" if rule.excluded else "present"
     source = f"{rule.subject_id}" + (f" ({rule.subject_label})" if rule.subject_label else "")
     target = f"{rule.object_id}" + (f" {rule.object_label}" if rule.object_label else "")
     confidence = f", confidence {rule.confidence}" if rule.confidence else ""
     return (
-        f"Derived {pole} from self-reported item {source} "
+        f"Derived present from self-reported item {source} "
         f"[{rule.predicate_id} {target}] when answer {rule.when_value}{confidence}."
     )

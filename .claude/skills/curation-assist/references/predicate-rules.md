@@ -114,12 +114,56 @@ half. Copy the full item text from the data dict before judging a column — and
 | `acid_reflux` "heart burn, GERD" | HP:0002020 Gastroesophageal reflux | exact | GERD is an exact synonym — a named disease *with* an exact HPO term stays exact |
 | `stroke` "stroke **and/or** aphasia" | HP:0001297 Stroke **+** HP:0002381 Aphasia | narrow ×2 | split; each sense is narrower than the column |
 | `dizziness` "lightheadedness or balance disturbance" | HP:0002321 Vertigo | related | **trap 1:** HPO *Vertigo* = spinning, which the source excludes — synonym match is misleading, so downgrade + comment |
-| `phq9.feeling_depressed` "Feeling down, depressed, or hopeless" | HP:5200273 Pathological sadness | exact | **trap 2:** *not* HP:0000716 *Depression*, whose exact synonym is "Depressive episode" — a syndrome, not one item. HP:5200273's exact synonyms ("Down in the dumps", "Feeling hopeless all the time") match the item verbatim |
+| `phq9.feeling_depressed` "Feeling down, depressed, or hopeless" | HP:5200273 Pathological sadness | exact — **contested**, see *One term, three predicates* | **trap 2:** *not* HP:0000716 *Depression*, whose exact synonym is "Depressive episode" — a syndrome, not one item. HP:5200273's exact synonyms ("Down in the dumps", "Feeling hopeless all the time") match the item verbatim |
 | `custom_affect_scale.sad_or_down` "Sad or down" | HP:5200273 Pathological sadness | related | same term, weaker predicate: one momentary 0–10 rating does not establish the excess in intensity/duration that makes sadness *pathological* |
 | `phq9.trouble_concentrate` "Trouble concentrating… reading the newspaper or watching television" | HP:0031987 Diminished ability to concentrate | exact | exact synonyms "Concentration problems"/"Poor concentration", and the HPO definition names re-reading text without understanding — the item's own example |
 | `adhd_adult.difficulty_attention` "difficulty keeping your attention when doing boring/repetitive work" | HP:0000736 Short attention span | broad | **sibling terms, don't merge:** HP:0000736 is *distractibility and impulsivity*, HP:0031987 is *failure to sustain focus*. The ASRS construct is the former, so this row stays put while the PHQ-9 one moves |
 | `panas.hostile` "Hostile" | HP:0031473 Anger | related | "Hostile"/"Hostility" are **exact synonyms of Anger**, not of Irritability — found only by re-checking every row that used HP:0000737, not from the review |
 | `custom_affect_scale.irritated` "Irritated or angry **(towards something or someone)**" | HP:0000737 + HP:0031473 | related ×2 | near-synonyms in English, distinct in HPO: *Irritability* is an undirected lowered threshold, *Anger* is hostility **directed** at a provocation — which the parenthetical states outright |
+
+## Worked examples from the 2026-08-24 clinical review
+
+A clinician (Sek Won Kong) reviewed the shipped questionnaire mappings. Every call below is an
+**expert override of an agent proposal** — the highest-value kind of example this file can carry.
+
+| Source (description) | Was | Now | The lesson |
+| --- | --- | --- | --- |
+| `gad7_anxiety.afraid_of_things` "Feeling afraid, as if something awful might happen" | broad → HP:0033845 *Sense of impending doom* | **narrow** | "Subj is broader than Obj." HPO's "life-threatening or tragic is about to occur" is the *stronger* phenomenon — and the row's own comment said so while the predicate said the opposite |
+| `ptsd_adult.losing_interest` "Losing interest in activities you used to enjoy **before a stressful experience**" | exact → HP:0012154 *Anhedonia* | **broad** | the item is event-scoped; Anhedonia covers event-related and unrelated alike, so the HPO term is broader |
+| `dsm5_adult.feeling_down` "Feeling down, depressed, or hopeless" | exact → HP:5200273 *Pathological sadness* | **related**, ungated | a normal-range mood descriptor is not the *pathological* term, however well the synonyms match |
+| `dsm5_adult.feeling_panic` "Feeling panic or being frightened" | broad → HP:0025269 *Panic attack* | **related**, ungated | a named clinical entity is not the feeling that names it. Contrast `panic_disorder` (a reported **diagnosis**) → Panic attack, which stays `broad` — the column kind decides |
+| `dsm5_adult.feeling_detached` "…from yourself, your body, surroundings, or memories" | exact → HP:5200217 *Depersonalization* | **narrow ×2**: + HP:5200218 *Derealization*, ungated | a conflation the agent read as one sense: "yourself/your body" is depersonalization, "surroundings" is derealization |
+| `dsm5_adult.someone_hear_thoughts` inbound sense ("you could hear another person's thoughts") | related → HP:0025776 *Thought insertion* | **row removed** | "I don't think there is an HPO term for this" |
+| `dsm5_adult.self_harm` "**Thoughts of** actually hurting yourself" | related → HP:0100716 *Self-injurious behavior* | **row removed** | same: HPO has no self-harm-*ideation* term |
+| `pediatric_hqa.peds_phqa_feeling_depressed` "Feeling down, depressed, **irritable**, or hopeless" | broad → HP:5200273 | **narrow ×2**: + HP:0000737 *Irritability* | the PHQ-**A** adds a sense the adult PHQ-9 item does not have. Never assume a paediatric variant is the adult item |
+| `pediatric_hqa.peds_phqa_thoughts_death` "better off dead, **or of hurting yourself**" | exact → HP:0031589 *Suicidal ideation* | **related** | conflates a passive death wish with self-harm ideation; the term matches neither exactly |
+| `pediatric_vhi10.peds_dry_raspy_hoarse` "dry, raspy, and/or hoarse" | broad → HP:0001609 *Hoarse voice* | **narrow** | three senses in one item; *Hoarse voice* is one of them, so it is narrower than the column |
+
+Three rules generalise out of that list.
+
+**`relatedMatch` is for *associated* concepts, not for "closest available term".** Two rows were
+deleted outright rather than downgraded. The tell is a `comment` that argues the term means
+something else — "*Thought insertion* emphasises alien thoughts imposed on the person rather than
+another's thoughts perceived", "HPO term denotes the behavior" — which is a description of a gap,
+not of a mapping. **A gap is a result: record what you searched and leave the sense unmapped.** A
+`relatedMatch` placed there survives review as a real assertion and misleads a downstream consumer
+who never reads the comment.
+
+**Thought vs act — the ideation twin of "state vs behaviour".** `dsm5_adult.self_harm` asks about
+*thoughts of* hurting yourself; HP:0100716 *Self-injurious behavior* is the act. HPO carries
+ideation terms only where it has minted them (HP:0031589 *Suicidal ideation*), so the absence of a
+self-harm-ideation term is a genuine gap, not an invitation to use the behaviour term. Check the
+item's verb before the item's topic.
+
+**A near-synonym is not an `exactMatch` when one side carries a severity or diagnostic claim.**
+"Feeling down, depressed, or hopeless" reads like *Pathological sadness*, whose exact synonyms are
+"Down in the dumps" and "Feeling hopeless all the time" — Trap 2 below uses that synonym list to
+*promote* the row to `exactMatch`. The reviewer pushed back: the HPO definition requires sadness
+"excessive in intensity, duration, or resistance to self-regulation", which a single screener item
+at "several days" does not establish. **Exact synonyms justify the topic, not the severity.** When
+the ontology definition adds a threshold the item does not test, downgrade. This rule has *not*
+yet been applied to `phq9.feeling_depressed`, which carries the identical item text and is still
+`exactMatch` and gated — see *One term, three predicates* under Trap 2.
 
 ## Trap 1 — lexical match ≠ semantic match
 
@@ -168,6 +212,38 @@ synonyms. Treat that warning as "go read the definition", not as a verdict.
 nothing like the PHQ-9 item, but its **exact** synonyms include "Down in the dumps" and "Feeling
 hopeless all the time" — so that row is `exactMatch` 0.95, not `broadMatch` 0.8. Rule 1 above
 says exact synonyms count; this is the reminder to actually *look at the list*.
+
+### One term, three predicates — an open question on HP:5200273
+
+**That promotion is contested.** The 2026-08-24 clinical review applied the opposite reasoning to
+`dsm5_adult.feeling_down`, whose item text is *word for word* the PHQ-9 row's — "Feeling down,
+depressed, or hopeless" — and downgraded it to `relatedMatch`, ungated, because HP:5200273's
+definition requires sadness "excessive in intensity, duration, or resistance to self-regulation"
+and one screener item does not establish that. Four rows now point at this one term:
+
+| Row | Item text | Answer scale | Predicate |
+| --- | --- | --- | --- |
+| `phq9.feeling_depressed` | "Feeling down, depressed, or hopeless" | 0–3 frequency, 2 weeks | `exactMatch` 0.95, gated `>=1` |
+| `dsm5_adult.feeling_down` | **identical** | 0–4 frequency, 2 weeks | `relatedMatch` 0.6, ungated |
+| `custom_affect_scale.sad_or_down` | "Sad or down" | 0–10 momentary | `relatedMatch` 0.6, ungated |
+| `pediatric_hqa.peds_phqa_feeling_depressed` | + "irritable" | PHQ-A 0–3 | `narrowMatch` ×2 |
+
+Rows 3 and 4 are principled — a momentary state rating, and a conflated item. **Rows 1 and 2 are
+not distinguishable on any ground the file states**: the reviewer flagged one and not the other,
+and whether PHQ-9 should follow was sent back to him rather than guessed, because the `>=1` gate
+rides on the answer (PHQ-9 depressed mood leaves the output entirely if it does).
+
+Two things follow for anyone curating here before that returns:
+
+- **Don't reconcile them by find-and-replace.** Some rows on this term *should* differ — see the
+  next subsection. Reconciling by hand-wave would flatten a real distinction to fix an accidental
+  one.
+- **Don't read row 1 as settled precedent.** Cite *Exact synonyms justify the topic, not the
+  severity* (above) as the live rule, and this row as the case it has not yet been applied to.
+
+The general shape is worth recognising: a reviewer works down a sheet and flags one instance of a
+pattern. **Before shipping their call, grep the file for the same item text** — a flag on one of
+two identical rows is nearly always fatigue, not a judgment that they differ.
 
 ### The column kind decides the granularity — never blanket-replace a term
 
