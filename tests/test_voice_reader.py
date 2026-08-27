@@ -2,9 +2,22 @@
 
 from pathlib import Path
 
+import yaml
+
 from b2ai_dataset_ingest.sources.voice import VoiceSource
 
 CONFIG_DIR = Path(__file__).parents[1] / "config" / "voice"
+
+
+def _a_placeholder_condition() -> str:
+    """A diagnosis condition still carrying the MONDO:0000000 placeholder.
+
+    Read from the config rather than hard-coded: coding one of them (as anxiety,
+    laryngeal_dystonia and laryngitis were on 2026-08-27) must not break the test below,
+    which is about placeholder *handling*, not about any particular condition.
+    """
+    conditions = yaml.safe_load((CONFIG_DIR / "diagnosis.yaml").read_text())["conditions"]
+    return next(k for k, v in sorted(conditions.items()) if v["id"] == "MONDO:0000000")
 
 
 def _write_tsv(path: Path, header: list[str], rows: list[list[str]]) -> None:
@@ -37,14 +50,14 @@ def test_participant_only_in_unresolved_diagnosis_still_emitted(tmp_path: Path):
     # A participant whose only appearance is a not-yet-coded (placeholder) diagnosis file
     # must still enter the universe as an id-only Individual (no Disease), not be dropped.
     _write_tsv(
-        tmp_path / "diagnosis" / "anxiety.tsv",  # anxiety -> MONDO:0000000 placeholder
+        tmp_path / "diagnosis" / f"{_a_placeholder_condition()}.tsv",
         ["participant_id", "session_id"],
-        [["only-anxiety", "ses-baseline"]],
+        [["only-placeholder", "ses-baseline"]],
     )
     participants = list(VoiceSource(root=tmp_path, config_dir=CONFIG_DIR).read())
     ids = {p.individual.id for p in participants}
-    assert "only-anxiety" in ids
-    [p] = [p for p in participants if p.individual.id == "only-anxiety"]
+    assert "only-placeholder" in ids
+    [p] = [p for p in participants if p.individual.id == "only-placeholder"]
     assert p.diseases == []  # placeholder condition contributes no Disease
 
 

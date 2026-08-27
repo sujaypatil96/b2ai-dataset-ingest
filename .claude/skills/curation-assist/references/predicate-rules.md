@@ -191,12 +191,32 @@ phenotype" convention in the table above. The clinical review downgraded it to `
 epilepsy is a **disease** and Seizure is a **phenotype**, so neither subsumes the other — a
 seizure can occur without epilepsy, and the diagnosis is not a kind of seizure.
 
-That is the same observation as the reviewer's "Mapping MONDO?" on ~25 other confounders columns.
-**A disease-kind column belongs in a disease ontology**; while it sits in HPO, the strongest
-honest predicate is `relatedMatch` to its characteristic phenotype. The remaining rows on this
-convention (`panic_disorder`, `anxiety_disorder`, `parkinsons_disease`,
-`obsessive_compulsive_disorder`, …) are **left as-is pending the MONDO mapping set**, so that they
-move once rather than twice. Don't "fix" them one at a time in the meantime.
+That is the same observation as the reviewer's "Mapping MONDO?" on ~25 other confounders columns,
+and it is now settled: **a disease-kind column belongs in a disease ontology.** Nineteen of them
+have MONDO rows in `mappings/b2ai-voice-conditions.sssom.tsv`, and their HPO rows were resolved
+two ways, which is the distinction to carry forward:
+
+- **The HPO term is the *same concept* as the column** (`asthma`, `bipolar_disorder`, `diabetes`,
+  `schizophrenia`, …). Both rows stay `exactMatch`. Mapping one subject into two ontologies is
+  ordinary SSSOM, not a contradiction — `HP:0002099` *Asthma* and `MONDO:0004979` *asthma* are the
+  same thing said twice.
+- **The HPO term is a *manifestation* of the disease** (`anxiety_disorder`→Anxiety,
+  `panic_disorder`→Panic attack, `parkinsons_disease`→Parkinsonism, `obsessive_compulsive_disorder`
+  →Compulsive behaviors, `eating_disorder`→Abnormal eating behavior, `epilepsy`→Seizure). Demoted
+  to `relatedMatch`; the MONDO row is now the column's real mapping.
+
+Those six were exactly the rows the retired convention covered, which is what made the line
+drawable: *is the HPO term the disease, or a sign of it?*
+
+**A "no term" answer is a result, not a failure — and this is where it pays.** Seven diagnosis-kind
+columns have **no** MONDO row because MONDO has no term for them: `chronic_cough`,
+`glottic_insufficiency`, `laryngospasm_irritable_larynx`, `lesions_vocal_cord`,
+`muscle_tension_dysphonia`, `swallowing_disorder`, `vocal_cord_dysfunction`. That is the
+voice/laryngology core of this dataset, and those columns stay HPO-only — the near-misses are
+traps, not candidates (`MONDO:0007876` is *laryngeal abductor paralysis*, a hereditary disease, not
+functional vocal cord dysfunction; the `dysphagia` hits are all syndromes that merely *feature*
+dysphagia). **Search before assuming a disease ontology is the better home**: for a functional
+voice finding, HPO is not the fallback, it is the right answer.
 
 ## Trap 1 — lexical match ≠ semantic match
 

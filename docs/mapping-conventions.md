@@ -65,14 +65,32 @@ is *value-gated*: the pipeline derives a `PhenotypicFeature` from a participant'
   then no longer be joined to the `Measurement` it was derived from. Use a dot, never a
   dash. Enforced by `tests/test_config_mappings.py::test_config_b2ai_ids_use_dot_separator`
   and `::test_gated_sssom_subjects_have_a_matching_config_assay`.
-- **Files.** One SSSOM/TSV per domain (`b2ai-voice-signs-symptoms`, `b2ai-voice-questionnaires`),
-  each self-contained: a `#`-commented SSSOM YAML metadata header (`curie_map`, `license`,
-  `subject_source`, `object_source` + pinned HPO `object_source_version`, `mapping_tool`) then a
-  TSV of `subject_id, subject_label, predicate_id, object_id, object_label,
-  mapping_justification, confidence, comment`. SSSOM/TSV only (no JSON/RDF).
-- **Predicates.** `skos:exactMatch` (same concept / exact HPO synonym), `skos:broadMatch` (the
-  HPO term is *genuinely broader* and subsumes the source), `skos:narrowMatch` (HPO term is a
-  subtype of the source), `skos:relatedMatch` (loose; a `comment` says why).
+- **Files.** One SSSOM/TSV per domain **and object ontology** (`b2ai-voice-signs-symptoms`,
+  `b2ai-voice-questionnaires`, `b2ai-voice-conditions`), each self-contained: a `#`-commented
+  SSSOM YAML metadata header (`curie_map`, `license`, `subject_source`, `object_source` + pinned
+  `object_source_version`, `mapping_tool`) then a TSV of `subject_id, subject_label,
+  predicate_id, object_id, object_label, mapping_justification, confidence, comment`. SSSOM/TSV
+  only (no JSON/RDF).
+
+  **One object ontology per file, because SSSOM says so.** `object_source` is a mapping-*set*-level
+  slot, so a set with both `HP:` and `MONDO:` objects cannot declare it honestly. The validator
+  reads each file's `object_source`, and `OBJECT_SOURCES` in `ontology/sssom_validate.py` turns it
+  into the CURIE prefix every `object_id` must carry and the oaklib adapter that verifies it —
+  currently `obo:hp` → `HP:` and `obo:mondo` → `MONDO:`. A file declaring anything else is an
+  **error** (`unknown-object-source`), not an unchecked pass: an unrecognised source would
+  silently skip the anti-hallucination layer.
+- **Phenotype or disease?** A column reporting a **sign or symptom** maps to HPO; a column
+  reporting a **diagnosis** maps to MONDO (`b2ai-voice-conditions.sssom.tsv`). A disease column
+  cannot `exactMatch` or hierarchically match a phenotype term — `confounders.epilepsy` is not a
+  kind of `HP:0001250` *Seizure*, nor the reverse — so where such a column keeps an HPO row for
+  its characteristic phenotype, that row is a `relatedMatch`. Where the HPO term denotes the
+  *same* concept as the column (`asthma`, `bipolar_disorder`, …), both rows can stay
+  `exactMatch`: mapping one subject into two ontologies is normal SSSOM. Established on clinical
+  review (2026-08-24), which is also why several voice/laryngology columns stay HPO-only —
+  MONDO has no term for them (see that file's header `comment`).
+- **Predicates.** `skos:exactMatch` (same concept / exact ontology synonym), `skos:broadMatch`
+  (the ontology term is *genuinely broader* and subsumes the source), `skos:narrowMatch` (ontology
+  term is a subtype of the source), `skos:relatedMatch` (loose; a `comment` says why).
   `mapping_justification` is `semapv:ManualMappingCuration`. **Conflated "A or B" columns** (a
   single checkbox meaning two distinct concepts, e.g. `pneumothorax_atelectasis`) do **not**
   `broadMatch` to just one sense — that inverts the direction. Either split into one
@@ -81,12 +99,12 @@ is *value-gated*: the pipeline derives a `PhenotypicFeature` from a participant'
   decided by the concepts, not by how close the wording looks**: if the HPO term is the stronger,
   more specific phenomenon (`Sense of impending doom` vs the item's "something awful might
   happen"), it is a `narrowMatch`, however near-synonymous the two read.
-- **No hallucinated terms.** Every `object_id` was found by *searching HPO itself* (not guessed)
-  and is re-verified by `ontology/sssom_validate.py`: it must exist and not be **deprecated**
-  (checked against HPO's `owl:deprecated` flag via `adapter.obsoletes()`, not merely the
-  `"obsolete "` label convention — some deprecated terms keep a normal label), and its
-  `object_label` must equal HPO's authoritative label (an *exact* synonym only warns). The
-  validator surfaces the loaded HPO version and warns if it differs from the file's
+- **No hallucinated terms.** Every `object_id` was found by *searching the object ontology itself*
+  (not guessed) and is re-verified by `ontology/sssom_validate.py`: it must exist and not be
+  **deprecated** (checked against the `owl:deprecated` flag via `adapter.obsoletes()`, not merely
+  the `"obsolete "` label convention — some deprecated terms keep a normal label), and its
+  `object_label` must equal the ontology's authoritative label (an *exact* synonym only warns).
+  The validator surfaces each loaded release and warns if one differs from that file's
   `object_source_version`. It also enforces structure — known predicates, a **self-contained**
   `curie_map`, in-range confidence, no duplicate triples (across files), well-formed subjects —
   and, when a phenotype data root is supplied, that each `b2ai:` subject names a real data-dict

@@ -1,0 +1,39 @@
+# curie_map:
+#   b2ai: https://github.com/sujaypatil96/b2ai-dataset-ingest#
+#   MONDO: http://purl.obolibrary.org/obo/MONDO_
+#   skos: http://www.w3.org/2004/02/skos/core#
+#   semapv: https://w3id.org/semapv/vocab/
+#   github: https://github.com/
+#   obo: http://purl.obolibrary.org/obo/
+# mapping_set_id: https://github.com/sujaypatil96/b2ai-dataset-ingest/mappings/b2ai-voice-conditions.sssom.tsv
+# mapping_set_version: '2026-08-27'
+# license: https://creativecommons.org/publicdomain/zero/1.0/
+# mapping_provider: https://github.com/sujaypatil96/b2ai-dataset-ingest
+# creator_id:
+#   - github:sujaypatil96
+# subject_source: b2ai-voice/3.1.0
+# object_source: obo:mondo
+# object_source_version: mondo/releases/2026-05-05
+# mapping_tool: 'oaklib (sqlite:obo:mondo)'
+# mapping_date: '2026-08-27'
+# comment: Bridge2AI-Voice confounders/ columns that report a *diagnosis* rather than a sign or symptom, mapped to MONDO. Added on clinical review (2026-08-24) - a disease column cannot exactly or hierarchically match a phenotype term, so these belong in a disease ontology; the columns' HPO rows stay in b2ai-voice-signs-symptoms.sssom.tsv, weakened to relatedMatch where the HPO term is a manifestation of the disease rather than the disease itself. SSSOM object_source is a mapping-set-level slot, which is why this is a separate set rather than MONDO rows in the HPO file. Seven diagnosis-kind columns are deliberately absent because MONDO has no term for them - chronic_cough_med_hist_throat, glottic_insufficiency_med_hist_throat, laryngospasm_irritable_larynx, lesions_vocal_cord, muscle_tension_dysphonia, swallowing_disorder, vocal_cord_dysfunction - which is the voice/laryngology core of this dataset; those stay HPO-only. Every object_id verified against the pinned MONDO release with oaklib. See docs/mapping-conventions.md.
+subject_id	subject_label	predicate_id	object_id	object_label	mapping_justification	confidence	comment
+b2ai:confounders.adhd_med_hist_psychological	Attention deficit/hyperactivity disorder (ADHD)	skos:exactMatch	MONDO:0007743	attention deficit-hyperactivity disorder	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.anxiety_disorder	Anxiety disorder (generalized or social)	skos:exactMatch	MONDO:0005618	anxiety disorder	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.asd_med_hist_psychological	Autism spectrum disorder (ASD)	skos:exactMatch	MONDO:0005258	autism spectrum disorder	semapv:ManualMappingCuration	0.95	the column says 'Autism spectrum disorder (ASD)', so the spectrum term, not MONDO:0005260 autism
+b2ai:confounders.asthma_med_hist_lung	Asthma	skos:exactMatch	MONDO:0004979	asthma	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.bipolar_disorder	Bipolar disorder	skos:exactMatch	MONDO:0004985	bipolar disorder	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.bpd_med_hist_psychological	Borderline personality disorder (BPD)	skos:exactMatch	MONDO:0001156	borderline personality disorder	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.chronic_pericarditis	Chronic pericarditis	skos:broadMatch	MONDO:0005904	pericarditis	semapv:ManualMappingCuration	0.8	MONDO has no chronic-specific pericarditis term, so the general term is broader than the column
+b2ai:confounders.copd_med_hist_lung	Chronic obstructive pulmonary disease (COPD)	skos:exactMatch	MONDO:0005002	chronic obstructive pulmonary disease	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.currently_have_diabetes	Diabetes	skos:exactMatch	MONDO:0005015	diabetes mellitus	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.depression_major_depressive_disorder	Depression or major depressive disorder	skos:broadMatch	MONDO:0002050	depressive disorder	semapv:ManualMappingCuration	0.8	column conflates 'depression' with the narrower major depressive disorder (MONDO:0002009); the general term subsumes both senses, so it is broader than the column. Matches the term config/voice/diagnosis.yaml already uses for diagnosis/depression.tsv
+b2ai:confounders.eating_disorder	Eating disorder	skos:exactMatch	MONDO:0005451	eating disorder	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.epilepsy	Epilepsy	skos:exactMatch	MONDO:0005027	epilepsy	semapv:ManualMappingCuration	0.95	the reviewer flagged the HPO row as relatedMatch rather than writing 'Mapping MONDO?' here, but it is the same observation - the column is a clinical diagnosis
+b2ai:confounders.interstitial_lung_disease	Interstitial lung disease	skos:exactMatch	MONDO:0015925	interstitial lung disease	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.obsessive_compulsive_disorder	Obsessive compulsive disorder (OCD)	skos:exactMatch	MONDO:0008114	obsessive-compulsive disorder	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.panic_disorder	Panic disorder	skos:exactMatch	MONDO:0005383	panic disorder	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.parkinsons_disease	Parkinson's disease	skos:exactMatch	MONDO:0005180	Parkinson disease	semapv:ManualMappingCuration	0.95	matches the term config/voice/diagnosis.yaml already uses for diagnosis/parkinsons_disease.tsv
+b2ai:confounders.schizophrenia_med_hist_psychological	Schizophrenia	skos:exactMatch	MONDO:0005090	schizophrenia	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.seasonal_allergies_med_hist_enm	Seasonal allergies	skos:narrowMatch	MONDO:0005324	seasonal allergic rhinitis	semapv:ManualMappingCuration	0.75	'Seasonal allergies' is not confined to the nose; the MONDO term is the rhinitis sense only, so it is narrower than the column
+b2ai:confounders.thyroid_disease	Thyroid disease	skos:exactMatch	MONDO:0003240	thyroid gland disorder	semapv:ManualMappingCuration	0.95	the column's own examples (thyroid polyp, Hashimoto's, Graves', hypo/hyperthyroidism) are all thyroid gland disorders
