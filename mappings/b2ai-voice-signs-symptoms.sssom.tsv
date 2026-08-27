@@ -6,7 +6,7 @@
 #   github: https://github.com/
 #   obo: http://purl.obolibrary.org/obo/
 # mapping_set_id: https://github.com/sujaypatil96/b2ai-dataset-ingest/mappings/b2ai-voice-signs-symptoms.sssom.tsv
-# mapping_set_version: '2026-07-30'
+# mapping_set_version: '2026-08-27'
 # license: https://creativecommons.org/publicdomain/zero/1.0/
 # mapping_provider: https://github.com/sujaypatil96/b2ai-dataset-ingest
 # creator_id:
@@ -15,8 +15,8 @@
 # object_source: obo:hp
 # object_source_version: hp/releases/2026-02-16
 # mapping_tool: 'oaklib (sqlite:obo:hp)'
-# mapping_date: '2026-07-30'
-# comment: Bridge2AI-Voice confounders/, diagnosis/, and pediatric/ (pediatric_medical_conditions) clinical signs, symptoms, and medical-history conditions mapped to HPO. Conditions/diseases are mapped to their best-fit HPO phenotype (exact where HPO has the term, broad/related to the nearest phenotype otherwise); diseases with no defensible HPO phenotype (e.g. cystic fibrosis, multiple sclerosis, COVID-19, trisomy 21) are left for a future MONDO layer. Medications, procedures, substances, and injuries are out of scope. Every object_id verified against the pinned HPO release with oaklib. See docs/mapping-conventions.md.
+# mapping_date: '2026-08-27'
+# comment: Bridge2AI-Voice confounders/, diagnosis/, and pediatric/ (pediatric_medical_conditions) clinical signs, symptoms, and medical-history conditions mapped to HPO. Conditions/diseases are mapped to their best-fit HPO phenotype (exact where HPO has the term, broad/related to the nearest phenotype otherwise); diseases with no defensible HPO phenotype (e.g. cystic fibrosis, multiple sclerosis, COVID-19, trisomy 21) are left for a future MONDO layer. Medications, procedures, substances, and injuries are out of scope. Every object_id verified against the pinned HPO release with oaklib. Revised after clinical review (2026-08-24) - a 'X cancer' column broadMatches the HPO neoplasm term rather than matching it exactly, because the HPO term covers benign neoplasms too. See docs/mapping-conventions.md.
 subject_id	subject_label	predicate_id	object_id	object_label	mapping_justification	confidence	comment
 b2ai:confounders.dizziness	Dizziness	skos:relatedMatch	HP:0002321	Vertigo	semapv:ManualMappingCuration	0.6	source scopes to lightheadedness/balance disturbance (non-spinning); Vertigo is HPO's nearest term but the senses differ (cf. HP:0031972 Presyncope, HP:4000033 Non-spinning vertigo)
 b2ai:confounders.shortness_breath	Shortness of breath	skos:exactMatch	HP:0002094	Dyspnea	semapv:ManualMappingCuration	0.95	
@@ -26,16 +26,17 @@ b2ai:confounders.dysarthria	Dysarthria	skos:exactMatch	HP:0001260	Dysarthria	sem
 b2ai:confounders.confusion	Confusion	skos:exactMatch	HP:0001289	Confusion	semapv:ManualMappingCuration	0.95	
 b2ai:confounders.hearing_loss	Hearing loss	skos:exactMatch	HP:0000365	Hearing impairment	semapv:ManualMappingCuration	0.95	HPO synonym 'Hearing loss'
 b2ai:confounders.nasal_congestion_obstruction	Nasal congestion or obstruction	skos:exactMatch	HP:0001742	Nasal congestion	semapv:ManualMappingCuration	0.95	
-b2ai:confounders.scratchy_sore_throat	Scratchy or sore throat	skos:exactMatch	HP:0033050	Pharyngalgia	semapv:ManualMappingCuration	0.95	HPO synonym 'Sore throat'
+b2ai:confounders.scratchy_sore_throat	Scratchy or sore throat	skos:narrowMatch	HP:0033050	Pharyngalgia	semapv:ManualMappingCuration	0.75	column conflates a scratchy (irritated) and a sore (painful) throat; Pharyngalgia is the pain sense only, so it is narrower than the column (clinical review, 2026-08-24). The irritation sense is left unmapped: HPO has no term for it (searched 'throat irritation', 'scratchy throat')
 b2ai:confounders.coughing_clearing_throat	Coughing or clearing your throat	skos:narrowMatch	HP:0012735	Cough	semapv:ManualMappingCuration	0.75	column conflates coughing + throat clearing (HPO has no throat-clearing term); Cough is the narrower captured sense
-b2ai:confounders.headache_migraine	Headache or migraine	skos:broadMatch	HP:0002315	Headache	semapv:ManualMappingCuration	0.8	column conflates headache and migraine
+b2ai:confounders.headache_migraine	Headache or migraine	skos:broadMatch	HP:0002315	Headache	semapv:ManualMappingCuration	0.8	column conflates headache and migraine, and HP:0002076 Migraine is_a HP:0002315 Headache, so this term genuinely subsumes both senses; kept broad rather than split away, with the migraine sense recorded on its own row (clinical review, 2026-08-24)
+b2ai:confounders.headache_migraine	Headache or migraine	skos:narrowMatch	HP:0002076	Migraine	semapv:ManualMappingCuration	0.75	the migraine sense of the column, named explicitly in the item text; narrower than the column, which also covers non-migrainous headache (added on clinical review, 2026-08-24)
 b2ai:confounders.anxiety_nervousness	Anxiety or nervousness	skos:exactMatch	HP:0000739	Anxiety	semapv:ManualMappingCuration	0.95	
 b2ai:confounders.atrial_fibrillation	Atrial fibrillation	skos:exactMatch	HP:0005110	Atrial fibrillation	semapv:ManualMappingCuration	0.95	
 b2ai:confounders.bronchiectasis	Bronchiectasis	skos:exactMatch	HP:0002110	Bronchiectasis	semapv:ManualMappingCuration	0.95	
 b2ai:confounders.emphysema	Emphysema	skos:exactMatch	HP:0002097	Emphysema	semapv:ManualMappingCuration	0.95	
 b2ai:confounders.cleft_lip	Cleft lip	skos:exactMatch	HP:0410030	Cleft lip	semapv:ManualMappingCuration	0.95	
 b2ai:confounders.cleft_palate	Cleft palate	skos:exactMatch	HP:0000175	Cleft palate	semapv:ManualMappingCuration	0.95	
-b2ai:confounders.epilepsy	Epilepsy	skos:broadMatch	HP:0001250	Seizure	semapv:ManualMappingCuration	0.8	epilepsy (disorder) manifests as seizures (phenotype)
+b2ai:confounders.epilepsy	Epilepsy	skos:relatedMatch	HP:0001250	Seizure	semapv:ManualMappingCuration	0.6	epilepsy is a disease and Seizure is a phenotype: neither subsumes the other, so the disorder->core-phenotype broadMatch overstated the link (clinical review, 2026-08-24). A seizure can occur without epilepsy, and the diagnosis is not a kind of seizure
 b2ai:confounders.congestive_heart_failure	Congestive heart failure	skos:exactMatch	HP:0001635	Congestive heart failure	semapv:ManualMappingCuration	0.95	
 b2ai:confounders.coronary_heart_disease	Coronary heart disease	skos:relatedMatch	HP:0001677	Coronary artery atherosclerosis	semapv:ManualMappingCuration	0.6	closest HPO phenotype; HPO synonym 'Coronary disease'
 b2ai:confounders.obesity	Obesity	skos:exactMatch	HP:0001513	Obesity	semapv:ManualMappingCuration	0.95	
@@ -43,18 +44,19 @@ b2ai:confounders.pneumothorax_atelectasis	Pneumothorax or atelectasis	skos:narro
 b2ai:confounders.pneumothorax_atelectasis	Pneumothorax or atelectasis	skos:narrowMatch	HP:0100750	Atelectasis	semapv:ManualMappingCuration	0.75	column conflates two distinct conditions; this row = atelectasis
 b2ai:confounders.pulmonary_hypertension	Pulmonary hypertension	skos:narrowMatch	HP:0002092	Pulmonary arterial hypertension	semapv:ManualMappingCuration	0.75	HPO term is the arterial subtype; source column is general pulmonary hypertension
 b2ai:confounders.scoliosis	Scoliosis	skos:exactMatch	HP:0002650	Scoliosis	semapv:ManualMappingCuration	0.95	
-b2ai:confounders.sinusitis	Sinusitis (rhinitis)	skos:exactMatch	HP:0000246	Sinusitis	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.sinusitis	Sinusitis (rhinitis)	skos:narrowMatch	HP:0000246	Sinusitis	semapv:ManualMappingCuration	0.75	column is 'Sinusitis (rhinitis)', conflating inflammation of the paranasal sinuses with inflammation of the nasal mucosa; the two are siblings in HPO with no near common parent, so one narrowMatch row per sense (clinical review, 2026-08-24). This row = sinusitis
+b2ai:confounders.sinusitis	Sinusitis (rhinitis)	skos:narrowMatch	HP:0012384	Rhinitis	semapv:ManualMappingCuration	0.75	the rhinitis sense of the column, named in its item text 'Sinusitis (rhinitis)' (added on clinical review, 2026-08-24)
 b2ai:confounders.sleep_disturbance	Sleep disturbance	skos:exactMatch	HP:0002360	Sleep disturbance	semapv:ManualMappingCuration	0.95	
 b2ai:confounders.chronic_kidney_disease	Chronic kidney disease	skos:exactMatch	HP:0012622	Chronic kidney disease	semapv:ManualMappingCuration	0.95	
 b2ai:confounders.stroke	Stroke / aphasia	skos:narrowMatch	HP:0001297	Stroke	semapv:ManualMappingCuration	0.75	column conflates stroke and/or aphasia; this row = the stroke sense
 b2ai:confounders.stroke	Stroke / aphasia	skos:narrowMatch	HP:0002381	Aphasia	semapv:ManualMappingCuration	0.75	column conflates stroke and/or aphasia; this row = the aphasia sense
 b2ai:confounders.velopharyngeal_insufficiency	Velopharyngeal insufficiency	skos:exactMatch	HP:0000220	Velopharyngeal insufficiency	semapv:ManualMappingCuration	0.95	
 b2ai:confounders.recurrent_bronchitis	Recurrent bronchitis	skos:broadMatch	HP:0012387	Bronchitis	semapv:ManualMappingCuration	0.8	
-b2ai:confounders.brain_tumor	Brain tumor	skos:exactMatch	HP:0030692	Brain neoplasm	semapv:ManualMappingCuration	0.95	HPO synonym 'Brain tumor'
-b2ai:confounders.chronic_ear_infections	Chronic ear infections	skos:exactMatch	HP:0000403	Recurrent otitis media	semapv:ManualMappingCuration	0.95	
-b2ai:confounders.stutter_dysfluency	Stutter / dysfluency	skos:exactMatch	HP:0025268	Stuttering	semapv:ManualMappingCuration	0.95	
+b2ai:confounders.brain_tumor	Brain tumor	skos:exactMatch	HP:0030692	Brain neoplasm	semapv:ManualMappingCuration	0.95	HPO synonym 'Brain tumor'; kept exactMatch where confounders.brain_cancer on the same term became broadMatch - HP:0030692 is 'benign or malignant', which is what 'tumor' means and is wider than 'cancer' (clinical review, 2026-08-24)
+b2ai:confounders.chronic_ear_infections	Chronic ear infections	skos:relatedMatch	HP:0000403	Recurrent otitis media	semapv:ManualMappingCuration	0.6	'chronic ear infections' covers otitis externa and other sites, not middle-ear infection alone, and chronic is not recurrent (clinical review, 2026-08-24)
+b2ai:confounders.stutter_dysfluency	Stutter / dysfluency	skos:narrowMatch	HP:0025268	Stuttering	semapv:ManualMappingCuration	0.75	column is 'Stutter/dysfluency'; stuttering is one kind of dysfluency, so the HPO term is narrower than the column (clinical review, 2026-08-24). The wider dysfluency sense has no HPO term of its own (searched 'speech dysfluency'); its nearest is HP:0002167, which confounders.speech_difficulty already carries
 b2ai:confounders.osa_med_hist_lung	Obstructive sleep apnea (OSA)	skos:exactMatch	HP:0002870	Obstructive sleep apnea	semapv:ManualMappingCuration	0.95	
-b2ai:confounders.speech_difficulty	Speech difficulty	skos:broadMatch	HP:0002167	Abnormal speech pattern	semapv:ManualMappingCuration	0.8	
+b2ai:confounders.speech_difficulty	Speech difficulty	skos:relatedMatch	HP:0002167	Abnormal speech pattern	semapv:ManualMappingCuration	0.6	HPO defines Abnormal speech pattern as 'an abnormality in the sound (volume) or cadence (rate) of speech', which does not subsume difficulty producing speech (articulation, word-finding, dysarthria); neither term contains the other (clinical review, 2026-08-24)
 b2ai:parkinsons_disease.diagnosis_parkinsons_gold_standard_diagnosis_category_1___bradykinesia	Bradykinesia (Parkinsonism criterion)	skos:exactMatch	HP:0002067	Bradykinesia	semapv:ManualMappingCuration	0.95	
 b2ai:parkinsons_disease.diagnosis_parkinsons_gold_standard_diagnosis_category_1___rigidity	Rigidity (Parkinsonism criterion)	skos:exactMatch	HP:0002063	Rigidity	semapv:ManualMappingCuration	0.95	
 b2ai:parkinsons_disease.diagnosis_parkinsons_gold_standard_diagnosis_category_1___tremor	Tremor (Parkinsonism criterion)	skos:exactMatch	HP:0001337	Tremor	semapv:ManualMappingCuration	0.95	
@@ -67,32 +69,32 @@ b2ai:confounders.asd_med_hist_psychological	Autism spectrum disorder (ASD)	skos:
 b2ai:confounders.asthma_med_hist_lung	Asthma	skos:exactMatch	HP:0002099	Asthma	semapv:ManualMappingCuration	0.95	
 b2ai:confounders.bipolar_disorder	Bipolar disorder	skos:exactMatch	HP:0007302	Bipolar affective disorder	semapv:ManualMappingCuration	0.95	
 b2ai:confounders.bpd_med_hist_psychological	Borderline personality disorder (BPD)	skos:exactMatch	HP:0012076	Borderline personality disorder	semapv:ManualMappingCuration	0.95	
-b2ai:confounders.brain_cancer	Brain cancer	skos:exactMatch	HP:0030692	Brain neoplasm	semapv:ManualMappingCuration	0.9	cf. confounders.brain_tumor -> HP:0030692
+b2ai:confounders.brain_cancer	Brain cancer	skos:broadMatch	HP:0030692	Brain neoplasm	semapv:ManualMappingCuration	0.8	'Brain cancer' names a malignancy; the HPO term covers benign and malignant neoplasms alike, so it is broader than the column (clinical review, 2026-08-24). cf. confounders.brain_tumor, where the same kind of term IS an exactMatch because 'tumor' is likewise benign-or-malignant
 b2ai:confounders.chronic_cough_med_hist_throat	Chronic cough	skos:exactMatch	HP:0034315	Chronic cough	semapv:ManualMappingCuration	0.95	
 b2ai:confounders.chronic_pericarditis	Chronic pericarditis	skos:broadMatch	HP:0001701	Pericarditis	semapv:ManualMappingCuration	0.8	HPO Pericarditis subsumes the chronic form (cf. HP:0002563 Constrictive pericarditis)
 b2ai:confounders.copd_med_hist_lung	Chronic obstructive pulmonary disease (COPD)	skos:exactMatch	HP:0006510	Chronic pulmonary obstruction	semapv:ManualMappingCuration	0.95	HPO exact synonym 'COPD'
 b2ai:confounders.currently_considered_obese	Currently considered obese	skos:exactMatch	HP:0001513	Obesity	semapv:ManualMappingCuration	0.95	cf. confounders.obesity -> HP:0001513
 b2ai:confounders.currently_have_diabetes	Diabetes	skos:exactMatch	HP:0000819	Diabetes mellitus	semapv:ManualMappingCuration	0.95	
 b2ai:confounders.depression_major_depressive_disorder	Depression or major depressive disorder	skos:exactMatch	HP:0000716	Depression	semapv:ManualMappingCuration	0.95	
-b2ai:confounders.ear_cancer	Ear cancer	skos:exactMatch	HP:0012780	Neoplasm of the ear	semapv:ManualMappingCuration	0.9	
+b2ai:confounders.ear_cancer	Ear cancer	skos:broadMatch	HP:0012780	Neoplasm of the ear	semapv:ManualMappingCuration	0.8	'Ear cancer' names a malignancy; the HPO term covers benign and malignant neoplasms alike, so it is broader than the column (clinical review, 2026-08-24). cf. confounders.brain_tumor, where the same kind of term IS an exactMatch because 'tumor' is likewise benign-or-malignant
 b2ai:confounders.eating_disorder	Eating disorder	skos:broadMatch	HP:0100738	Abnormal eating behavior	semapv:ManualMappingCuration	0.8	disorder mapped to its core phenotype Abnormal eating behavior
-b2ai:confounders.esophageal_cancer	Esophageal cancer	skos:exactMatch	HP:0100751	Esophageal neoplasm	semapv:ManualMappingCuration	0.9	
+b2ai:confounders.esophageal_cancer	Esophageal cancer	skos:broadMatch	HP:0100751	Esophageal neoplasm	semapv:ManualMappingCuration	0.8	'Esophageal cancer' names a malignancy; the HPO term covers benign and malignant neoplasms alike, so it is broader than the column (clinical review, 2026-08-24). cf. confounders.brain_tumor, where the same kind of term IS an exactMatch because 'tumor' is likewise benign-or-malignant
 b2ai:confounders.glottic_insufficiency_med_hist_throat	Glottic insufficiency, presbyphonia	skos:relatedMatch	HP:0005934	Imperfect vocal cord adduction	semapv:ManualMappingCuration	0.7	glottic insufficiency = incomplete glottal closure; Imperfect vocal cord adduction is the nearest HPO term
 b2ai:confounders.interstitial_lung_disease	Interstitial lung disease	skos:exactMatch	HP:0006530	Abnormal pulmonary interstitial morphology	semapv:ManualMappingCuration	0.9	'interstitial lung disease' is an exact synonym of the HPO term
-b2ai:confounders.laryngeal_cancer	Laryngeal cancer	skos:exactMatch	HP:0100605	Neoplasm of the larynx	semapv:ManualMappingCuration	0.9	
+b2ai:confounders.laryngeal_cancer	Laryngeal cancer	skos:broadMatch	HP:0100605	Neoplasm of the larynx	semapv:ManualMappingCuration	0.8	'Laryngeal cancer' names a malignancy; the HPO term covers benign and malignant neoplasms alike, so it is broader than the column (clinical review, 2026-08-24). cf. confounders.brain_tumor, where the same kind of term IS an exactMatch because 'tumor' is likewise benign-or-malignant
 b2ai:confounders.laryngospasm_irritable_larynx	Laryngospasm, irritable larynx	skos:exactMatch	HP:0025425	Laryngospasm	semapv:ManualMappingCuration	0.9	source adds 'irritable larynx'; Laryngospasm is the primary phenotype
 b2ai:confounders.lesions_vocal_cord	Lesions of the vocal cord	skos:broadMatch	HP:0008777	Abnormal vocal cord morphology	semapv:ManualMappingCuration	0.8	vocal-cord lesions = structural vocal cord abnormality
-b2ai:confounders.lung_cancer	Lung cancer	skos:exactMatch	HP:0100526	Neoplasm of the lung	semapv:ManualMappingCuration	0.9	
+b2ai:confounders.lung_cancer	Lung cancer	skos:broadMatch	HP:0100526	Neoplasm of the lung	semapv:ManualMappingCuration	0.8	'Lung cancer' names a malignancy; the HPO term covers benign and malignant neoplasms alike, so it is broader than the column (clinical review, 2026-08-24). cf. confounders.brain_tumor, where the same kind of term IS an exactMatch because 'tumor' is likewise benign-or-malignant
 b2ai:confounders.muscle_tension_dysphonia	Muscle tension dysphonia	skos:broadMatch	HP:0001618	Dysphonia	semapv:ManualMappingCuration	0.8	muscle tension dysphonia is a functional subtype; Dysphonia is the general HPO phenotype
 b2ai:confounders.obsessive_compulsive_disorder	Obsessive compulsive disorder (OCD)	skos:broadMatch	HP:0000722	Compulsive behaviors	semapv:ManualMappingCuration	0.8	OCD mapped to its core compulsive-behavior phenotype (cf. HP:0008770 Obsessive-compulsive trait)
-b2ai:confounders.oral_cancer	Oral cancer	skos:exactMatch	HP:0100649	Neoplasm of the oral cavity	semapv:ManualMappingCuration	0.9	
+b2ai:confounders.oral_cancer	Oral cancer	skos:broadMatch	HP:0100649	Neoplasm of the oral cavity	semapv:ManualMappingCuration	0.8	'Oral cancer' names a malignancy; the HPO term covers benign and malignant neoplasms alike, so it is broader than the column (clinical review, 2026-08-24). cf. confounders.brain_tumor, where the same kind of term IS an exactMatch because 'tumor' is likewise benign-or-malignant
 b2ai:confounders.panic_disorder	Panic disorder	skos:broadMatch	HP:0025269	Panic attack	semapv:ManualMappingCuration	0.8	disorder mapped to its core phenotype Panic attack
 b2ai:confounders.parkinsons_disease	Parkinson's disease	skos:broadMatch	HP:0001300	Parkinsonism	semapv:ManualMappingCuration	0.8	confounders history item; Parkinson's disease mapped to its Parkinsonism phenotype
 b2ai:confounders.schizophrenia_med_hist_psychological	Schizophrenia	skos:exactMatch	HP:0100753	Schizophrenia	semapv:ManualMappingCuration	0.95	
 b2ai:confounders.seasonal_allergies_med_hist_enm	Seasonal allergies	skos:exactMatch	HP:0012395	Seasonal allergy	semapv:ManualMappingCuration	0.95	
-b2ai:confounders.sinus_cancer	Sinus cancer	skos:exactMatch	HP:0030072	Paranasal sinus neoplasm	semapv:ManualMappingCuration	0.9	
+b2ai:confounders.sinus_cancer	Sinus cancer	skos:broadMatch	HP:0030072	Paranasal sinus neoplasm	semapv:ManualMappingCuration	0.8	'Sinus cancer' names a malignancy; the HPO term covers benign and malignant neoplasms alike, so it is broader than the column (clinical review, 2026-08-24). cf. confounders.brain_tumor, where the same kind of term IS an exactMatch because 'tumor' is likewise benign-or-malignant
 b2ai:confounders.swallowing_disorder	Swallowing disorder / dysphagia	skos:exactMatch	HP:0002015	Dysphagia	semapv:ManualMappingCuration	0.95	
-b2ai:confounders.thyroid_cancer	Thyroid cancer	skos:exactMatch	HP:0002890	Thyroid carcinoma	semapv:ManualMappingCuration	0.9	
+b2ai:confounders.thyroid_cancer	Thyroid cancer	skos:broadMatch	HP:0100031	Neoplasm of the thyroid gland	semapv:ManualMappingCuration	0.8	retargeted from HP:0002890 Thyroid carcinoma, which is malignant-specific and so is NOT broader than the column - the neoplasm umbrella is, which is what the reviewer's rule asks for (clinical review, 2026-08-24); this keeps all eight cancer columns on one pattern
 b2ai:confounders.thyroid_disease	Thyroid disease	skos:broadMatch	HP:0000820	Abnormality of the thyroid gland	semapv:ManualMappingCuration	0.8	general 'thyroid disease' mapped to the umbrella HPO thyroid-gland abnormality
 b2ai:confounders.vocal_cord_dysfunction	Vocal cord dysfunction / paradoxical vocal fold motion	skos:exactMatch	HP:0031801	Vocal cord dysfunction	semapv:ManualMappingCuration	0.95	
 b2ai:pediatric_medical_conditions.peds_mc_breathing_conditions___asthma	Asthma	skos:exactMatch	HP:0002099	Asthma	semapv:ManualMappingCuration	0.95	
