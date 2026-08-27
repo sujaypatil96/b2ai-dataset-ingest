@@ -151,12 +151,13 @@ def _write_conditional(tmp_path: Path, rows: list[str]) -> Path:
     return path
 
 
-def test_interpretation_columns_are_rejected_in_a_mapping_set(tmp_path: Path):
-    """ADR-0003: `when_value`/`predicate_modifier` belong in mappings/derivations/, not here.
+def test_predicate_modifier_is_rejected_but_when_value_is_not(tmp_path: Path):
+    """ADR-0003 removed the absent pole from mapping sets, not the present gate.
 
-    They are rejected rather than ignored because `predicate_modifier: Not` negates *the
-    mapping* per the SSSOM spec ("subject is not a predicate match to object"), so a
-    present/absent pair on one triple asserts a contradiction, not phenotype absence.
+    `predicate_modifier: Not` negates *the mapping* per the SSSOM spec ("subject is not a
+    predicate match to object"), so a present/absent pair on one triple asserted a
+    contradiction. `when_value` asserts nothing of the kind — it qualifies which answers make
+    the mapping applicable — so it stays.
     """
     path = _write_conditional(
         tmp_path,
@@ -166,32 +167,39 @@ def test_interpretation_columns_are_rejected_in_a_mapping_set(tmp_path: Path):
         ],
     )
     findings = validate_paths([path], check_ontology=False).errors
-    assert {f.code for f in findings} >= {"interpretation-in-mapping"}
     offenders = {f.subject for f in findings if f.code == "interpretation-in-mapping"}
-    assert offenders == {"b2ai:phq9.feeling_depressed", "b2ai:phq9.no_energy"}
+    assert offenders == {"b2ai:phq9.feeling_depressed"}, "when_value must not be rejected"
+
+
+def test_unparseable_when_value_is_an_error(tmp_path: Path):
+    path = _write_conditional(
+        tmp_path,
+        [_cond_row("b2ai:phq9.no_energy", "HP:0012378", "Fatigue", when="totally bogus")],
+    )
+    codes = {f.code for f in validate_paths([path], check_ontology=False).errors}
+    assert "bad-when-value" in codes
 
 
 def test_one_triple_one_row(tmp_path: Path):
-    """With the poles gone there is no present/absent pair to exempt: a repeated
+    """With the absent pole gone there is no present/absent pair to exempt: a repeated
     (subject, predicate, object) is simply a duplicate."""
     dup = _write_conditional(
         tmp_path,
         [
-            _cond_row("b2ai:phq9.feeling_depressed", "HP:0000716", "Depression"),
-            _cond_row("b2ai:phq9.feeling_depressed", "HP:0000716", "Depression"),
+            _cond_row("b2ai:phq9.feeling_depressed", "HP:0000716", "Depression", when=">=1"),
+            _cond_row("b2ai:phq9.feeling_depressed", "HP:0000716", "Depression", when="==0"),
         ],
     )
     codes = {f.code for f in validate_paths([dup], check_ontology=False).errors}
     assert "duplicate" in codes
 
 
-def test_shipped_mapping_sets_carry_no_interpretation_columns():
-    """The regression guard for the split itself."""
+def test_shipped_mapping_sets_carry_no_predicate_modifier():
+    """The regression guard for the half of the split that was a spec misuse."""
     for path in default_mapping_files():
         _, rows = parse_sssom(path)
         for row in rows:
-            assert "when_value" not in row, f"{path.name} still carries when_value"
-            assert "predicate_modifier" not in row, f"{path.name} still carries predicate_modifier"
+            assert not row.get("predicate_modifier"), f"{path.name} carries predicate_modifier"
 
 
 def test_validator_requires_self_contained_curie_map(tmp_path: Path):

@@ -14,9 +14,6 @@ rules:
     object_id: HP:0012154
     object_label: Anhedonia
     confidence: 0.95
-    present:
-      when_value: ">=1"
-      note: at least 'Several days'
     absent:
       when_value: "==0"
       note: "'Not at all'"
@@ -25,9 +22,6 @@ rules:
     object_id: HP:5200273
     object_label: Pathological sadness
     confidence: 0.95
-    present:
-      when_value: ">=1"
-      note: at least 'Several days'
     absent:
       when_value: "==0"
       note: "'Not at all'"
@@ -36,9 +30,6 @@ rules:
     object_id: HP:0002360
     object_label: Sleep disturbance
     confidence: 0.8
-    present:
-      when_value: ">=1"
-      note: at least 'Several days'
     absent:
       unauthorable: conflated-superset
       note: >-
@@ -49,9 +40,6 @@ rules:
     object_id: HP:0012378
     object_label: Fatigue
     confidence: 0.95
-    present:
-      when_value: ">=1"
-      note: at least 'Several days'
     absent:
       when_value: "==0"
       note: "'Not at all'"
@@ -60,9 +48,6 @@ rules:
     object_id: HP:0100738
     object_label: Abnormal eating behavior
     confidence: 0.8
-    present:
-      when_value: ">=1"
-      note: at least 'Several days'
     absent:
       unauthorable: conflated-superset
       note: >-
@@ -73,9 +58,6 @@ rules:
     object_id: HP:0031987
     object_label: Diminished ability to concentrate
     confidence: 0.95
-    present:
-      when_value: ">=1"
-      note: at least 'Several days'
     absent:
       when_value: "==0"
       note: "'Not at all'"
@@ -84,11 +66,6 @@ rules:
     object_id: HP:0031469
     object_label: Low self-esteem
     confidence: 0.75
-    present:
-      unauthorable: conflated-sense
-      note: >-
-        A >=1 answer cannot say which half of "feeling bad about yourself / a failure /
-        let your family down" was endorsed.
     absent:
       when_value: "==0"
       note: "'Not at all' denies both senses, so it excludes the worthlessness sense."
@@ -97,10 +74,6 @@ rules:
     object_id: HP:6000011
     object_label: Guilt
     confidence: 0.75
-    present:
-      unauthorable: conflated-sense
-      note: >-
-        A >=1 answer cannot say which half of the conflated item was endorsed.
     absent:
       when_value: "==0"
       note: "'Not at all' denies both senses, so it excludes the guilt sense."

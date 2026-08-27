@@ -21,9 +21,6 @@ rules:
     object_id: HP:0002094
     object_label: Dyspnea
     confidence: 0.8
-    present:
-      when_value: ">=2"
-      note: "'Sometimes' or more"
     absent:
       unauthorable: conflated-superset
       note: A low answer cannot exclude a term that is broader than the item.
@@ -32,9 +29,6 @@ rules:
     object_id: HP:0002094
     object_label: Dyspnea
     confidence: 0.8
-    present:
-      when_value: ">=2"
-      note: "'Sometimes' or more"
     absent:
       unauthorable: conflated-superset
       note: A low answer cannot exclude a term that is broader than the item.
@@ -43,9 +37,6 @@ rules:
     object_id: HP:0002094
     object_label: Dyspnea
     confidence: 0.8
-    present:
-      when_value: ">=2"
-      note: "'Sometimes' or more"
     absent:
       unauthorable: conflated-superset
       note: A low answer cannot exclude a term that is broader than the item.
@@ -54,9 +45,6 @@ rules:
     object_id: HP:0002875
     object_label: Exertional dyspnea
     confidence: 0.95
-    present:
-      when_value: ">=2"
-      note: "'Sometimes' or more"
     absent:
       when_value: "==0"
       note: "'Never'"
@@ -65,9 +53,6 @@ rules:
     object_id: HP:0010307
     object_label: Stridor
     confidence: 0.95
-    present:
-      when_value: ">=2"
-      note: "'Sometimes' or more"
     absent:
       when_value: "==0"
       note: "'Never'"

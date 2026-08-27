@@ -52,7 +52,7 @@ src/b2ai_dataset_ingest/
   ontology/     MONDO/HPO/LOINC term helpers
 config/         per-dataset YAML mappings (config/voice/) + shared value sets
 mappings/       SSSOM term mappings: B2AI dataset terms (b2ai:) -> HPO, with a validator
-                  derivations/  answer -> PhenotypicFeature rules, one YAML per instrument
+                  derivations/  absent poles + recall windows, one YAML per instrument
 docs/           design docs (SDDs), ADRs, plans, mapping conventions
 tests/          fixtures + tests, incl. tests/data/multisession/ for time-course
 data_synth/     (gitignored) synthetic input — see scripts/fetch_*synthetic*.sh
@@ -105,13 +105,15 @@ concept and nothing more. Every HPO code is machine-verified against a pinned HP
 oaklib) so nothing is hallucinated; `b2ai-ingest validate-mappings` (and CI) enforce it. See
 [docs/mapping-conventions.md](docs/mapping-conventions.md#term-mappings-to-hpo-sssom).
 
-How a participant's *answer* becomes a `PhenotypicFeature` — cut-points, recall windows, and the
-present/absent poles — is a separate layer in
-[`mappings/derivations/`](mappings/derivations/README.md), one YAML per instrument, validated by
-the same command. Keeping the two apart is
+A row's optional `when_value` says *which answers* make the mapping applicable, so the pipeline
+can derive a present `PhenotypicFeature`. What a mapping row **cannot** say is that a phenotype
+is absent — the only SSSOM slot for it negates the mapping rather than the phenotype, and an
+exclusion needs the instrument's recall window to bound it. Absent poles and recall windows
+therefore live in [`mappings/derivations/`](mappings/derivations/README.md), one YAML per
+instrument, validated by the same command. See
 [ADR-0003](docs/adr/0003-separate-derivation-from-mapping.md); it is why no `excluded = true`
-feature is emitted today (an exclusion with no bounded period reads as lifetime absence, and
-Bridge2AI-Voice sessions carry no timestamp to bound it against).
+feature is emitted today, since Bridge2AI-Voice sessions carry no timestamp to bound one
+against.
 
 ```bash
 uv sync --extra validation            # install oaklib (the offline HPO backend)

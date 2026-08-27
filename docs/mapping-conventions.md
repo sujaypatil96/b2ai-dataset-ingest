@@ -45,17 +45,18 @@ Common keys: `table` / `table_group` (which source table[s]), `keyed_by`
 ## Term mappings to HPO (SSSOM)
 
 Separate from the ETL configs above, `mappings/` holds **SSSOM** files that map Bridge2AI-Voice
-dataset *terms* to the Human Phenotype Ontology (HPO). These are a standalone, shareable
-term-to-term artifact: a row says the item is *about* the HPO concept, and nothing more. It
-never asserts that a participant *has* it — that depends on the answer, and is a separate,
-weaker, instrument-specific claim that lives in `mappings/derivations/*.yaml` (see
-"Deriving features from answers" below and
-[ADR-0003](adr/0003-separate-derivation-from-mapping.md)).
+dataset *terms* to the Human Phenotype Ontology (HPO) — a standalone, shareable term-to-term
+artifact. A row says the item is *about* the HPO concept; a non-empty **`when_value`**
+additionally says *which answers* make that mapping applicable, so the pipeline can derive a
+present `PhenotypicFeature` (see "Deriving features from answers" below).
 
-**The two layers are deliberately not the same file.** A mapping holds for everyone, forever,
-independent of any instrument; an interpretation is contingent on the instrument's scale,
-scoring rule and recall window. They were fused until 2026-08-24, when a clinical review asked
-that they be separated — see the ADR for the two defects that made the fusion untenable.
+**What a mapping row cannot say is that a phenotype is ABSENT.** The only SSSOM slot for it,
+`predicate_modifier: Not`, negates *the mapping* per the spec — "subject is not a predicate match
+to object" — so a present/absent row pair asserts a contradiction rather than absence. And an
+`excluded = true` needs the instrument's recall window to bound it, which no SSSOM slot carries.
+Both therefore live in `mappings/derivations/*.yaml`, one file per instrument. See
+[ADR-0003](adr/0003-separate-derivation-from-mapping.md); the split came out of a clinical review
+on 2026-08-24.
 
 - **Namespace.** Dataset terms use the project-local `b2ai:` CURIE prefix (canonical expansions
   live in `src/b2ai_dataset_ingest/ontology/curie_map.py`, derived from the emitter's
@@ -101,32 +102,43 @@ that they be separated — see the ADR for the two defects that made the fusion 
 
 ### Deriving features from answers
 
-A term→term mapping records that an item is *about* an HPO concept; it does not assert a
-participant *has* it. That step lives in **`mappings/derivations/<instrument>.yaml`**, one file
-per instrument, keyed by the same `b2ai:<table>.<column>` subject id. See
-[`mappings/derivations/README.md`](../mappings/derivations/README.md) for the file shape and
-[ADR-0003](adr/0003-separate-derivation-from-mapping.md) for why it is a separate layer.
+A term→term mapping records that an item is *about* an HPO concept. Turning a participant's
+*answer* into a `PhenotypicFeature` is split across two files, along the line the SSSOM spec
+draws:
 
-Each rule names a `subject_id`/`object_id` pair and gives up to two poles:
+| | Where it lives |
+| --- | --- |
+| **present pole** | the SSSOM row's `when_value` column |
+| **absent pole** | `absent:` in `mappings/derivations/<instrument>.yaml` |
+| **recall window, scoring reference, open questions** | the same instrument file |
+
+The rule of thumb: if it is a claim about the *item*, it goes on the row; if it is a claim about
+the *instrument*, or an assertion of absence, it goes in the instrument file. See
+[`mappings/derivations/README.md`](../mappings/derivations/README.md) for the file shape.
 
 - **`when_value`** — a condition on the participant's answer. Grammar: comparisons `>=1`, `<=3`,
   `>0`, `<2`, `==0`, `!=0`; string equality `== "Checked"`; membership `in {1,2,3}` /
   `in {"a","b"}`; and `&` conjunction (`>=1 & <=3`). Numeric conditions are evaluated against the
   same **ordinal score** the emitted Measurement carries (resolved from the data dict's
-  `choices`); string conditions against the raw cell (case-insensitively).
-- **`unauthorable`** — instead of a condition: a recorded decision *not* to derive this pole,
-  with a reason from the closed set (`conflated-superset`, `conflated-sense`,
-  `baseline-relative`, `intensity-qualified`) and a `note` saying why. A declined pole is
-  explicit; a missing one is a gap.
+  `choices`); string conditions against the raw cell (case-insensitively). An **empty**
+  `when_value` is a pure semantic mapping and derives nothing. Declare the slot once in the file's
+  SSSOM `extension_definitions` metadata; it is spec-compliant and an SSSOM-core consumer ignores
+  it.
+- **`unauthorable`** — in the instrument file, instead of an `absent.when_value`: a recorded
+  decision *not* to derive that pole, with a reason from the closed set (`conflated-superset`,
+  `conflated-sense`, `baseline-relative`, `intensity-qualified`) and a `note` saying why. A
+  declined pole is explicit; a missing one is a gap. A present pole with no gate is recorded the
+  same way — an empty `when_value` plus a `comment` saying why.
 
-The instrument's **`recall_window`** and **`scoring_reference`** sit at the top of the file,
-because they are properties of the instrument, not of any one item.
+**A rule may not invent a mapping.** Every rule's `(subject_id, object_id)` pair must exist as a
+row in `mappings/*.sssom.tsv`; `b2ai-ingest validate-mappings` fails with `unanchored-rule`
+otherwise, errors on a `present:` block that has strayed into an instrument file
+(`present-in-rule-file`), and warns when a table has gated mappings but no instrument file
+(`no-instrument-file`, so its features would carry no scope). The SSSOM validator rejects
+`predicate_modifier` outright (`interpretation-in-mapping`).
 
-**A derivation may not invent a mapping.** Every rule's `(subject_id, object_id)` pair must
-exist as a row in `mappings/*.sssom.tsv`; `b2ai-ingest validate-mappings` fails with
-`unanchored-rule` otherwise. That check is what stops the two layers from drifting apart.
-The validator also rejects `when_value`/`predicate_modifier` *inside* a mapping set
-(`interpretation-in-mapping`), so the fusion cannot come back by accident.
+Emitted features are sorted by `(pole, object_id)`, so moving a row between files cannot silently
+reshuffle the output.
 
 #### Choosing a cut-point
 
@@ -234,9 +246,11 @@ pole, cut-point, recall window, confidence) and a GA4GH `Evidence` whose `eviden
 `ExternalReference` back to the source item — self-report-derived phenotypes stay
 distinguishable from clinician-observed findings.
 
-The validator checks that `when_value` **parses**, that a pole declares exactly one of
-`when_value`/`unauthorable`, and that reasons and windows come from their closed sets; whether a
-cut-point is *clinically* right is a curator judgment (see the `curation-assist` skill). The
-apply path lives in `mapping/derivations.py` (rule model + loader), `mapping/hpo_rules.py`
-(scoping + derivation) and `mapping/conditions.py` (the grammar); the reader runs it during
-questionnaire ingestion.
+The validator checks that `when_value` **parses** (in both files), that the absent pole declares
+exactly one of `when_value`/`unauthorable`, and that reasons and windows come from their closed
+sets; whether a cut-point is *clinically* right is a curator judgment (see the `curation-assist`
+skill). The apply path lives in `mapping/derivations.py` (rule model + the loader that reads both
+files), `mapping/hpo_rules.py` (scoping + derivation) and `mapping/conditions.py` (the grammar);
+the reader runs it during questionnaire ingestion. Note the reference `sssom-py` parser **drops**
+`when_value` on load, so the pipeline reads mappings with the column-preserving `parse_sssom` in
+`mapping/sssom_io.py`.

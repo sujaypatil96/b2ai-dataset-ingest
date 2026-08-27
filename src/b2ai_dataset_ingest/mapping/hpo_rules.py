@@ -159,7 +159,7 @@ def _feature_from_rule(
                 reference=ExternalReference(
                     id=rule.subject_id,
                     reference=expand(rule.subject_id),
-                    description=rule.note or None,
+                    description=rule.subject_label or None,
                 ),
             )
         ],
@@ -167,12 +167,14 @@ def _feature_from_rule(
 
 
 def _describe(rule: DerivationRule) -> str:
-    """Human-readable provenance: source item, pole, cut-point, recall window, confidence."""
+    """Human-readable provenance: source item, pole, mapping predicate, cut-point, window."""
     target = f"{rule.object_id}" + (f" {rule.object_label}" if rule.object_label else "")
-    confidence = f", confidence {rule.confidence}" if rule.confidence else ""
+    mapping = f"[{rule.predicate_id} {target}]" if rule.predicate_id else f"[{target}]"
+    item = rule.subject_id + (f" ({rule.subject_label})" if rule.subject_label else "")
+    instrument = f", {rule.instrument_label}" if rule.instrument_label else ""
     scope = f" scoped to {rule.window.text}" if rule.window.text else ""
-    instrument = f" ({rule.instrument_label})" if rule.instrument_label else ""
+    confidence = f", confidence {rule.confidence}" if rule.confidence else ""
     return (
-        f"Derived {rule.pole} [{target}] from self-reported item {rule.subject_id}"
-        f"{instrument} when answer {rule.when_value}{scope}{confidence}."
+        f"Derived {rule.pole} {mapping} from self-reported item {item}{instrument} "
+        f"when answer {rule.when_value}{scope}{confidence}."
     )

@@ -14,9 +14,6 @@ rules:
     object_id: HP:0000739
     object_label: Anxiety
     confidence: 0.95
-    present:
-      when_value: ">=1"
-      note: at least 'Several days'
     absent:
       when_value: "==0"
       note: "'Not at all'"
@@ -25,9 +22,6 @@ rules:
     object_id: HP:0000737
     object_label: Irritability
     confidence: 0.95
-    present:
-      when_value: ">=1"
-      note: at least 'Several days'
     absent:
       when_value: "==0"
       note: "'Not at all'"
@@ -36,9 +30,6 @@ rules:
     object_id: HP:0000711
     object_label: Restlessness
     confidence: 0.95
-    present:
-      when_value: ">=1"
-      note: at least 'Several days'
     absent:
       when_value: "==0"
       note: "'Not at all'"
@@ -47,9 +38,6 @@ rules:
     object_id: HP:0025771
     object_label: Ruminations
     confidence: 0.8
-    present:
-      when_value: ">=1"
-      note: at least 'Several days'
     absent:
       unauthorable: conflated-superset
       note: >-

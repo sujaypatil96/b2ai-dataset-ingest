@@ -26,9 +26,6 @@ rules:
     object_id: HP:0000736
     object_label: Short attention span
     confidence: 0.8
-    present:
-      when_value: ">=3"
-      note: "'Often' or 'Very Often' — the ASRS Part A cut-point"
     absent:
       unauthorable: conflated-superset
       note: A low answer cannot exclude a term that is broader than the item.
@@ -37,9 +34,6 @@ rules:
     object_id: HP:0000752
     object_label: Hyperactivity
     confidence: 0.8
-    present:
-      when_value: ">=3"
-      note: "'Often' or 'Very Often' — the ASRS Part A cut-point"
     absent:
       unauthorable: conflated-superset
       note: A low answer cannot exclude a term that is broader than the item.
@@ -48,9 +42,6 @@ rules:
     object_id: HP:0100710
     object_label: Impulsivity
     confidence: 0.8
-    present:
-      when_value: ">=3"
-      note: "'Often' or 'Very Often' — the ASRS Part A cut-point"
     absent:
       unauthorable: conflated-superset
       note: A low answer cannot exclude a term that is broader than the item.

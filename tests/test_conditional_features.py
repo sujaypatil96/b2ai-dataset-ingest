@@ -1,11 +1,12 @@
 """Reader -> derived HPO PhenotypicFeatures, end to end (ADR-0003).
 
-Exercises the whole apply path against a hermetic PHQ-9 slice and an injected derivation-rule
-file carrying both poles, then round-trips through the emitter. The absent pole is authored
-here exactly as it ships, so this also pins the current end-to-end behaviour: because the
-reader can give a session no timestamp, the absent pole is *withheld* rather than published
-as unqualified absence. (``tests/test_hpo_rules.py`` covers the other side of that gate — the
-same rule deriving a bounded exclusion once an observation time exists.)
+Exercises the whole apply path against a hermetic PHQ-9 slice, an injected mapping set whose
+``when_value`` carries the present pole, and an instrument file carrying the absent pole and
+the recall window. Both poles are authored exactly as they ship, so this pins the current
+end-to-end behaviour: because the reader can give a session no timestamp, the absent pole is
+*withheld* rather than published as unqualified absence. (``tests/test_hpo_rules.py`` covers
+the other side of that gate — the same rule deriving a bounded exclusion once an observation
+time exists.)
 """
 
 from pathlib import Path
@@ -17,6 +18,25 @@ from b2ai_dataset_ingest.emitters import PhenopacketEmitter
 from b2ai_dataset_ingest.sources.voice import VoiceSource
 
 CONFIG_DIR = Path(__file__).parents[1] / "config" / "voice"
+
+_HEADER = """\
+# curie_map:
+#   b2ai: https://github.com/sujaypatil96/b2ai-dataset-ingest#
+#   HP: http://purl.obolibrary.org/obo/HP_
+#   skos: http://www.w3.org/2004/02/skos/core#
+#   semapv: https://w3id.org/semapv/vocab/
+# license: https://creativecommons.org/publicdomain/zero/1.0/
+"""
+_COLS = (
+    "subject_id\tsubject_label\tpredicate_id\tobject_id\tobject_label\t"
+    "mapping_justification\tconfidence\tcomment\twhen_value"
+)
+# The present pole rides on the mapping row it qualifies.
+_ROW = "\t".join(
+    ["b2ai:phq9.feeling_depressed", "Feeling down", "skos:broadMatch", "HP:0000716",
+     "Depression", "semapv:ManualMappingCuration", "0.8", "", ">=1"]
+)
+_MAPPING = _HEADER + _COLS + "\n" + _ROW + "\n"
 
 _RULES = """\
 instrument: phq9
@@ -31,14 +51,12 @@ rules:
     object_id: HP:0000716
     object_label: Depression
     confidence: 0.8
-    present:
-      when_value: ">=1"
     absent:
       when_value: "==0"
 """
 
 
-def _build_dataset(root: Path) -> Path:
+def _build_dataset(root: Path) -> list[Path]:
     qdir = root / "questionnaire"
     qdir.mkdir(parents=True, exist_ok=True)
     (qdir / "phq9.tsv").write_text(
@@ -47,13 +65,15 @@ def _build_dataset(root: Path) -> Path:
         "p1\tses-followup\tNot at all\n"  # -> absent pole matches, but cannot be scoped
         "p2\tses-baseline\t\n"  # blank -> nothing asserted
     )
+    mapping = root / "q.sssom.tsv"
+    mapping.write_text(_MAPPING)
     rules = root / "phq9.yaml"
     rules.write_text(_RULES)
-    return rules
+    return [mapping, rules]
 
 
 def _source(tmp_path: Path) -> VoiceSource:
-    return VoiceSource(root=tmp_path, config_dir=CONFIG_DIR, mappings=[_build_dataset(tmp_path)])
+    return VoiceSource(root=tmp_path, config_dir=CONFIG_DIR, mappings=_build_dataset(tmp_path))
 
 
 def test_present_pole_is_derived_and_unscopable_absence_is_withheld(tmp_path: Path):

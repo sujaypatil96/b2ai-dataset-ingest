@@ -51,13 +51,14 @@ pretending it is deterministic, and to make step 2 **airtight**.
    comment. Before reusing a term that was rejected elsewhere — or changing one — check the
    **kind** of each column using it: a screener *item* and a reported *diagnosis* can share
    wording and still need different terms, so never blanket-replace across the mapping files.
-6. **Author a derivation rule, when the item should derive a phenotype -- in a separate
-   file.** A term mapping only says the item is *about* a concept; whether a given *answer*
-   asserts it belongs in `mappings/derivations/<instrument>.yaml`, never in the SSSOM row
-   (ADR-0003). Follow `references/when-value.md`: pick the cut-point, author the `present`
-   and/or `absent` pole, declare a pole you decline as `unauthorable` with a reason, and flag
-   the threshold as **needs expert sign-off** -- the validator checks that it *parses*, never
-   that it is clinically right. An item with no derivation rule is a perfectly good mapping.
+6. **Author the value condition, when the item should derive a phenotype.** A term mapping
+   only says the item is *about* a concept; a `when_value` says *which answers* make it
+   applicable. Follow `references/when-value.md`: the **present** pole's `when_value` goes in
+   the SSSOM row; the **absent** pole goes in `mappings/derivations/<instrument>.yaml`, because
+   it has no legal SSSOM expression and needs that file's recall window to bound it (ADR-0003).
+   Declare a pole you decline as `unauthorable` with a reason, and flag the threshold as
+   **needs expert sign-off** -- the validator checks that it *parses*, never that it is
+   clinically right. An item with no condition at all is a perfectly good mapping.
 7. **Emit a review artifact**, not a fait accompli -- one row per candidate in the format in
    `references/review-artifact.md`: proposal, rationale, alternatives, confidence, and an
    explicit split of *auto-verified* (code is real/current) vs *needs expert sign-off*
@@ -82,10 +83,11 @@ pretending it is deterministic, and to make step 2 **airtight**.
   rule is anchored to a mapping row, and that any `when_value` **parses** -- it does **not**
   mean the concept, the predicate, or the cut-point is right. Keep the human sign-off visible;
   don't let "the validator passed" stand in for review.
-- **Never put interpretation in a mapping set.** `when_value` and `predicate_modifier` are
-  rejected there. `predicate_modifier: Not` negates *the mapping* per the SSSOM spec ("subject
-  is **not** a predicate match to object"), not the phenotype -- using it for absence asserts a
-  contradiction. Absence is a derivation-rule `absent` pole (ADR-0003).
+- **Never assert absence in a mapping set.** `predicate_modifier` is rejected there: per the
+  SSSOM spec `Not` negates *the mapping* ("subject is **not** a predicate match to object"), not
+  the phenotype, so using it for absence asserts a contradiction. Absence is an `absent` pole in
+  the instrument file (ADR-0003). `when_value` is fine on the row -- it qualifies applicability,
+  it does not negate anything.
 - `mapping_justification` stays `semapv:ManualMappingCuration` -- these are curated, and the
   files should say so.
 

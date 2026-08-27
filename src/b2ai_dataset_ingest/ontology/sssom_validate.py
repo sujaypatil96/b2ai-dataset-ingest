@@ -33,6 +33,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from b2ai_dataset_ingest.mapping.conditions import ConditionParseError, parse_condition
 from b2ai_dataset_ingest.mapping.loaders import load_data_dict
 from b2ai_dataset_ingest.mapping.sssom_io import (
     MetadataError,
@@ -55,11 +56,12 @@ ALLOWED_PREDICATES = frozenset(
     }
 )
 REQUIRED_COLUMNS = ("subject_id", "predicate_id", "object_id", "mapping_justification")
-#: Interpretation columns banished to ``mappings/derivations/*.yaml`` by ADR-0003. They are
-#: rejected rather than ignored: ``predicate_modifier: Not`` negates *the mapping* ("subject is
-#: not a predicate match to object"), so a present/absent pair on one triple is a contradiction,
-#: not an encoding of phenotype absence.
-FORBIDDEN_COLUMNS = ("predicate_modifier", "when_value")
+#: ``predicate_modifier`` is rejected rather than ignored (ADR-0003): per the SSSOM spec it
+#: negates *the mapping* ("subject is **not** a predicate match to object"), so the pair of rows
+#: it was being used for asserted a contradiction rather than phenotype absence. There is no
+#: legal way to express an absent pole in a mapping set; absent poles live in
+#: ``mappings/derivations/*.yaml``, beside the recall window that bounds them.
+FORBIDDEN_COLUMNS = ("predicate_modifier",)
 _RELEASE_DATE = re.compile(r"(\d{4}-\d{2}-\d{2})")
 
 
@@ -221,16 +223,22 @@ def _check_row(
         except ValueError:
             yield err("bad-confidence", f"confidence {conf!r} is not a number")
 
-    # A mapping set records what an item is ABOUT; how an ANSWER is interpreted belongs in
-    # mappings/derivations/*.yaml (ADR-0003). Re-adding either column here would reintroduce
-    # the contradiction it was removed for.
+    # `when_value` is allowed and is the *present* pole's gate: it qualifies which answers make
+    # this mapping applicable, which is still a statement about the item. `predicate_modifier` is
+    # not — re-adding it would reintroduce the contradiction it was removed for.
     for column in FORBIDDEN_COLUMNS:
         if row.get(column, "").strip():
             yield err(
                 "interpretation-in-mapping",
-                f"{column!r} does not belong in a mapping set; move it to "
-                f"mappings/derivations/ (ADR-0003)",
+                f"{column!r} does not belong in a mapping set; the absent pole it encoded "
+                f"belongs in mappings/derivations/ (ADR-0003)",
             )
+    when_value = row.get("when_value", "").strip()
+    if when_value:
+        try:
+            parse_condition(when_value)
+        except ConditionParseError as exc:
+            yield err("bad-when-value", f"when_value {when_value!r} does not parse: {exc}")
 
     # One triple, one row. There is no longer a present/absent pair to exempt.
     if subj and pred and obj:

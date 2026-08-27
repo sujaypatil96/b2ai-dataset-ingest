@@ -10,20 +10,22 @@ A term mapping (`b2ai:phq9.feeling_depressed → HP:5200273 Pathological sadness
 *about* that phenotype. It does **not** say a participant *has* it — that depends on the answer. A
 `when_value` is the gate that turns an answer into a present/absent `PhenotypicFeature`.
 
-**It lives in a different file from the mapping.** Since ADR-0003, conditions belong in
-`mappings/derivations/<instrument>.yaml`, never as a column in `mappings/*.sssom.tsv` — the
-validator rejects them there. Every rule must be *anchored*: its `subject_id`/`object_id` pair
-has to exist as a mapping row, so author the mapping first.
+**The two poles live in different files.** The **present** pole is the SSSOM row's own
+`when_value` column, beside the mapping it qualifies. The **absent** pole is in
+`mappings/derivations/<instrument>.yaml`, because since ADR-0003 it has no legal SSSOM
+expression — `predicate_modifier` is rejected there — and because bounding it needs that file's
+`recall_window`. An absent rule must be *anchored*: its `subject_id`/`object_id` pair has to
+exist as a mapping row, so author the mapping first.
 
 ## When to add one (and when not to)
 
 - **Add** a `when_value` when the item is an in-scope sign/symptom whose **answer encodes
   severity/frequency** (an ordinal screener item like PHQ-9/GAD-7, or a checkbox), and a
   present/absent phenotype is the intended output.
-- **Author no rule at all** when the mapping is only meant to record *aboutness* (a shareable
-  semantic link), or when the item is out of scope (admin, score, psychosocial impact, task
-  data — see `scope-checklist.md`). A mapping with no derivation rule changes no output; it is
-  always safe.
+- **Leave `when_value` empty** when the mapping is only meant to record *aboutness* (a
+  shareable semantic link), or when the item is out of scope (admin, score, psychosocial impact,
+  task data — see `scope-checklist.md`). An empty `when_value` changes no output; it is always
+  safe. Say in the `comment` why there is no gate, if the reason is not obvious.
 - **Declare a pole `unauthorable`** when you considered it and decided against it, with a
   reason from the closed set (`conflated-superset`, `conflated-sense`, `baseline-relative`,
   `intensity-qualified`) and a `note`. A declined pole is a recorded decision; a silently
@@ -99,9 +101,25 @@ conditioned, and starts emitting the moment session timestamps exist. What you m
 is the instrument's `recall_window` — `iso8601` plus an honest `source` (`data_dict`,
 `published_instrument`, `unverified`). `unverified` means *unknown*, never *unbounded*.
 
-## Writing the rule
+## Writing it
 
-One file per instrument, named for the data-dict stem:
+The present pole rides on the mapping row:
+
+```
+subject_id                   predicate_id     object_id   ...  comment  when_value
+b2ai:phq9.feeling_depressed  skos:exactMatch  HP:5200273  ...           >=1
+```
+
+with the slot declared once in the file's SSSOM metadata:
+
+```yaml
+# extension_definitions:
+#   - slot_name: when_value
+#     property: b2ai:when_value
+#     type_hint: xsd:string
+```
+
+The absent pole goes in the instrument file, named for the data-dict stem:
 
 ```yaml
 # mappings/derivations/phq9.yaml
@@ -115,9 +133,6 @@ rules:
     object_id: HP:5200273
     object_label: Pathological sadness
     confidence: 0.95
-    present:
-      when_value: ">=1"
-      note: at least 'Several days'
     absent:
       when_value: "==0"
       note: "'Not at all'"
@@ -125,18 +140,17 @@ rules:
 
 - Make the two conditions **mutually exclusive** (`>=1` vs `==0` can't both fire) so one answer
   never yields both present and absent for the same term.
-- The mapping's `predicate` is not repeated here — the rule is anchored to the mapping row by
-  `subject_id`/`object_id`, and the predicate stays where it belongs. Per the table above, a
-  `broadMatch` object usually gets a present pole with `absent: {unauthorable:
-  conflated-superset}`, and a `narrowMatch` object the reverse.
+- A `present:` block in the instrument file is an error — that pole belongs on the row.
+- Per the table above, a `broadMatch` object usually gets a present `when_value` with
+  `absent: {unauthorable: conflated-superset}`, and a `narrowMatch` object the reverse.
 - Put the cut-point's justification in `scoring_reference` so a reviewer can check it rather
   than take it on trust.
 
 ## Guardrails
 
-- The validator checks the condition **parses**, that each pole declares exactly one of
-  `when_value`/`unauthorable`, and that the rule is anchored to a mapping row — nothing more.
-  A green gate is not sign-off on the threshold.
+- The validator checks the condition **parses** (in either file), that the absent pole declares
+  exactly one of `when_value`/`unauthorable`, and that the rule is anchored to a mapping row —
+  nothing more. A green gate is not sign-off on the threshold.
 - Numeric conditions are evaluated against the **ordinal score** (the same value the emitted
   Measurement carries), resolved from the data dict's `choices`. If an item has no resolvable
   ordinal, a numeric `when_value` will never fire — use a string/`in {...}` condition instead.

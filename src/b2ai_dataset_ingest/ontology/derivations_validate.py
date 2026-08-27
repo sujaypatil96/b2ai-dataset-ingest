@@ -1,21 +1,24 @@
-"""Validate the derivation rules in ``mappings/derivations/*.yaml``.
+"""Validate the instrument rule files in ``mappings/derivations/*.yaml``.
 
 The companion to :mod:`~b2ai_dataset_ingest.ontology.sssom_validate`. That module guards the
-*mapping* layer (no hallucinated or drifted HPO terms); this one guards the *interpretation*
-layer that ADR-0003 split out of it.
+*mapping* layer (no hallucinated or drifted HPO terms, no ``predicate_modifier``); this one
+guards the layer holding what a mapping set cannot express — the **absent** pole and the
+instrument's recall window (ADR-0003). The *present* pole is not here: it is the SSSOM row's
+own ``when_value``, and a ``present`` block that has strayed into a rule file is an error.
 
 The load-bearing check is **anchoring**: every rule's ``(subject_id, object_id)`` pair must
-already exist as a row in the SSSOM set. A derivation says "this answer warrants asserting
-that term"; it may not invent the underlying claim that the item is about the term. Without
-this, the two layers could drift apart silently and a derived ``PhenotypicFeature`` would have
-no mapping to justify it.
+already exist as a row in the SSSOM set. A rule says "this answer warrants asserting that
+term"; it may not invent the underlying claim that the item is about the term. Without this,
+the two layers could drift apart silently and a derived ``PhenotypicFeature`` would have no
+mapping to justify it.
 
-Everything else is structural: a rule file's ``instrument`` must match its filename (that stem
-is what joins a rule to a data table), each pole must declare exactly one of ``when_value`` or
-``unauthorable``, conditions must parse, ``unauthorable`` reasons must come from the closed set
-in :mod:`~b2ai_dataset_ingest.mapping.derivations`, and recall windows must be durations the
-apply path can actually subtract. As with cut-points, whether a threshold is *clinically* right
-is a curator judgment this cannot check.
+Everything else is structural: a file's ``instrument`` must match its filename (that stem is
+what joins a rule to a data table, and to the present poles that borrow its window), the
+``absent`` pole must declare exactly one of ``when_value`` or ``unauthorable``, conditions must
+parse, ``unauthorable`` reasons must come from the closed set in
+:mod:`~b2ai_dataset_ingest.mapping.derivations`, and recall windows must be durations the apply
+path can actually subtract. As with cut-points, whether a threshold is *clinically* right is a
+curator judgment this cannot check.
 """
 
 from __future__ import annotations
@@ -26,7 +29,6 @@ from typing import Any
 
 from b2ai_dataset_ingest.mapping.conditions import ConditionParseError, parse_condition
 from b2ai_dataset_ingest.mapping.derivations import (
-    POLES,
     UNAUTHORABLE_REASONS,
     WINDOW_SOURCES,
     default_derivation_files,
@@ -67,6 +69,7 @@ def validate_derivations(
     for path, document in load_derivation_documents(files):
         findings.extend(_check_document(document, path, anchors, seen))
         n_rules += len(document.get("rules") or [])
+    findings.extend(check_present_poles_have_an_instrument(mapping_paths, files))
     return findings, n_rules
 
 
@@ -178,48 +181,90 @@ def _check_confidence(raw: Any, ident: str, fname: str) -> Iterable[Finding]:
 
 
 def _check_poles(entry: dict[str, Any], ident: str, fname: str) -> Iterable[Finding]:
-    authored = 0
-    for pole in POLES:
-        block = entry.get(pole)
-        if block is None:
-            continue
-        if not isinstance(block, dict):
-            yield Finding(fname, ident, "error", "bad-pole", f"{pole!r} must be a mapping")
-            continue
-        when_value = str(block.get("when_value") or "").strip()
-        unauthorable = str(block.get("unauthorable") or "").strip()
-        if when_value and unauthorable:
+    if "present" in entry:
+        yield Finding(
+            fname, ident, "error", "present-in-rule-file",
+            "the present pole belongs in the SSSOM row's when_value column, not here — "
+            "only the absent pole (which has no legal SSSOM expression) lives in a rule file",
+        )
+    block = entry.get("absent")
+    if block is None:
+        yield Finding(
+            fname, ident, "error", "no-absent-pole",
+            "rule entry declares no absent pole, so it does nothing; delete it, or record why "
+            "the pole is declined with `absent: {unauthorable: ...}`",
+        )
+        return
+    if not isinstance(block, dict):
+        yield Finding(fname, ident, "error", "bad-pole", "'absent' must be a mapping")
+        return
+
+    when_value = str(block.get("when_value") or "").strip()
+    unauthorable = str(block.get("unauthorable") or "").strip()
+    if when_value and unauthorable:
+        yield Finding(
+            fname, ident, "error", "ambiguous-pole",
+            "'absent' declares both when_value and unauthorable; a pole is either derived or "
+            "explicitly declined, not both",
+        )
+    elif not when_value and not unauthorable:
+        yield Finding(
+            fname, ident, "error", "empty-pole",
+            "'absent' declares neither when_value nor unauthorable",
+        )
+    if when_value:
+        try:
+            parse_condition(when_value)
+        except ConditionParseError as exc:
             yield Finding(
-                fname, ident, "error", "ambiguous-pole",
-                f"{pole!r} declares both when_value and unauthorable; a pole is either "
-                f"derived or explicitly declined, not both",
+                fname, ident, "error", "bad-when-value",
+                f"absent when_value {when_value!r} does not parse: {exc}",
             )
-        elif not when_value and not unauthorable:
-            yield Finding(
-                fname, ident, "error", "empty-pole",
-                f"{pole!r} declares neither when_value nor unauthorable",
-            )
-        if when_value:
-            authored += 1
-            try:
-                parse_condition(when_value)
-            except ConditionParseError as exc:
-                yield Finding(
-                    fname, ident, "error", "bad-when-value",
-                    f"{pole} when_value {when_value!r} does not parse: {exc}",
-                )
-        if unauthorable and unauthorable not in UNAUTHORABLE_REASONS:
+    if unauthorable:
+        if unauthorable not in UNAUTHORABLE_REASONS:
             yield Finding(
                 fname, ident, "error", "bad-unauthorable-reason",
-                f"{pole} unauthorable {unauthorable!r} not in {sorted(UNAUTHORABLE_REASONS)}",
+                f"absent unauthorable {unauthorable!r} not in {sorted(UNAUTHORABLE_REASONS)}",
             )
-        if unauthorable and not str(block.get("note") or "").strip():
+        if not str(block.get("note") or "").strip():
             yield Finding(
                 fname, ident, "warning", "undocumented-decline",
-                f"{pole} is declined as {unauthorable!r} with no note explaining why",
+                f"absent is declined as {unauthorable!r} with no note explaining why",
             )
-    if authored == 0:
-        yield Finding(
-            fname, ident, "error", "no-authored-pole",
-            "rule derives nothing — both poles are declined or absent",
+
+
+def check_present_poles_have_an_instrument(
+    mapping_paths: Iterable[Path] | None = None,
+    rule_paths: Iterable[Path] | None = None,
+) -> Iterable[Finding]:
+    """Warn when a gated mapping's table has no instrument file to supply its recall window.
+
+    A present pole still derives without one, but it is stamped with no window, and the table's
+    absent poles could never be scoped — usually the sign of a missing rule file rather than a
+    deliberate choice.
+    """
+    known = {
+        str(document.get("instrument") or path.stem)
+        for path, document in load_derivation_documents(
+            list(rule_paths) if rule_paths is not None else None
         )
+    }
+    seen: set[str] = set()
+    for path in list(mapping_paths) if mapping_paths is not None else default_mapping_files():
+        try:
+            _, rows = parse_sssom(path)
+        except Exception:  # noqa: BLE001 - sssom_validate reports the parse failure itself
+            continue
+        for row in rows:
+            subject = (row.get("subject_id") or "").strip()
+            if not (row.get("when_value") or "").strip() or not subject.startswith("b2ai:"):
+                continue
+            table = subject.split(":", 1)[1].split(".", 1)[0]
+            if table in known or table in seen:
+                continue
+            seen.add(table)
+            yield Finding(
+                path.name, subject, "warning", "no-instrument-file",
+                f"table {table!r} has gated mappings but no mappings/derivations/{table}.yaml, "
+                f"so its recall window is unknown and its features carry no scope",
+            )

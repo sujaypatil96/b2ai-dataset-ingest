@@ -16,9 +16,6 @@ rules:
     object_id: HP:0012735
     object_label: Cough
     confidence: 0.8
-    present:
-      when_value: ">=3"
-      note: "'Some of the time' or more"
     absent:
       unauthorable: conflated-superset
       note: A low answer cannot exclude a term that is broader than the item.
@@ -27,9 +24,6 @@ rules:
     object_id: HP:0001609
     object_label: Hoarse voice
     confidence: 0.95
-    present:
-      when_value: ">=3"
-      note: "'Some of the time' or more"
     absent:
       when_value: "==0"
       note: "'None of the time'"
@@ -38,9 +32,6 @@ rules:
     object_id: HP:0031245
     object_label: Productive cough
     confidence: 0.95
-    present:
-      when_value: ">=3"
-      note: "'Some of the time' or more"
     absent:
       when_value: "==0"
       note: "'None of the time'"

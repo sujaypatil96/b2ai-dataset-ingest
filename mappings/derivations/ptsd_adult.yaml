@@ -22,9 +22,6 @@ rules:
     object_id: HP:0002267
     object_label: Exaggerated startle response
     confidence: 0.9
-    present:
-      when_value: ">=2"
-      note: "'Moderately' or greater"
     absent:
       when_value: "==0"
       note: "'Not at all'"
@@ -33,9 +30,6 @@ rules:
     object_id: HP:5200231
     object_label: Hypervigilance
     confidence: 0.9
-    present:
-      when_value: ">=2"
-      note: "'Moderately' or greater"
     absent:
       when_value: "==0"
       note: "'Not at all'"
@@ -44,12 +38,6 @@ rules:
     object_id: HP:0000718
     object_label: Aggressive behavior
     confidence: 0.75
-    present:
-      unauthorable: intensity-qualified
-      note: >-
-        The item is "being extremely irritable, to the point where you yelled, got into
-        fights, or destroyed things"; an endorsement cannot say which narrow sense of the
-        escalation was meant.
     absent:
       when_value: "==0"
       note: A 0 denies the escalation the HPO definition names.
@@ -58,9 +46,6 @@ rules:
     object_id: HP:0012154
     object_label: Anhedonia
     confidence: 0.95
-    present:
-      when_value: ">=2"
-      note: "'Moderately' or greater"
     absent:
       when_value: "==0"
       note: "'Not at all'"
