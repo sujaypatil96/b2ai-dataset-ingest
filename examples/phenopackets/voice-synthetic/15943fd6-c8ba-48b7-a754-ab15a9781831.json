@@ -1,0 +1,216 @@
+{
+  "id": "15943fd6-c8ba-48b7-a754-ab15a9781831",
+  "subject": {
+    "id": "15943fd6-c8ba-48b7-a754-ab15a9781831",
+    "taxonomy": {
+      "id": "NCBITaxon:9606",
+      "label": "Homo sapiens"
+    }
+  },
+  "measurements": [
+    {
+      "assay": {
+        "id": "b2ai:adhd_adult.talking_too_much",
+        "label": "How often do you find yourself talking too much when you are in social situations?"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          },
+          "value": 3.0
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "b2ai:dsm5_adult.feeling_more_irritated",
+        "label": "Feeling more irritated, grouchy, or angry than usual?"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          },
+          "value": 1.0
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "b2ai:dsm5_adult.social_phobia_2",
+        "label": "felt anxious, worried, or nervous about social situations"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          },
+          "value": 1.0
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "b2ai:dyspnea_index.di_air_in",
+        "label": "I have trouble getting air in"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          }
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "LOINC:44260-8",
+        "label": "Thoughts that you would be better off dead, or of hurting yourself"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          }
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "b2ai:vhi10.voice_clarity",
+        "label": "The clarity of my voice is unpredictable"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          },
+          "value": 2.0
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    }
+  ],
+  "diseases": [
+    {
+      "term": {
+        "id": "MONDO:0004976",
+        "label": "amyotrophic lateral sclerosis"
+      },
+      "onset": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "term": {
+        "id": "MONDO:0002352",
+        "label": "larynx cancer"
+      },
+      "onset": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    }
+  ],
+  "metaData": {
+    "createdBy": "b2ai-dataset-ingest",
+    "resources": [
+      {
+        "id": "b2ai",
+        "name": "Bridge2AI-Voice project-local codes (b2ai-dataset-ingest)",
+        "url": "https://github.com/sujaypatil96/b2ai-dataset-ingest",
+        "version": "0.0.1",
+        "namespacePrefix": "b2ai",
+        "iriPrefix": "https://github.com/sujaypatil96/b2ai-dataset-ingest#"
+      },
+      {
+        "id": "loinc",
+        "name": "Logical Observation Identifiers Names and Codes (LOINC)",
+        "url": "https://loinc.org",
+        "version": "2.80",
+        "namespacePrefix": "LOINC",
+        "iriPrefix": "https://loinc.org/"
+      },
+      {
+        "id": "mondo",
+        "name": "Mondo Disease Ontology",
+        "url": "http://purl.obolibrary.org/obo/mondo.owl",
+        "version": "2025-06-03",
+        "namespacePrefix": "MONDO",
+        "iriPrefix": "http://purl.obolibrary.org/obo/MONDO_"
+      },
+      {
+        "id": "ncbitaxon",
+        "name": "NCBI organismal classification",
+        "url": "http://purl.obolibrary.org/obo/ncbitaxon.owl",
+        "version": "2024-07-03",
+        "namespacePrefix": "NCBITaxon",
+        "iriPrefix": "http://purl.obolibrary.org/obo/NCBITaxon_"
+      },
+      {
+        "id": "ncit",
+        "name": "NCI Thesaurus OBO Edition",
+        "url": "http://purl.obolibrary.org/obo/ncit.owl",
+        "version": "2024-05-07",
+        "namespacePrefix": "NCIT",
+        "iriPrefix": "http://purl.obolibrary.org/obo/NCIT_"
+      },
+      {
+        "id": "ucum",
+        "name": "Unified Code for Units of Measure (UCUM)",
+        "url": "https://ucum.org",
+        "version": "2.1",
+        "namespacePrefix": "UCUM",
+        "iriPrefix": "https://ucum.org/"
+      }
+    ],
+    "phenopacketSchemaVersion": "2.0"
+  }
+}

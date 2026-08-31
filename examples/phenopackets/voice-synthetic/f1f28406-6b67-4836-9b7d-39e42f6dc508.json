@@ -1,0 +1,128 @@
+{
+  "id": "f1f28406-6b67-4836-9b7d-39e42f6dc508",
+  "subject": {
+    "id": "f1f28406-6b67-4836-9b7d-39e42f6dc508",
+    "taxonomy": {
+      "id": "NCBITaxon:9606",
+      "label": "Homo sapiens"
+    }
+  },
+  "measurements": [
+    {
+      "assay": {
+        "id": "LOINC:44253-3",
+        "label": "Moving or speaking slowly, or being fidgety or restless"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          }
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    }
+  ],
+  "diseases": [
+    {
+      "term": {
+        "id": "MONDO:0004976",
+        "label": "amyotrophic lateral sclerosis"
+      },
+      "onset": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "term": {
+        "id": "MONDO:0002352",
+        "label": "larynx cancer"
+      },
+      "onset": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "term": {
+        "id": "MONDO:0000485",
+        "label": "spasmodic dystonia"
+      },
+      "onset": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "term": {
+        "id": "MONDO:0005180",
+        "label": "Parkinson disease"
+      },
+      "onset": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    }
+  ],
+  "metaData": {
+    "createdBy": "b2ai-dataset-ingest",
+    "resources": [
+      {
+        "id": "loinc",
+        "name": "Logical Observation Identifiers Names and Codes (LOINC)",
+        "url": "https://loinc.org",
+        "version": "2.80",
+        "namespacePrefix": "LOINC",
+        "iriPrefix": "https://loinc.org/"
+      },
+      {
+        "id": "mondo",
+        "name": "Mondo Disease Ontology",
+        "url": "http://purl.obolibrary.org/obo/mondo.owl",
+        "version": "2025-06-03",
+        "namespacePrefix": "MONDO",
+        "iriPrefix": "http://purl.obolibrary.org/obo/MONDO_"
+      },
+      {
+        "id": "ncbitaxon",
+        "name": "NCBI organismal classification",
+        "url": "http://purl.obolibrary.org/obo/ncbitaxon.owl",
+        "version": "2024-07-03",
+        "namespacePrefix": "NCBITaxon",
+        "iriPrefix": "http://purl.obolibrary.org/obo/NCBITaxon_"
+      },
+      {
+        "id": "ncit",
+        "name": "NCI Thesaurus OBO Edition",
+        "url": "http://purl.obolibrary.org/obo/ncit.owl",
+        "version": "2024-05-07",
+        "namespacePrefix": "NCIT",
+        "iriPrefix": "http://purl.obolibrary.org/obo/NCIT_"
+      },
+      {
+        "id": "ucum",
+        "name": "Unified Code for Units of Measure (UCUM)",
+        "url": "https://ucum.org",
+        "version": "2.1",
+        "namespacePrefix": "UCUM",
+        "iriPrefix": "https://ucum.org/"
+      }
+    ],
+    "phenopacketSchemaVersion": "2.0"
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "id": "8896b265-55d5-4712-86ba-29b9090c5a9d",
+  "subject": {
+    "id": "8896b265-55d5-4712-86ba-29b9090c5a9d",
+    "taxonomy": {
+      "id": "NCBITaxon:9606",
+      "label": "Homo sapiens"
+    }
+  },
+  "diseases": [
+    {
+      "term": {
+        "id": "MONDO:0002352",
+        "label": "larynx cancer"
+      },
+      "onset": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "term": {
+        "id": "MONDO:0000485",
+        "label": "spasmodic dystonia"
+      },
+      "onset": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    }
+  ],
+  "metaData": {
+    "createdBy": "b2ai-dataset-ingest",
+    "resources": [
+      {
+        "id": "mondo",
+        "name": "Mondo Disease Ontology",
+        "url": "http://purl.obolibrary.org/obo/mondo.owl",
+        "version": "2025-06-03",
+        "namespacePrefix": "MONDO",
+        "iriPrefix": "http://purl.obolibrary.org/obo/MONDO_"
+      },
+      {
+        "id": "ncbitaxon",
+        "name": "NCBI organismal classification",
+        "url": "http://purl.obolibrary.org/obo/ncbitaxon.owl",
+        "version": "2024-07-03",
+        "namespacePrefix": "NCBITaxon",
+        "iriPrefix": "http://purl.obolibrary.org/obo/NCBITaxon_"
+      },
+      {
+        "id": "ncit",
+        "name": "NCI Thesaurus OBO Edition",
+        "url": "http://purl.obolibrary.org/obo/ncit.owl",
+        "version": "2024-05-07",
+        "namespacePrefix": "NCIT",
+        "iriPrefix": "http://purl.obolibrary.org/obo/NCIT_"
+      }
+    ],
+    "phenopacketSchemaVersion": "2.0"
+  }
+}

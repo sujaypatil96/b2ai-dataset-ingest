@@ -1,0 +1,153 @@
+{
+  "id": "50e8db5a-1177-429e-9e52-eb6c864c110a",
+  "subject": {
+    "id": "50e8db5a-1177-429e-9e52-eb6c864c110a",
+    "taxonomy": {
+      "id": "NCBITaxon:9606",
+      "label": "Homo sapiens"
+    }
+  },
+  "measurements": [
+    {
+      "assay": {
+        "id": "b2ai:dsm5_adult.feeling_down",
+        "label": "Feeling down, depressed, or hopeless?"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          },
+          "value": 3.0
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "b2ai:dsm5_adult.someone_hear_thoughts",
+        "label": "Feeling that someone could hear your thoughts, or that you could hear what another person was thinking?"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          }
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "LOINC:69733-4",
+        "label": "Worrying too much about different things"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          }
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    }
+  ],
+  "diseases": [
+    {
+      "term": {
+        "id": "MONDO:0002352",
+        "label": "larynx cancer"
+      },
+      "onset": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "term": {
+        "id": "MONDO:0000485",
+        "label": "spasmodic dystonia"
+      },
+      "onset": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    }
+  ],
+  "metaData": {
+    "createdBy": "b2ai-dataset-ingest",
+    "resources": [
+      {
+        "id": "b2ai",
+        "name": "Bridge2AI-Voice project-local codes (b2ai-dataset-ingest)",
+        "url": "https://github.com/sujaypatil96/b2ai-dataset-ingest",
+        "version": "0.0.1",
+        "namespacePrefix": "b2ai",
+        "iriPrefix": "https://github.com/sujaypatil96/b2ai-dataset-ingest#"
+      },
+      {
+        "id": "loinc",
+        "name": "Logical Observation Identifiers Names and Codes (LOINC)",
+        "url": "https://loinc.org",
+        "version": "2.80",
+        "namespacePrefix": "LOINC",
+        "iriPrefix": "https://loinc.org/"
+      },
+      {
+        "id": "mondo",
+        "name": "Mondo Disease Ontology",
+        "url": "http://purl.obolibrary.org/obo/mondo.owl",
+        "version": "2025-06-03",
+        "namespacePrefix": "MONDO",
+        "iriPrefix": "http://purl.obolibrary.org/obo/MONDO_"
+      },
+      {
+        "id": "ncbitaxon",
+        "name": "NCBI organismal classification",
+        "url": "http://purl.obolibrary.org/obo/ncbitaxon.owl",
+        "version": "2024-07-03",
+        "namespacePrefix": "NCBITaxon",
+        "iriPrefix": "http://purl.obolibrary.org/obo/NCBITaxon_"
+      },
+      {
+        "id": "ncit",
+        "name": "NCI Thesaurus OBO Edition",
+        "url": "http://purl.obolibrary.org/obo/ncit.owl",
+        "version": "2024-05-07",
+        "namespacePrefix": "NCIT",
+        "iriPrefix": "http://purl.obolibrary.org/obo/NCIT_"
+      },
+      {
+        "id": "ucum",
+        "name": "Unified Code for Units of Measure (UCUM)",
+        "url": "https://ucum.org",
+        "version": "2.1",
+        "namespacePrefix": "UCUM",
+        "iriPrefix": "https://ucum.org/"
+      }
+    ],
+    "phenopacketSchemaVersion": "2.0"
+  }
+}

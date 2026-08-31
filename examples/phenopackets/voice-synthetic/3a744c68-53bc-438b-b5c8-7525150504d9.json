@@ -1,0 +1,291 @@
+{
+  "id": "3a744c68-53bc-438b-b5c8-7525150504d9",
+  "subject": {
+    "id": "3a744c68-53bc-438b-b5c8-7525150504d9",
+    "timeAtLastEncounter": {
+      "age": {
+        "iso8601duration": "P59Y"
+      }
+    },
+    "taxonomy": {
+      "id": "NCBITaxon:9606",
+      "label": "Homo sapiens"
+    }
+  },
+  "phenotypicFeatures": [
+    {
+      "description": "Derived present from self-reported item b2ai:dsm5_adult.memory_issues (Problems with memory (learning new information) or with location (finding your way home)) [skos:broadMatch HP:0100543 Cognitive impairment] when answer >=2, confidence 0.8.",
+      "type": {
+        "id": "HP:0100543",
+        "label": "Cognitive impairment"
+      },
+      "onset": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      },
+      "evidence": [
+        {
+          "evidenceCode": {
+            "id": "ECO:0006160",
+            "label": "self-reported patient statement evidence used in automatic assertion"
+          },
+          "reference": {
+            "id": "b2ai:dsm5_adult.memory_issues",
+            "reference": "https://github.com/sujaypatil96/b2ai-dataset-ingest#dsm5_adult.memory_issues",
+            "description": "Problems with memory (learning new information) or with location (finding your way home)"
+          }
+        }
+      ]
+    }
+  ],
+  "measurements": [
+    {
+      "assay": {
+        "id": "b2ai:dsm5_adult.memory_issues",
+        "label": "Problems with memory (e.g., learning new information) or with location (e.g., finding your way home)?"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          },
+          "value": 2.0
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "b2ai:leicester_cough_questionnaire.lcq_energy",
+        "label": "In the last 2 weeks, have you had a lot of energy?"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          },
+          "value": 3.0
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "b2ai:leicester_cough_questionnaire.lcq_interfere_job",
+        "label": "In the last 2 weeks, my cough has interfered with my job or other daily tasks"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          }
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "LOINC:44253-3",
+        "label": "Moving or speaking slowly, or being fidgety or restless"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          },
+          "value": 2.0
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "LOINC:44260-8",
+        "label": "Thoughts that you would be better off dead, or of hurting yourself"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          }
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "b2ai:ptsd_adult.emotionally_upset",
+        "label": "Feeling very emotionally upset when something reminded you of a stressful experience?"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          },
+          "value": 2.0
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "b2ai:vhi10.left_out_convo",
+        "label": "I feel left out of conversations because of my voice"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          }
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    }
+  ],
+  "diseases": [
+    {
+      "term": {
+        "id": "MONDO:0002352",
+        "label": "larynx cancer"
+      },
+      "onset": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "term": {
+        "id": "MONDO:0000485",
+        "label": "spasmodic dystonia"
+      },
+      "onset": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "term": {
+        "id": "MONDO:0005180",
+        "label": "Parkinson disease"
+      },
+      "onset": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    }
+  ],
+  "metaData": {
+    "createdBy": "b2ai-dataset-ingest",
+    "resources": [
+      {
+        "id": "b2ai",
+        "name": "Bridge2AI-Voice project-local codes (b2ai-dataset-ingest)",
+        "url": "https://github.com/sujaypatil96/b2ai-dataset-ingest",
+        "version": "0.0.1",
+        "namespacePrefix": "b2ai",
+        "iriPrefix": "https://github.com/sujaypatil96/b2ai-dataset-ingest#"
+      },
+      {
+        "id": "eco",
+        "name": "Evidence and Conclusion Ontology (ECO)",
+        "url": "http://purl.obolibrary.org/obo/eco.owl",
+        "version": "2026-05-15",
+        "namespacePrefix": "ECO",
+        "iriPrefix": "http://purl.obolibrary.org/obo/ECO_"
+      },
+      {
+        "id": "hp",
+        "name": "Human Phenotype Ontology",
+        "url": "http://purl.obolibrary.org/obo/hp.owl",
+        "version": "2025-05-06",
+        "namespacePrefix": "HP",
+        "iriPrefix": "http://purl.obolibrary.org/obo/HP_"
+      },
+      {
+        "id": "loinc",
+        "name": "Logical Observation Identifiers Names and Codes (LOINC)",
+        "url": "https://loinc.org",
+        "version": "2.80",
+        "namespacePrefix": "LOINC",
+        "iriPrefix": "https://loinc.org/"
+      },
+      {
+        "id": "mondo",
+        "name": "Mondo Disease Ontology",
+        "url": "http://purl.obolibrary.org/obo/mondo.owl",
+        "version": "2025-06-03",
+        "namespacePrefix": "MONDO",
+        "iriPrefix": "http://purl.obolibrary.org/obo/MONDO_"
+      },
+      {
+        "id": "ncbitaxon",
+        "name": "NCBI organismal classification",
+        "url": "http://purl.obolibrary.org/obo/ncbitaxon.owl",
+        "version": "2024-07-03",
+        "namespacePrefix": "NCBITaxon",
+        "iriPrefix": "http://purl.obolibrary.org/obo/NCBITaxon_"
+      },
+      {
+        "id": "ncit",
+        "name": "NCI Thesaurus OBO Edition",
+        "url": "http://purl.obolibrary.org/obo/ncit.owl",
+        "version": "2024-05-07",
+        "namespacePrefix": "NCIT",
+        "iriPrefix": "http://purl.obolibrary.org/obo/NCIT_"
+      },
+      {
+        "id": "ucum",
+        "name": "Unified Code for Units of Measure (UCUM)",
+        "url": "https://ucum.org",
+        "version": "2.1",
+        "namespacePrefix": "UCUM",
+        "iriPrefix": "https://ucum.org/"
+      }
+    ],
+    "phenopacketSchemaVersion": "2.0"
+  }
+}

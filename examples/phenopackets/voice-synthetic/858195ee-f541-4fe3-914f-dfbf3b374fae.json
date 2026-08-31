@@ -1,0 +1,496 @@
+{
+  "id": "858195ee-f541-4fe3-914f-dfbf3b374fae",
+  "subject": {
+    "id": "858195ee-f541-4fe3-914f-dfbf3b374fae",
+    "taxonomy": {
+      "id": "NCBITaxon:9606",
+      "label": "Homo sapiens"
+    }
+  },
+  "phenotypicFeatures": [
+    {
+      "description": "Derived present from self-reported item b2ai:phq9.no_appetite (Poor appetite or overeating) [skos:broadMatch HP:0100738 Abnormal eating behavior] when answer >=1, confidence 0.8.",
+      "type": {
+        "id": "HP:0100738",
+        "label": "Abnormal eating behavior"
+      },
+      "onset": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      },
+      "evidence": [
+        {
+          "evidenceCode": {
+            "id": "ECO:0006160",
+            "label": "self-reported patient statement evidence used in automatic assertion"
+          },
+          "reference": {
+            "id": "b2ai:phq9.no_appetite",
+            "reference": "https://github.com/sujaypatil96/b2ai-dataset-ingest#phq9.no_appetite",
+            "description": "Poor appetite or overeating"
+          }
+        }
+      ]
+    },
+    {
+      "description": "Derived present from self-reported item b2ai:ptsd_adult.super_alert (Being 'super alert', on guard, or constantly on the lookout for danger) [skos:exactMatch HP:5200231 Hypervigilance] when answer >=2, confidence 0.9.",
+      "type": {
+        "id": "HP:5200231",
+        "label": "Hypervigilance"
+      },
+      "onset": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      },
+      "evidence": [
+        {
+          "evidenceCode": {
+            "id": "ECO:0006160",
+            "label": "self-reported patient statement evidence used in automatic assertion"
+          },
+          "reference": {
+            "id": "b2ai:ptsd_adult.super_alert",
+            "reference": "https://github.com/sujaypatil96/b2ai-dataset-ingest#ptsd_adult.super_alert",
+            "description": "Being 'super alert', on guard, or constantly on the lookout for danger"
+          }
+        }
+      ]
+    }
+  ],
+  "measurements": [
+    {
+      "assay": {
+        "id": "b2ai:dsm5_adult.feeling_down",
+        "label": "Feeling down, depressed, or hopeless?"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          },
+          "value": 3.0
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "b2ai:dsm5_adult.feeling_more_irritated",
+        "label": "Feeling more irritated, grouchy, or angry than usual?"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          },
+          "value": 1.0
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "b2ai:dsm5_adult.no_purpose",
+        "label": "Not knowing who you really are or what you want out of life?"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          },
+          "value": 4.0
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "b2ai:dsm5_adult.someone_hear_thoughts",
+        "label": "Feeling that someone could hear your thoughts, or that you could hear what another person was thinking?"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          }
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "b2ai:dyspnea_index.di_exercise",
+        "label": "My shortness of breath gets worse with exercise or physical activity"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          },
+          "value": 1.0
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "b2ai:leicester_cough_questionnaire.lcq_energy",
+        "label": "In the last 2 weeks, have you had a lot of energy?"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          },
+          "value": 5.0
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "LOINC:44254-1",
+        "label": "Feeling tired or having little energy"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          }
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "LOINC:44251-7",
+        "label": "Poor appetite or overeating"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          },
+          "value": 1.0
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "b2ai:ptsd_adult.super_alert",
+        "label": "Being \"super alert\", on guard, or constantly on the lookout for danger?"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          },
+          "value": 2.0
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "b2ai:vhi10.tough_to_understand",
+        "label": "People have difficulty understanding me in a noisy room"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          }
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "b2ai:vhi10.voice_restrict_social",
+        "label": "My voice difficulties restrict personal and social life"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          },
+          "value": 3.0
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "b2ai:vhi10.voice_lose_income",
+        "label": "My voice problem causes me to lose income"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          },
+          "value": 4.0
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "b2ai:vhi10.voice_upsetting",
+        "label": "My voice problem upsets me"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          },
+          "value": 2.0
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "b2ai:vhi10.voice_handicapped",
+        "label": "My voice makes me feel handicapped"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          }
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "b2ai:vhi10.ask_whats_wrong_voice",
+        "label": "People ask, what is wrong with your voice?"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          }
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    }
+  ],
+  "diseases": [
+    {
+      "term": {
+        "id": "MONDO:0004976",
+        "label": "amyotrophic lateral sclerosis"
+      },
+      "onset": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "term": {
+        "id": "MONDO:0002352",
+        "label": "larynx cancer"
+      },
+      "onset": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "term": {
+        "id": "MONDO:0000485",
+        "label": "spasmodic dystonia"
+      },
+      "onset": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "term": {
+        "id": "MONDO:0005180",
+        "label": "Parkinson disease"
+      },
+      "onset": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    }
+  ],
+  "metaData": {
+    "createdBy": "b2ai-dataset-ingest",
+    "resources": [
+      {
+        "id": "b2ai",
+        "name": "Bridge2AI-Voice project-local codes (b2ai-dataset-ingest)",
+        "url": "https://github.com/sujaypatil96/b2ai-dataset-ingest",
+        "version": "0.0.1",
+        "namespacePrefix": "b2ai",
+        "iriPrefix": "https://github.com/sujaypatil96/b2ai-dataset-ingest#"
+      },
+      {
+        "id": "eco",
+        "name": "Evidence and Conclusion Ontology (ECO)",
+        "url": "http://purl.obolibrary.org/obo/eco.owl",
+        "version": "2026-05-15",
+        "namespacePrefix": "ECO",
+        "iriPrefix": "http://purl.obolibrary.org/obo/ECO_"
+      },
+      {
+        "id": "hp",
+        "name": "Human Phenotype Ontology",
+        "url": "http://purl.obolibrary.org/obo/hp.owl",
+        "version": "2025-05-06",
+        "namespacePrefix": "HP",
+        "iriPrefix": "http://purl.obolibrary.org/obo/HP_"
+      },
+      {
+        "id": "loinc",
+        "name": "Logical Observation Identifiers Names and Codes (LOINC)",
+        "url": "https://loinc.org",
+        "version": "2.80",
+        "namespacePrefix": "LOINC",
+        "iriPrefix": "https://loinc.org/"
+      },
+      {
+        "id": "mondo",
+        "name": "Mondo Disease Ontology",
+        "url": "http://purl.obolibrary.org/obo/mondo.owl",
+        "version": "2025-06-03",
+        "namespacePrefix": "MONDO",
+        "iriPrefix": "http://purl.obolibrary.org/obo/MONDO_"
+      },
+      {
+        "id": "ncbitaxon",
+        "name": "NCBI organismal classification",
+        "url": "http://purl.obolibrary.org/obo/ncbitaxon.owl",
+        "version": "2024-07-03",
+        "namespacePrefix": "NCBITaxon",
+        "iriPrefix": "http://purl.obolibrary.org/obo/NCBITaxon_"
+      },
+      {
+        "id": "ncit",
+        "name": "NCI Thesaurus OBO Edition",
+        "url": "http://purl.obolibrary.org/obo/ncit.owl",
+        "version": "2024-05-07",
+        "namespacePrefix": "NCIT",
+        "iriPrefix": "http://purl.obolibrary.org/obo/NCIT_"
+      },
+      {
+        "id": "ucum",
+        "name": "Unified Code for Units of Measure (UCUM)",
+        "url": "https://ucum.org",
+        "version": "2.1",
+        "namespacePrefix": "UCUM",
+        "iriPrefix": "https://ucum.org/"
+      }
+    ],
+    "phenopacketSchemaVersion": "2.0"
+  }
+}

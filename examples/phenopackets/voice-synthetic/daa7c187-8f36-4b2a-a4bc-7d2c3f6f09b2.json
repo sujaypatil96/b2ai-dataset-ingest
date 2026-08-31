@@ -1,0 +1,242 @@
+{
+  "id": "daa7c187-8f36-4b2a-a4bc-7d2c3f6f09b2",
+  "subject": {
+    "id": "daa7c187-8f36-4b2a-a4bc-7d2c3f6f09b2",
+    "taxonomy": {
+      "id": "NCBITaxon:9606",
+      "label": "Homo sapiens"
+    }
+  },
+  "phenotypicFeatures": [
+    {
+      "description": "Derived present from self-reported item b2ai:leicester_cough_questionnaire.lcq_hoarse_voice (Hoarse voice as a result of your cough) [skos:exactMatch HP:0001609 Hoarse voice] when answer >=3, confidence 0.95.",
+      "type": {
+        "id": "HP:0001609",
+        "label": "Hoarse voice"
+      },
+      "onset": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      },
+      "evidence": [
+        {
+          "evidenceCode": {
+            "id": "ECO:0006160",
+            "label": "self-reported patient statement evidence used in automatic assertion"
+          },
+          "reference": {
+            "id": "b2ai:leicester_cough_questionnaire.lcq_hoarse_voice",
+            "reference": "https://github.com/sujaypatil96/b2ai-dataset-ingest#leicester_cough_questionnaire.lcq_hoarse_voice",
+            "description": "Hoarse voice as a result of your cough"
+          }
+        }
+      ]
+    }
+  ],
+  "measurements": [
+    {
+      "assay": {
+        "id": "b2ai:dsm5_adult.smoking_more",
+        "label": "Smoking any cigarettes, a cigar, or pipe, or using snuff or chewing tobacco?"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          }
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "b2ai:dsm5_adult.someone_hear_thoughts",
+        "label": "Feeling that someone could hear your thoughts, or that you could hear what another person was thinking?"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          }
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "b2ai:leicester_cough_questionnaire.lcq_hoarse_voice",
+        "label": "In the last 2 weeks, have you suffered from a hoarse voice as a result of your cough?"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          },
+          "value": 4.0
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "b2ai:vhi10.voice_upsetting",
+        "label": "My voice problem upsets me"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          }
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "assay": {
+        "id": "b2ai:vhi10.voice_handicapped",
+        "label": "My voice makes me feel handicapped"
+      },
+      "value": {
+        "quantity": {
+          "unit": {
+            "id": "UCUM:{score}",
+            "label": "score"
+          },
+          "value": 2.0
+        }
+      },
+      "timeObserved": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    }
+  ],
+  "diseases": [
+    {
+      "term": {
+        "id": "MONDO:0004976",
+        "label": "amyotrophic lateral sclerosis"
+      },
+      "onset": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "term": {
+        "id": "MONDO:0002352",
+        "label": "larynx cancer"
+      },
+      "onset": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    },
+    {
+      "term": {
+        "id": "MONDO:0005180",
+        "label": "Parkinson disease"
+      },
+      "onset": {
+        "ontologyClass": {
+          "id": "NCIT:C25213",
+          "label": "Baseline"
+        }
+      }
+    }
+  ],
+  "metaData": {
+    "createdBy": "b2ai-dataset-ingest",
+    "resources": [
+      {
+        "id": "b2ai",
+        "name": "Bridge2AI-Voice project-local codes (b2ai-dataset-ingest)",
+        "url": "https://github.com/sujaypatil96/b2ai-dataset-ingest",
+        "version": "0.0.1",
+        "namespacePrefix": "b2ai",
+        "iriPrefix": "https://github.com/sujaypatil96/b2ai-dataset-ingest#"
+      },
+      {
+        "id": "eco",
+        "name": "Evidence and Conclusion Ontology (ECO)",
+        "url": "http://purl.obolibrary.org/obo/eco.owl",
+        "version": "2026-05-15",
+        "namespacePrefix": "ECO",
+        "iriPrefix": "http://purl.obolibrary.org/obo/ECO_"
+      },
+      {
+        "id": "hp",
+        "name": "Human Phenotype Ontology",
+        "url": "http://purl.obolibrary.org/obo/hp.owl",
+        "version": "2025-05-06",
+        "namespacePrefix": "HP",
+        "iriPrefix": "http://purl.obolibrary.org/obo/HP_"
+      },
+      {
+        "id": "mondo",
+        "name": "Mondo Disease Ontology",
+        "url": "http://purl.obolibrary.org/obo/mondo.owl",
+        "version": "2025-06-03",
+        "namespacePrefix": "MONDO",
+        "iriPrefix": "http://purl.obolibrary.org/obo/MONDO_"
+      },
+      {
+        "id": "ncbitaxon",
+        "name": "NCBI organismal classification",
+        "url": "http://purl.obolibrary.org/obo/ncbitaxon.owl",
+        "version": "2024-07-03",
+        "namespacePrefix": "NCBITaxon",
+        "iriPrefix": "http://purl.obolibrary.org/obo/NCBITaxon_"
+      },
+      {
+        "id": "ncit",
+        "name": "NCI Thesaurus OBO Edition",
+        "url": "http://purl.obolibrary.org/obo/ncit.owl",
+        "version": "2024-05-07",
+        "namespacePrefix": "NCIT",
+        "iriPrefix": "http://purl.obolibrary.org/obo/NCIT_"
+      },
+      {
+        "id": "ucum",
+        "name": "Unified Code for Units of Measure (UCUM)",
+        "url": "https://ucum.org",
+        "version": "2.1",
+        "namespacePrefix": "UCUM",
+        "iriPrefix": "https://ucum.org/"
+      }
+    ],
+    "phenopacketSchemaVersion": "2.0"
+  }
+}
