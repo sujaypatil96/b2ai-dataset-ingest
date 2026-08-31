@@ -110,7 +110,10 @@ half. Copy the full item text from the data dict before judging a column — and
 | `di_air_in` "trouble getting air in" | HP:0002094 Dyspnea | broad | item is a specific expression of the umbrella phenotype |
 | `pulmonary_hypertension` | HP:0002092 Pulmonary arterial hypertension | narrow | HPO term is the arterial subtype |
 | `no_appetite` "poor appetite **or** overeating" | HP:0100738 Abnormal eating behavior | broad | retargeted to a term that subsumes both poles |
-| `panic_disorder` (a disorder) | HP:0025269 Panic attack | broad | disorder → its core phenotype; HPO term is the manifestation the disorder subsumes (cf. `anxiety_disorder`→Anxiety, `epilepsy`→Seizure) |
+| `brain_tumor` "Brain tumor" **and** `brain_cancer` "Brain cancer" | HP:0030692 Brain neoplasm | **exact** *and* **broad** — same term, two predicates | HPO defines it as "a benign **or** malignant neoplasm": that is what *tumor* means (exact), and wider than *cancer*, which is malignant only (broad) |
+| `headache_migraine` "Headache or migraine" | HP:0002315 Headache **+** HP:0002076 Migraine | broad **+** narrow | the rare conflation with *both* a true subsumer and a named sub-sense: Migraine **is_a** Headache, so Headache alone is already honest — the second row just records the sense the column names |
+| `speech_difficulty` "Speech difficulty" | HP:0002167 Abnormal speech pattern | related | **trap 1:** the label reads like an umbrella, but the definition is "an abnormality in the **sound (volume) or cadence (rate)** of speech" — it does not reach articulation or word-finding |
+| `panic_disorder` (a disorder) | HP:0025269 Panic attack | broad — **contested**, see *A disease column cannot hierarchically match a phenotype* | disorder → its core phenotype; HPO term is the manifestation the disorder subsumes (cf. `anxiety_disorder`→Anxiety) |
 | `acid_reflux` "heart burn, GERD" | HP:0002020 Gastroesophageal reflux | exact | GERD is an exact synonym — a named disease *with* an exact HPO term stays exact |
 | `stroke` "stroke **and/or** aphasia" | HP:0001297 Stroke **+** HP:0002381 Aphasia | narrow ×2 | split; each sense is narrower than the column |
 | `dizziness` "lightheadedness or balance disturbance" | HP:0002321 Vertigo | related | **trap 1:** HPO *Vertigo* = spinning, which the source excludes — synonym match is misleading, so downgrade + comment |
@@ -131,7 +134,7 @@ A clinician (Sek Won Kong) reviewed the shipped questionnaire mappings. Every ca
 | `gad7_anxiety.afraid_of_things` "Feeling afraid, as if something awful might happen" | broad → HP:0033845 *Sense of impending doom* | **narrow** | "Subj is broader than Obj." HPO's "life-threatening or tragic is about to occur" is the *stronger* phenomenon — and the row's own comment said so while the predicate said the opposite |
 | `ptsd_adult.losing_interest` "Losing interest in activities you used to enjoy **before a stressful experience**" | exact → HP:0012154 *Anhedonia* | **broad** | the item is event-scoped; Anhedonia covers event-related and unrelated alike, so the HPO term is broader |
 | `dsm5_adult.feeling_down` "Feeling down, depressed, or hopeless" | exact → HP:5200273 *Pathological sadness* | **related**, ungated | a normal-range mood descriptor is not the *pathological* term, however well the synonyms match |
-| `dsm5_adult.feeling_panic` "Feeling panic or being frightened" | broad → HP:0025269 *Panic attack* | **related**, ungated | a named clinical entity is not the feeling that names it. Contrast `panic_disorder` (a reported **diagnosis**) → Panic attack, which stays `broad` — the column kind decides |
+| `dsm5_adult.feeling_panic` "Feeling panic or being frightened" | broad → HP:0025269 *Panic attack* | **related**, ungated | a named clinical entity is not the feeling that names it. Contrast `panic_disorder` (a reported **diagnosis**) → Panic attack, which stays `broad` pending the MONDO layer — the column kind decides |
 | `dsm5_adult.feeling_detached` "…from yourself, your body, surroundings, or memories" | exact → HP:5200217 *Depersonalization* | **narrow ×2**: + HP:5200218 *Derealization*, ungated | a conflation the agent read as one sense: "yourself/your body" is depersonalization, "surroundings" is derealization |
 | `dsm5_adult.someone_hear_thoughts` inbound sense ("you could hear another person's thoughts") | related → HP:0025776 *Thought insertion* | **row removed** | "I don't think there is an HPO term for this" |
 | `dsm5_adult.self_harm` "**Thoughts of** actually hurting yourself" | related → HP:0100716 *Self-injurious behavior* | **row removed** | same: HPO has no self-harm-*ideation* term |
@@ -164,6 +167,56 @@ at "several days" does not establish. **Exact synonyms justify the topic, not th
 the ontology definition adds a threshold the item does not test, downgrade. This rule has *not*
 yet been applied to `phq9.feeling_depressed`, which carries the identical item text and is still
 `exactMatch` and gated — see *One term, three predicates* under Trap 2.
+
+### "Cancer" is malignant; "neoplasm" and "tumor" are not
+
+A `<site> cancer` column is **not** an `exactMatch` for HPO's `Neoplasm of the <site>`, whose
+definitions read "a benign **or** malignant neoplasm" — the HPO term is strictly wider, so the
+column `broadMatch`es it. Eight confounders columns were corrected this way on the 2026-08-24
+clinical review. The reviewer left `confounders.brain_tumor` alone on the *same* HPO term, which
+is right: *tumor* is benign-or-malignant too, so that one really is exact.
+
+**Check that the umbrella exists before flipping the predicate.** The rule needs an HPO *neoplasm*
+term to point at, and one column had none: `thyroid_cancer` targeted HP:0002890 *Thyroid
+carcinoma*, which is malignant-specific and a **child** of HP:0100031 *Neoplasm of the thyroid
+gland*. Flipping the predicate alone would have asserted that a malignancy-specific term is
+broader than "thyroid cancer", which is backwards. Applying a reviewer's rule sometimes means
+retargeting the object, not just editing one column — and HPO does not always carry a generic
+"<site> cancer" term (searched: only *Medullary* and *Non-medullary thyroid carcinoma* exist).
+
+### A disease column cannot hierarchically match a phenotype
+
+`confounders.epilepsy` → HP:0001250 *Seizure* was `broadMatch` under the "disorder → its core
+phenotype" convention in the table above. The clinical review downgraded it to `relatedMatch`:
+epilepsy is a **disease** and Seizure is a **phenotype**, so neither subsumes the other — a
+seizure can occur without epilepsy, and the diagnosis is not a kind of seizure.
+
+That is the same observation as the reviewer's "Mapping MONDO?" on ~25 other confounders columns,
+and it is now settled: **a disease-kind column belongs in a disease ontology.** Nineteen of them
+have MONDO rows in `mappings/b2ai-voice-conditions.sssom.tsv`, and their HPO rows were resolved
+two ways, which is the distinction to carry forward:
+
+- **The HPO term is the *same concept* as the column** (`asthma`, `bipolar_disorder`, `diabetes`,
+  `schizophrenia`, …). Both rows stay `exactMatch`. Mapping one subject into two ontologies is
+  ordinary SSSOM, not a contradiction — `HP:0002099` *Asthma* and `MONDO:0004979` *asthma* are the
+  same thing said twice.
+- **The HPO term is a *manifestation* of the disease** (`anxiety_disorder`→Anxiety,
+  `panic_disorder`→Panic attack, `parkinsons_disease`→Parkinsonism, `obsessive_compulsive_disorder`
+  →Compulsive behaviors, `eating_disorder`→Abnormal eating behavior, `epilepsy`→Seizure). Demoted
+  to `relatedMatch`; the MONDO row is now the column's real mapping.
+
+Those six were exactly the rows the retired convention covered, which is what made the line
+drawable: *is the HPO term the disease, or a sign of it?*
+
+**A "no term" answer is a result, not a failure — and this is where it pays.** Seven diagnosis-kind
+columns have **no** MONDO row because MONDO has no term for them: `chronic_cough`,
+`glottic_insufficiency`, `laryngospasm_irritable_larynx`, `lesions_vocal_cord`,
+`muscle_tension_dysphonia`, `swallowing_disorder`, `vocal_cord_dysfunction`. That is the
+voice/laryngology core of this dataset, and those columns stay HPO-only — the near-misses are
+traps, not candidates (`MONDO:0007876` is *laryngeal abductor paralysis*, a hereditary disease, not
+functional vocal cord dysfunction; the `dysphagia` hits are all syndromes that merely *feature*
+dysphagia). **Search before assuming a disease ontology is the better home**: for a functional
+voice finding, HPO is not the fallback, it is the right answer.
 
 ## Trap 1 — lexical match ≠ semantic match
 

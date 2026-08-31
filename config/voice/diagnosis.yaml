@@ -10,7 +10,11 @@
 # `control` is not a disease: a control-only participant still gets an Individual and any
 # measurements, but no Disease. See `control_handling` below.
 #
-# CURIEs marked (verified) were checked against EBI OLS4 on 2026-07-06.
+# CURIEs marked (verified) were checked against EBI OLS4 on 2026-07-06; anxiety,
+# laryngeal_dystonia and laryngitis were added on 2026-08-27 and checked against the
+# pinned MONDO release (2026-05-05) with oaklib, alongside mappings/b2ai-voice-conditions
+# .sssom.tsv. airway_stenosis stays TODO on purpose: MONDO has tracheal stenosis but no
+# airway/laryngeal stenosis term, and the B2AI condition is not specific to the trachea.
 
 table_group: diagnosis
 produces: DiseaseObservation
@@ -23,7 +27,7 @@ session_columns: [session_id]
 conditions:
   airway_stenosis: { id: "MONDO:0000000", label: "TODO" }
   amyotrophic_lateral_sclerosis: { id: "MONDO:0004976", label: "amyotrophic lateral sclerosis" }  # verified
-  anxiety: { id: "MONDO:0000000", label: "TODO" }
+  anxiety: { id: "MONDO:0005618", label: "anxiety disorder" }  # verified
   benign_lesions: { id: "MONDO:0000000", label: "TODO" }
   bipolar_disorder: { id: "MONDO:0004985", label: "bipolar disorder" }  # verified
   cognitive_impairment: { id: "MONDO:0000000", label: "TODO" }
@@ -32,8 +36,8 @@ conditions:
   glottic_insufficiency: { id: "MONDO:0000000", label: "TODO" }
   huntingtons_disease: { id: "MONDO:0007739", label: "Huntington disease" }  # verified
   laryngeal_cancer: { id: "MONDO:0002352", label: "larynx cancer" }  # verified (MONDO:0005051 is NOT laryngeal cancer)
-  laryngeal_dystonia: { id: "MONDO:0000000", label: "TODO" }
-  laryngitis: { id: "MONDO:0000000", label: "TODO" }
+  laryngeal_dystonia: { id: "MONDO:0000485", label: "spasmodic dystonia" }  # verified (primary label is "spasmodic dystonia"; "laryngeal dystonia" and "spasmodic dysphonia" are exact synonyms and the definition is larynx-specific)
+  laryngitis: { id: "MONDO:0002647", label: "laryngitis" }  # verified
   muscle_tension_dysphonia: { id: "MONDO:0000000", label: "TODO" }
   parkinsons_disease: { id: "MONDO:0005180", label: "Parkinson disease" }  # verified
   precancerous_lesions: { id: "MONDO:0000000", label: "TODO" }

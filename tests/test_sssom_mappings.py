@@ -11,7 +11,8 @@ from pathlib import Path
 import pytest
 
 from b2ai_dataset_ingest.ontology.sssom_validate import (
-    _get_hp_adapter,
+    OBJECT_SOURCES,
+    _get_ontology_adapter,
     default_mapping_files,
     parse_sssom,
     validate_paths,
@@ -35,6 +36,7 @@ SSSOM_HEADER = (
     "#   skos: http://www.w3.org/2004/02/skos/core#\n"
     "#   semapv: https://w3id.org/semapv/vocab/\n"
     "# license: https://creativecommons.org/publicdomain/zero/1.0/\n"
+    "# object_source: obo:hp\n"
 )
 SSSOM_COLS = (
     "subject_id\tsubject_label\tpredicate_id\tobject_id\tobject_label\t"
@@ -47,7 +49,7 @@ def _data_root() -> Path | None:
 
 
 def _oaklib_ready() -> bool:
-    return _get_hp_adapter() is not None
+    return all(_get_ontology_adapter(sel) is not None for _, sel in OBJECT_SOURCES.values())
 
 
 def _sssom_ready() -> bool:
@@ -189,6 +191,35 @@ def test_repeated_conditional_rows_are_duplicates(tmp_path: Path):
     )
     codes = {f.code for f in validate_paths([dup], check_ontology=False).errors}
     assert "duplicate" in codes
+
+
+def test_object_prefix_follows_the_file_s_object_source(tmp_path: Path):
+    """A MONDO object in a file declaring obo:hp is an error, and the mirror case is fine."""
+    mondo_row = _row("b2ai:confounders.epilepsy", "skos:exactMatch", "MONDO:0005027", "epilepsy")
+    hp_file = _write_sssom(tmp_path, [mondo_row])
+    codes = {f.code for f in validate_paths([hp_file], check_ontology=False).errors}
+    assert "bad-object" in codes
+
+    mondo = tmp_path / "conditions.sssom.tsv"
+    mondo.write_text(
+        SSSOM_HEADER.replace("HP: http://purl.obolibrary.org/obo/HP_",
+                             "MONDO: http://purl.obolibrary.org/obo/MONDO_")
+                    .replace("object_source: obo:hp", "object_source: obo:mondo")
+        + SSSOM_COLS + "\n" + mondo_row + "\n"
+    )
+    assert not validate_paths([mondo], check_ontology=False).errors
+
+
+def test_unknown_object_source_is_an_error(tmp_path: Path):
+    """An undeclared/unsupported object ontology must fail loudly, not skip the checks silently."""
+    path = tmp_path / "weird.sssom.tsv"
+    path.write_text(
+        SSSOM_HEADER.replace("object_source: obo:hp", "object_source: obo:doid")
+        + SSSOM_COLS + "\n"
+        + _row("b2ai:confounders.obesity", "skos:exactMatch", "HP:0001513", "Obesity") + "\n"
+    )
+    codes = {f.code for f in validate_paths([path], check_ontology=False).errors}
+    assert "unknown-object-source" in codes
 
 
 def test_validator_requires_self_contained_curie_map(tmp_path: Path):

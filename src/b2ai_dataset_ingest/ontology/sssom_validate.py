@@ -12,13 +12,18 @@ three layers of checks and returns structured :class:`Finding` objects:
    subject must name a real column in the corresponding data dictionary
    (``<data_root>/**/<table>.json``, via :func:`mapping.loaders.load_data_dict`). Skipped (not
    failed) when no data root is available; unresolved tables are counted and surfaced.
-3. **HPO anti-hallucination** (via oaklib's offline HPO SQLite, when available): every
-   ``object_id`` must exist, not be deprecated (checked against ``owl:deprecated`` via
-   ``adapter.obsoletes()`` -- not merely the ``"obsolete "`` label convention), and its
-   ``object_label`` must equal HPO's authoritative label (an *exact* synonym only warns). The
-   loaded HPO version is compared to each file's ``object_source_version`` and surfaced, so a
-   green run is auditable and drift is visible. Skipped (not failed) when oaklib/the HP backend
-   is unavailable, unless ``check_ontology`` forces it.
+3. **Anti-hallucination** (via oaklib's offline SQLite, when available): every ``object_id``
+   must exist, not be deprecated (checked against ``owl:deprecated`` via ``adapter.obsoletes()``
+   -- not merely the ``"obsolete "`` label convention), and its ``object_label`` must equal the
+   ontology's authoritative label (an *exact* synonym only warns). The loaded release is compared
+   to each file's ``object_source_version`` and surfaced, so a green run is auditable and drift is
+   visible. Skipped (not failed) when oaklib/the backend is unavailable, unless ``check_ontology``
+   forces it.
+
+**Which ontology a file maps to is the file's own declaration.** Each set names one in its
+``object_source`` metadata (SSSOM makes it a mapping-*set*-level slot, which is why a MONDO set is
+a separate file rather than MONDO rows in the HPO file); :data:`OBJECT_SOURCES` turns that into
+the CURIE prefix every ``object_id`` must carry and the oaklib adapter to check it against.
 
 The SSSOM/TSV parser is intentionally dependency-light (stdlib + PyYAML, already a project
 dep) so structural + subject checks never need the heavy ontology stack.
@@ -43,8 +48,14 @@ from b2ai_dataset_ingest.mapping.sssom_io import (
 
 logger = logging.getLogger(__name__)
 
-# oaklib adapter selector for the offline HPO SQLite (matches ontology/terms.py).
-HP_ADAPTER = "sqlite:obo:hp"
+#: Object ontologies a mapping set may declare in its ``object_source``, mapped to the CURIE
+#: prefix its ``object_id``s must use and the oaklib selector that verifies them offline (the
+#: HP selector matches ontology/terms.py). A file declaring anything else is an error rather
+#: than an unchecked pass -- an unknown source would silently skip the anti-hallucination layer.
+OBJECT_SOURCES = {
+    "obo:hp": ("HP", "sqlite:obo:hp"),
+    "obo:mondo": ("MONDO", "sqlite:obo:mondo"),
+}
 
 ALLOWED_PREDICATES = frozenset(
     {
@@ -90,7 +101,8 @@ class ValidationResult:
     n_rows: int = 0
     ontology_checked: bool = False
     subjects_checked: bool = False
-    hpo_version: str | None = None
+    #: object_source -> loaded release date, for every ontology actually consulted
+    ontology_versions: dict[str, str] = field(default_factory=dict)
     subjects_unresolved: int = 0  # subjects whose data-dict table could not be resolved
 
     @property
@@ -103,11 +115,9 @@ class ValidationResult:
 
     def render(self) -> str:
         lines = [f.render() for f in self.findings]
-        ont = (
-            f"ontology=oaklib@{self.hpo_version or '?'}"
-            if self.ontology_checked
-            else "ontology=SKIPPED"
-        )
+        loaded = ", ".join(f"{s}@{v}" for s, v in sorted(self.ontology_versions.items()))
+        ont = f"ontology=oaklib({loaded or '?'})" if self.ontology_checked else "ontology=SKIPPED"
+
         subj = "subjects=data-dict" if self.subjects_checked else "subjects=SKIPPED"
         if self.subjects_checked and self.subjects_unresolved:
             subj += f" ({self.subjects_unresolved} unresolved)"
@@ -121,21 +131,21 @@ class ValidationResult:
 # ------------------------------------------------------------------- ontology backend
 
 
-def _get_hp_adapter():
-    """Return an oaklib HPO adapter, or None if oaklib / the HP backend is unavailable."""
+def _get_ontology_adapter(selector: str):
+    """Return an oaklib adapter for ``selector``, or None if oaklib / that backend is missing."""
     try:
         from oaklib import get_adapter
     except ImportError:
         return None
     try:
-        return get_adapter(HP_ADAPTER)
+        return get_adapter(selector)
     except Exception as exc:  # noqa: BLE001 - oaklib raises many backend/network errors
-        logger.warning("oaklib HPO adapter unavailable (%s); ontology checks skipped", exc)
+        logger.warning("oaklib adapter %s unavailable (%s); ontology checks skipped", selector, exc)
         return None
 
 
-def _adapter_hpo_version(adapter) -> str | None:
-    """Best-effort ``owl:versionIRI`` release date of the loaded HPO (e.g. ``2026-02-16``)."""
+def _adapter_version(adapter) -> str | None:
+    """Best-effort ``owl:versionIRI`` release date of the loaded ontology (e.g. ``2026-02-16``)."""
     try:
         from sqlalchemy import text
 
@@ -151,10 +161,10 @@ def _adapter_hpo_version(adapter) -> str | None:
     return None
 
 
-def _obsolete_ids(adapter) -> set[str]:
-    """The set of deprecated HP CURIEs (``owl:deprecated``), or empty on failure."""
+def _obsolete_ids(adapter, prefix: str) -> set[str]:
+    """The set of deprecated CURIEs in ``prefix`` (``owl:deprecated``), or empty on failure."""
     try:
-        return {c for c in adapter.obsoletes() if isinstance(c, str) and c.startswith("HP:")}
+        return {c for c in adapter.obsoletes() if isinstance(c, str) and c.startswith(f"{prefix}:")}
     except Exception as exc:  # noqa: BLE001
         logger.warning("adapter.obsoletes() failed (%s); falling back to label heuristic", exc)
         return set()
@@ -190,6 +200,7 @@ def _check_row(
     fname: str,
     file_prefixes: set[str],
     seen: set[tuple[str, str, str]],
+    object_prefix: str,
 ) -> Iterable[Finding]:
     subj = row.get("subject_id", "").strip()
     pred = row.get("predicate_id", "").strip()
@@ -209,8 +220,12 @@ def _check_row(
         yield err("malformed-subject", f"b2ai subject must be b2ai:<table>.<column>: {subj!r}")
     if pred and pred not in ALLOWED_PREDICATES:
         yield err("bad-predicate", f"predicate_id {pred!r} not in {sorted(ALLOWED_PREDICATES)}")
-    if obj and not obj.startswith("HP:"):
-        yield err("bad-object", f"object_id must be an HP: CURIE, got {obj!r}")
+    if obj and not obj.startswith(f"{object_prefix}:"):
+        yield err(
+            "bad-object",
+            f"object_id must be a {object_prefix}: CURIE (this file declares object_source "
+            f"for {object_prefix}), got {obj!r}",
+        )
 
     # self-containment: every CURIE used must be declared in this file's own curie_map
     for curie in (subj, pred, obj, row.get("mapping_justification", "").strip()):
@@ -275,19 +290,19 @@ def _check_subject_exists(
         )
 
 
-def _check_object_in_hpo(
-    row: dict[str, str], fname: str, adapter, obsolete_ids: set[str]
+def _check_object_in_ontology(
+    row: dict[str, str], fname: str, adapter, obsolete_ids: set[str], prefix: str
 ) -> Iterable[Finding]:
     subj = row.get("subject_id", "").strip() or "<no subject_id>"
     obj = row.get("object_id", "").strip()
     declared = row.get("object_label", "").strip()
-    if not obj.startswith("HP:"):
+    if not obj.startswith(f"{prefix}:"):
         return  # structural check already flagged it
     label = adapter.label(obj)
     if label is None:
         yield Finding(
             fname, subj, "error", "hallucinated-term",
-            f"{obj} does not exist in the loaded HPO release",
+            f"{obj} does not exist in the loaded {prefix} release",
         )
         return
     # Deprecation via the authoritative owl:deprecated flag, with the label convention as a
@@ -295,13 +310,13 @@ def _check_object_in_hpo(
     if obj in obsolete_ids or label.lower().startswith("obsolete"):
         yield Finding(
             fname, subj, "error", "obsolete-term",
-            f"{obj} is obsolete/deprecated in HPO ({label!r})",
+            f"{obj} is obsolete/deprecated in {prefix} ({label!r})",
         )
         return
     if not declared:
         yield Finding(
             fname, subj, "warning", "missing-object-label",
-            f"{obj} has no object_label; label drift cannot be checked (HPO label {label!r})",
+            f"{obj} has no object_label; label drift cannot be checked ({prefix} label {label!r})",
         )
         return
     if declared.lower() == label.lower():
@@ -329,19 +344,29 @@ def validate_paths(
     Structural and subject checks always run; only the HPO layer depends on the backend.
     """
     result = ValidationResult()
-    adapter = obsolete_ids = None
-    if check_ontology is not False:
-        adapter = _get_hp_adapter()
-        if adapter is None and check_ontology is True:
-            result.findings.append(
-                Finding("<config>", "-", "error", "no-ontology-backend",
-                        "oaklib/HPO backend required (--strict-ontology) but unavailable")
-            )
-        elif adapter is not None:
-            obsolete_ids = _obsolete_ids(adapter)
-            result.hpo_version = _adapter_hpo_version(adapter)
-    result.ontology_checked = adapter is not None
     result.subjects_checked = data_root is not None
+    # One adapter per object ontology actually declared, loaded on first use: a repo that maps
+    # only to HPO must not pay for MONDO, and vice versa.
+    backends: dict[str, tuple[object, set[str]] | None] = {}
+
+    def backend(source: str, prefix: str, selector: str):
+        """(adapter, obsolete ids) for one object ontology, or None if it is unavailable."""
+        if source not in backends:
+            adapter = _get_ontology_adapter(selector) if check_ontology is not False else None
+            if adapter is None:
+                backends[source] = None
+                if check_ontology is True:
+                    result.findings.append(
+                        Finding("<config>", "-", "error", "no-ontology-backend",
+                                f"oaklib backend {selector} required (--strict-ontology) but "
+                                "unavailable")
+                    )
+            else:
+                backends[source] = (adapter, _obsolete_ids(adapter, prefix))
+                version = _adapter_version(adapter)
+                if version:
+                    result.ontology_versions[source] = version
+        return backends[source]
 
     seen: set[tuple[str, str, str]] = set()  # cross-file duplicate detection
     for path in paths:
@@ -358,7 +383,19 @@ def validate_paths(
             result.findings.append(
                 Finding(fname, "-", "error", "no-curie-map", "file has no curie_map metadata")
             )
-        result.findings.extend(_check_version(metadata, fname, result.hpo_version))
+        source = str(metadata.get("object_source") or "").strip()
+        if source not in OBJECT_SOURCES:
+            result.findings.append(
+                Finding(fname, "-", "error", "unknown-object-source",
+                        f"object_source {source!r} not in {sorted(OBJECT_SOURCES)}; the objects "
+                        "in this file cannot be checked against any ontology")
+            )
+            continue  # without a known source there is no prefix to check rows against
+        prefix, selector = OBJECT_SOURCES[source]
+        loaded = backend(source, prefix, selector)
+        result.findings.extend(
+            _check_version(metadata, fname, result.ontology_versions.get(source))
+        )
         for column, why in WITHDRAWN_COLUMNS.items():
             if any(column in row for row in rows):
                 result.findings.append(
@@ -366,18 +403,19 @@ def validate_paths(
                 )
         result.n_rows += len(rows)
         for row in rows:
-            result.findings.extend(_check_row(row, fname, file_prefixes, seen))
+            result.findings.extend(_check_row(row, fname, file_prefixes, seen, prefix))
             if data_root is not None:
                 result.findings.extend(_check_subject_exists(row, fname, data_root, result))
-            if adapter is not None:
+            if loaded is not None:
                 result.findings.extend(
-                    _check_object_in_hpo(row, fname, adapter, obsolete_ids or set())
+                    _check_object_in_ontology(row, fname, loaded[0], loaded[1], prefix)
                 )
+    result.ontology_checked = any(b is not None for b in backends.values())
     return result
 
 
 def _check_version(metadata: dict[str, Any], fname: str, loaded: str | None) -> Iterable[Finding]:
-    """Warn if the loaded HPO release differs from the file's declared ``object_source_version``."""
+    """Warn if the loaded release differs from the file's declared ``object_source_version``."""
     declared = str(metadata.get("object_source_version") or "").strip()
     if not declared or not loaded:
         return
@@ -386,7 +424,7 @@ def _check_version(metadata: dict[str, Any], fname: str, loaded: str | None) -> 
     if declared_date != loaded:
         yield Finding(
             fname, "-", "warning", "hpo-version-mismatch",
-            f"validated against HPO {loaded} but file declares object_source_version "
+            f"validated against {loaded} but file declares object_source_version "
             f"{declared!r}; label/obsolescence results reflect {loaded}",
         )
 
