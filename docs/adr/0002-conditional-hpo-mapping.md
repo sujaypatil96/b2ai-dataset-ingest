@@ -1,6 +1,6 @@
 # ADR-0002: Conditional HPO mapping — carry the value-condition in SSSOM, execute in the pipeline
 
-- **Status:** Accepted
+- **Status:** Accepted; decision 3 **withdrawn 2026-08-27** (see *Amended 2026-08-27*)
 - **Date:** 2026-07-23
 
 ## Context
@@ -38,7 +38,7 @@ report and are not yet independently checked (its branch is not in this repo).
    (`AttributeError: module 'ast' has no attribute 'Num'`, removed in 3.12+; even a trivial
    expression fails). LinkML stays the **definition/validation** layer: a `ValueCondition` class
    mirroring LinkML `slot_conditions` operators, used to structure/validate the condition, not run it.
-3. **Absent pole via the standard `predicate_modifier: Not`** → phenopacket
+3. ~~**Absent pole via the standard `predicate_modifier: Not`**~~ **(withdrawn 2026-08-27)** → phenopacket
    `PhenotypicFeature.excluded = true` (phenopackets-native negation), not a new invented column.
    *(verified)* `predicate_modifier` is a core slot preserved by sssom-py.
 4. **Provenance on every derived feature.** Attach a human-readable description (source item,
@@ -52,26 +52,53 @@ report and are not yet independently checked (its branch is not in this repo).
    in metadata), so it cannot carry the condition — the apply path uses our in-repo `parse_sssom`,
    which preserves all columns.
 6. **`when_value` is curator judgment.** The validator checks that `when_value` **parses** and
-   that `predicate_modifier ∈ {"", "Not"}`; it does **not** check the cut-point is clinically
+   sits on a predicate that can carry one; it does **not** check the cut-point is clinically
    right. Threshold choice needs expert sign-off — the `curation-assist` skill authors it.
+
+> **Amended 2026-08-27 (clinical review).** A clinician review of the shipped questionnaire
+> mappings (Sek Won Kong, 2026-08-24) rejected the absent pole, and decision 3 is **withdrawn**:
+>
+> > "An answer of 'Not at all' does not necessarily indicate the absence of the phenotype in an
+> > individual. For example, in the PHQ-9, 'Not at all' only indicates that the symptom was not
+> > reported during the past two weeks. It does not establish that the phenotype is absent more
+> > generally. My concern is that this could be interpreted computationally as an explicit absence
+> > of the phenotype without preserving the instrument-specific time window."
+>
+> This is the failure mode `mapping-conventions.md` had already flagged as *undecided* under
+> *Recall windows*: a derived feature gets no `TimeElement` when the session id is an opaque hash,
+> so `excluded = true` emitted from a two-week item reads as unqualified absence. The review
+> settles it. All 26 absent-pole rows and the `predicate_modifier` column are gone; the validator
+> now **errors** on the column's reappearance (`withdrawn-column`), and the mechanism is out of
+> `hpo_rules.py`. The set asserts only presence.
+>
+> Two rules replace it, both already true of every shipped row:
+> - **Only `skos:exactMatch` and `skos:broadMatch` rows may carry a `when_value`** — deriving "the
+>   participant has this phenotype" from an endorsement is sound only when the HPO term is the same
+>   as, or broader than, what the item asked (validator: `ungateable-predicate`).
+> - **One row per `(subject, predicate, object)` triple** — the present/absent pair was the only
+>   thing that needed two, so duplicate detection is back to the plain triple.
+>
+> Decisions 1, 2, 4, 5 and 6 stand. Reinstating absence needs a way to carry the instrument's
+> recall window into the output (e.g. `PhenotypicFeature.onset`), not just a column.
 
 ## Worked example — `b2ai:phq9.feeling_depressed` → HP:5200273 Pathological sadness
 
 Two SSSOM rows (the `when_value` extension column is declared in `extension_definitions`):
 
 ```
-subject_id                   predicate_id     object_id   predicate_modifier  when_value
-b2ai:phq9.feeling_depressed  skos:exactMatch  HP:5200273                      >=1
-b2ai:phq9.feeling_depressed  skos:exactMatch  HP:5200273  Not                 ==0
+subject_id                   predicate_id     object_id   when_value
+b2ai:phq9.feeling_depressed  skos:exactMatch  HP:5200273  >=1
 ```
 
 - Answer ≥ 1 ("Several days" … "Nearly every day") → emit `HP:5200273` **present**, with an
   ECO:0006160 self-report `Evidence` and an onset `TimePoint`.
-- Answer `== 0` ("Not at all") → emit `HP:5200273` **excluded** (via `predicate_modifier: Not`).
-- A blank cell satisfies neither condition → nothing is asserted.
+- Answer `== 0` ("Not at all") → nothing is asserted. It denies the symptom over the item's
+  two-week window, which is not the same as denying the phenotype (*Amended 2026-08-27*); the
+  row that used to emit `excluded` here is gone.
+- A blank cell satisfies no condition → nothing is asserted.
 
-*(verified: our `parse_sssom` reads both `when_value` and `predicate_modifier` on these rows;
-sssom-py drops `when_value` but still returns the two mappings and validates them.)*
+*(verified: our `parse_sssom` reads `when_value` on this row; sssom-py drops it but still returns
+the mapping and validates it.)*
 
 > **Amended 2026-08-11 (PR #10 review).** The worked example originally used
 > `skos:broadMatch` → `HP:0000716 Depression`. HP:0000716 denotes a depressive *episode* — its
@@ -98,8 +125,8 @@ sssom-py drops `when_value` but still returns the two mappings and validates the
   distinguishable from observed findings.
 - **Implementation is a tracked follow-up, not part of this ADR.** The OpenScientist code is
   report-only here; porting/re-implementing the grammar, rule loader, reader hook, provenance
-  emitter, the validator `when_value`/`predicate_modifier` checks, and the skill's `when_value`
-  authoring step is a separate work item to be verified in-repo.
+  emitter, the validator `when_value` checks, and the skill's `when_value` authoring step is a
+  separate work item to be verified in-repo.
 
 ## Alternatives considered
 

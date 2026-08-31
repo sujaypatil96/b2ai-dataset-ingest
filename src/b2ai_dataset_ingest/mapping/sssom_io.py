@@ -5,7 +5,7 @@ This is the in-repo, dependency-light (stdlib + PyYAML) SSSOM/TSV reader shared 
 (:mod:`b2ai_dataset_ingest.mapping.hpo_rules`). It exists because the reference ``sssom-py``
 parser **drops** extension columns on load (retaining only ``extension_definitions`` in the
 metadata), so it cannot carry the ``when_value`` condition; :func:`parse_sssom` keeps all
-columns, including ``when_value`` and ``predicate_modifier`` (ADR-0002 decision 5).
+columns, including ``when_value`` (ADR-0002 decision 5).
 """
 
 from __future__ import annotations

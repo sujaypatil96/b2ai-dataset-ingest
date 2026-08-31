@@ -2,23 +2,30 @@
 
 > The `when_value` **grammar** and how the pipeline runs it live in
 > `docs/mapping-conventions.md` (and [ADR-0002](../../../docs/adr/0002-conditional-hpo-mapping.md)).
-> This file is the **curation heuristic**: when to add a condition, how to pick the cut-point,
-> and how to write the present/absent pair. Experts: add worked examples as calls get settled.
+> This file is the **curation heuristic**: when to add a condition and how to pick the cut-point.
+> Experts: add worked examples as calls get settled.
 
 A term mapping (`b2ai:phq9.feeling_depressed → HP:5200273 Pathological sadness`) says the item is
 *about* that phenotype. It does **not** say a participant *has* it — that depends on the answer. A
-`when_value` is the gate that turns an answer into a present/absent `PhenotypicFeature`.
+`when_value` is the gate that turns an answer into a **present** `PhenotypicFeature`.
+
+> **Only presence is ever asserted.** Absent poles (`predicate_modifier: Not` →
+> `excluded = true`) were withdrawn set-wide on clinical review (2026-08-24): a questionnaire's
+> lowest answer denies the symptom *within the instrument's recall window*, and that window does
+> not survive into the phenopacket, so `excluded = true` read as an unqualified "does not have
+> this phenotype". Never author one; the validator errors on the column
+> (`withdrawn-column`). An answer below the gate now asserts nothing, exactly like a blank cell.
 
 ## When to add one (and when not to)
 
 - **Add** a `when_value` when the item is an in-scope sign/symptom whose **answer encodes
-  severity/frequency** (an ordinal screener item like PHQ-9/GAD-7, or a checkbox), and a
-  present/absent phenotype is the intended output.
+  severity/frequency** (an ordinal screener item like PHQ-9/GAD-7, or a checkbox), and asserting
+  the phenotype **present** is the intended output.
 - **Leave it empty** when the mapping is only meant to record *aboutness* (a shareable semantic
   link), or when the item is out of scope (admin, score, psychosocial impact, task data — see
   `scope-checklist.md`). An empty `when_value` changes no output; it is always safe.
 - **Don't** invent a condition to force a phenotype out of an item that doesn't support one. If
-  the answer can't cleanly separate present from absent, say so and leave it semantic-only.
+  no answer cleanly establishes the phenotype, say so and leave it semantic-only.
 
 ## Picking the cut-point (the part that needs sign-off)
 
@@ -26,61 +33,54 @@ The threshold is a **clinical judgment**, not a lexical one — the validator wi
 wrong cut-point. Default reasoning, to be confirmed by a domain expert:
 
 - **Ordinal 0–3 screener items** (PHQ-9, GAD-7: "Not at all / Several days / More than half /
-  Nearly every day): the conventional split is **`>=1` present, `==0` absent** — any endorsement
-  above "Not at all" asserts the symptom. A stricter clinician may prefer `>=2`; record which and
-  why. Do not silently pick one.
-- **Checkbox items** ("Checked"/"Unchecked"): `== "Checked"` present, `== "Unchecked"` absent.
-- **Only assert the pole you can defend.** If a low answer is genuinely ambiguous (not clearly
-  *absent*), author only the present row and omit the absent one — silence is better than a
-  wrong `excluded=true`.
+  Nearly every day): the conventional cut-point is **`>=1`** — any endorsement above "Not at all"
+  asserts the symptom. A stricter clinician may prefer `>=2`; record which and why. Do not
+  silently pick one.
+- **Checkbox items** ("Checked"/"Unchecked"): `== "Checked"` present; "Unchecked" asserts nothing.
+- **One item is not a construct.** A gate says *this answer establishes this phenotype*. Where the
+  HPO term names a multi-indicator construct that the instrument itself scores over several items,
+  one item cannot carry it — `adhd_adult.interrupt_others` → HP:0100710 *Impulsivity* was ungated
+  on clinical review for exactly this ("≥3 of this item alone does not support the presence of
+  impulsivity"): the ASRS scores impulsivity across several items and interrupting has
+  non-impulsive causes. Leave the semantic row, drop the gate.
 
 Flag the cut-point as **needs expert sign-off** in the review artifact, separately from the
 (auto-verified) ontology code.
 
-## The predicate decides *which poles* you may assert
+## The predicate decides whether you may gate at all
 
-"Only assert the pole you can defend" is not a case-by-case feel — for a hierarchical predicate
-it follows from the direction you already chose in `predicate-rules.md`. Endorsement travels
-**up** the hierarchy; denial travels **down**.
+Which rows may carry a `when_value` is not a case-by-case feel — it follows from the direction
+you already chose in `predicate-rules.md`. Endorsement travels **up** the hierarchy, so a gate is
+sound only when the HPO term is the same as, or broader than, what the item asked. **The validator
+enforces this** (`ungateable-predicate`).
 
-| Predicate | Present (`>=1`) | Absent (`==0`) | Why |
-| --- | --- | --- | --- |
-| `exactMatch` | ✅ | ✅ | item ≡ phenotype, so both directions carry |
-| `broadMatch` (object broader) | ✅ | ❌ | denying the specific item cannot exclude the umbrella — the participant may have it via another child |
-| `narrowMatch` (object narrower) | ❌ | ✅ | endorsing the broad item cannot say *which* narrow sense; denying it denies all of them |
-| `relatedMatch` | ❌ | ❌ | only partial overlap — neither direction is sound; leave ungated |
+| Predicate | May carry a `when_value`? | Why |
+| --- | --- | --- |
+| `exactMatch` | ✅ | item ≡ phenotype, so an endorsement *is* an assertion of the term |
+| `broadMatch` (object broader) | ✅ | endorsement travels up: a specific instance present ⇒ the umbrella present |
+| `narrowMatch` (object narrower) | ❌ | endorsing the broad item cannot say *which* narrow sense was meant |
+| `relatedMatch` | ❌ | only partial overlap — neither concept subsumes the other |
 
-Worked examples from the GAD-7/PHQ-9 pass:
+Worked examples:
 
-- `phq9.trouble_sleeping` → HP:0002360 *Sleep disturbance* (broad). "Not at all" rules out
-  insomnia and hypersomnia but not sleep apnea or a parasomnia, both children of the same term —
-  so present-only.
+- `phq9.trouble_sleeping` → HP:0002360 *Sleep disturbance* (broad). Endorsing insomnia or
+  hypersomnia does establish *some* sleep disturbance, so the gate is sound.
 - `phq9.feeling_bad_self` → HP:0031469 *Low self-esteem* + HP:6000011 *Guilt* (narrow ×2).
   A `>=1` answer cannot say which half of the conflated item was endorsed, so asserting either
-  would be a coin flip; a `==0` answer denies both — so absent-only, on both rows.
-- `vhi10.strain_voice` → HP:0001618 *Dysphonia* (related). Left ungated: HPO has no term for
+  would be a coin flip — ungated, on both rows.
+- `vhi10.strain_voice` → HP:0001618 *Dysphonia* (related). Ungated: HPO has no term for
   effortful phonation (searched "strained voice", "vocal strain", "vocal fatigue", "phonation",
-  "effortful speech" — no hits), and a relatedMatch cannot carry either pole.
+  "effortful speech" — no hits), and a relatedMatch cannot carry a gate.
 
-**A conflation-retarget `broadMatch` is still a `broadMatch`.** `no_appetite` → *Abnormal eating
-behavior* was retargeted so the term subsumes *both* poles of the item, which makes the present
-pole sound; it does not make the absent pole sound, because the term keeps its other children.
-
-**Consequence: the predicate is now load-bearing for output.** Before this, a wrong
-`broad`/`narrow` direction was a metadata blemish; now it decides whether a participant's
-phenopacket says "present" or "excluded". When authoring a gate, re-read the object's definition
-and confirm the direction before trusting it — `gad7_anxiety.afraid_of_things` → HP:0033845
-*Sense of impending doom* is labelled `broadMatch`, but its own `comment` argues the HPO term is
-*stronger* than the item ("life-threatening or tragic" vs "something awful"), which is the
-narrow direction. That row is held ungated until the direction is settled.
-
-### Absent-only rows: keep the semantic row, add the `Not` row
-
-For an absent-only gate, do **not** simply put `predicate_modifier: Not` on the existing row.
-`predicate_modifier` is SSSOM-core, and an SSSOM-core consumer drops `when_value` — so a lone
-negated row reads as "this mapping does *not* hold" and the semantic mapping is lost. Leave the
-ungated row in place and add the `Not`/`==0` row beside it, the same shape as a present/absent
-pair (the validator's duplicate key includes both columns, so this is not a duplicate).
+**Consequence: the predicate is load-bearing for output.** A wrong `broad`/`narrow` direction is
+not a metadata blemish; it decides whether a participant's phenopacket asserts the phenotype at
+all. When authoring a gate, re-read the object's definition and confirm the direction before
+trusting it — and beware a `comment` that argues one direction while the `predicate_id` says the
+other. `gad7_anxiety.afraid_of_things` → HP:0033845 *Sense of impending doom* was labelled
+`broadMatch` while its own comment argued the HPO term is *stronger* than the item
+("life-threatening or tragic" vs "something awful"), which is the **narrow** direction; the
+clinical review caught it and the row is now `narrowMatch`, ungated. **When the comment and the
+predicate disagree, the comment is usually the one that did the thinking.**
 
 ## Writing the rows
 
@@ -93,28 +93,23 @@ Declare the slot once in the file's SSSOM metadata:
 #     type_hint: xsd:string
 ```
 
-Then the present/absent pair repeats subject/predicate/object and differs only in the last two
-columns (it is **not** a duplicate):
+Then the gate is one column on the row you already wrote:
 
 ```
-subject_id                   predicate_id     object_id   predicate_modifier  when_value
-b2ai:phq9.feeling_depressed  skos:exactMatch  HP:5200273                      >=1
-b2ai:phq9.feeling_depressed  skos:exactMatch  HP:5200273  Not                 ==0
+subject_id                   predicate_id     object_id   when_value
+b2ai:phq9.feeling_depressed  skos:exactMatch  HP:5200273  >=1
 ```
 
-- Present row: empty `predicate_modifier`, the "asserts present" condition.
-- Absent row: `predicate_modifier: Not` (→ `excluded=true`), the "asserts absent" condition.
-- Make the two conditions **mutually exclusive** (`>=1` vs `==0` can't both fire) so one answer
-  never yields both present and absent for the same term.
-- The `predicate` stays the term-mapping predicate you chose in step 4; the condition rides
-  alongside it, it does not replace it. Note that a **pair** like the one above is only available
-  to `exactMatch` — per the table above, `broadMatch` gets the present row alone and `narrowMatch`
-  the `Not` row alone.
+- One `(subject, predicate, object)` triple carries **one** row; a repeat is a duplicate however
+  its `when_value` differs.
+- The `predicate` stays the term-mapping predicate you chose in step 5; the condition rides
+  alongside it, it does not replace it — and per the table above, only `exactMatch` and
+  `broadMatch` rows may carry one at all.
 
 ## Guardrails
 
-- The validator checks the condition **parses** and `predicate_modifier ∈ {"", "Not"}` — nothing
-  more. A green gate is not sign-off on the threshold.
+- The validator checks the condition **parses** and sits on a gateable predicate — nothing more.
+  A green gate is not sign-off on the threshold.
 - Numeric conditions are evaluated against the **ordinal score** (the same value the emitted
   Measurement carries), resolved from the data dict's `choices`. If an item has no resolvable
   ordinal, a numeric `when_value` will never fire — use a string/`in {...}` condition instead.

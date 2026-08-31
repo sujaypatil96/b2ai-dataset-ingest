@@ -56,8 +56,17 @@ ALLOWED_PREDICATES = frozenset(
     }
 )
 REQUIRED_COLUMNS = ("subject_id", "predicate_id", "object_id", "mapping_justification")
-#: The only SSSOM predicate_modifier we emit — ``Not`` -> phenopacket ``excluded`` (ADR-0002).
-ALLOWED_MODIFIERS = frozenset({"", "Not"})
+#: Only these predicates may carry a ``when_value``: deriving "the participant has this
+#: phenotype" from an endorsement is sound only when the HPO term is the same as, or broader
+#: than, what the item asked (ADR-0002, amended after clinical review).
+GATEABLE_PREDICATES = frozenset({"skos:exactMatch", "skos:broadMatch"})
+#: Withdrawn after clinical review (2026-08-24): ``predicate_modifier: Not`` asserted an
+#: *unqualified* absence from an answer scoped to the instrument's recall window. Flagged so it
+#: cannot be reintroduced without revisiting that decision (docs/mapping-conventions.md).
+WITHDRAWN_COLUMNS = {
+    "predicate_modifier": "absent poles were withdrawn on clinical review; a questionnaire's "
+    "lowest answer denies the symptom within the instrument's recall window, not the phenotype",
+}
 _RELEASE_DATE = re.compile(r"(\d{4}-\d{2}-\d{2})")
 
 
@@ -180,7 +189,7 @@ def _check_row(
     row: dict[str, str],
     fname: str,
     file_prefixes: set[str],
-    seen: set[tuple[str, str, str, str, str]],
+    seen: set[tuple[str, str, str]],
 ) -> Iterable[Finding]:
     subj = row.get("subject_id", "").strip()
     pred = row.get("predicate_id", "").strip()
@@ -219,26 +228,24 @@ def _check_row(
         except ValueError:
             yield err("bad-confidence", f"confidence {conf!r} is not a number")
 
-    # Conditional-mapping columns (ADR-0002): the absent pole is expressed with the standard
-    # predicate_modifier: Not; the value gate is a parseable when_value expression. The
-    # validator checks structure only — a cut-point being *clinically* right needs a curator.
-    modifier = row.get("predicate_modifier", "").strip()
-    if modifier not in ALLOWED_MODIFIERS:
-        yield err(
-            "bad-predicate-modifier",
-            f"predicate_modifier {modifier!r} not in {sorted(ALLOWED_MODIFIERS)}",
-        )
+    # The value gate (ADR-0002): a parseable when_value, and only on a predicate that can carry
+    # one. The validator checks structure only — a cut-point being *clinically* right needs a
+    # curator.
     when_value = row.get("when_value", "").strip()
     if when_value:
         try:
             parse_condition(when_value)
         except ConditionParseError as exc:
             yield err("bad-when-value", f"when_value {when_value!r} does not parse: {exc}")
+        if pred and pred not in GATEABLE_PREDICATES:
+            yield err(
+                "ungateable-predicate",
+                f"when_value {when_value!r} on a {pred} row: only {sorted(GATEABLE_PREDICATES)} "
+                "assert a phenotype the item's endorsement actually establishes",
+            )
 
-    # Duplicate detection keys on the whole conditional identity, so a present/absent pair
-    # (same subject/predicate/object, differing predicate_modifier + when_value) is allowed.
     if subj and pred and obj:
-        key = (subj, pred, obj, modifier, when_value)
+        key = (subj, pred, obj)
         if key in seen:
             yield err("duplicate", f"duplicate mapping {key}")
         seen.add(key)
@@ -336,7 +343,7 @@ def validate_paths(
     result.ontology_checked = adapter is not None
     result.subjects_checked = data_root is not None
 
-    seen: set[tuple[str, str, str, str, str]] = set()  # cross-file duplicate detection
+    seen: set[tuple[str, str, str]] = set()  # cross-file duplicate detection
     for path in paths:
         fname = path.name
         try:
@@ -352,6 +359,11 @@ def validate_paths(
                 Finding(fname, "-", "error", "no-curie-map", "file has no curie_map metadata")
             )
         result.findings.extend(_check_version(metadata, fname, result.hpo_version))
+        for column, why in WITHDRAWN_COLUMNS.items():
+            if any(column in row for row in rows):
+                result.findings.append(
+                    Finding(fname, "-", "error", "withdrawn-column", f"column {column!r}: {why}")
+                )
         result.n_rows += len(rows)
         for row in rows:
             result.findings.extend(_check_row(row, fname, file_prefixes, seen))

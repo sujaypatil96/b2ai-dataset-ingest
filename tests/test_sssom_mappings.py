@@ -134,14 +134,14 @@ def test_validator_catches_structural_faults(tmp_path: Path):
 
 _COND_COLS = (
     "subject_id\tsubject_label\tpredicate_id\tobject_id\tobject_label\t"
-    "mapping_justification\tconfidence\tpredicate_modifier\twhen_value"
+    "mapping_justification\tconfidence\twhen_value"
 )
 
 
-def _cond_row(subject, obj, obj_label, modifier="", when=""):
+def _cond_row(subject, obj, obj_label, when="", predicate="skos:broadMatch"):
     return "\t".join(
-        [subject, "x", "skos:broadMatch", obj, obj_label,
-         "semapv:ManualMappingCuration", "0.8", modifier, when]
+        [subject, "x", predicate, obj, obj_label,
+         "semapv:ManualMappingCuration", "0.8", when]
     )
 
 
@@ -151,37 +151,40 @@ def _write_conditional(tmp_path: Path, rows: list[str]) -> Path:
     return path
 
 
-def test_validator_catches_when_value_and_modifier_faults(tmp_path: Path):
-    """Offline: an unknown predicate_modifier and an unparseable when_value are errors."""
+def test_validator_catches_when_value_faults(tmp_path: Path):
+    """Offline: an unparseable when_value, and a gate on a predicate that cannot carry one."""
     path = _write_conditional(
         tmp_path,
         [
-            _cond_row("b2ai:phq9.feeling_depressed", "HP:0000716", "Depression", modifier="Maybe"),
             _cond_row("b2ai:phq9.no_energy", "HP:0012378", "Fatigue", when="totally bogus"),
+            _cond_row("b2ai:phq9.feeling_depressed", "HP:0000716", "Depression", when=">=1",
+                      predicate="skos:relatedMatch"),
         ],
     )
     codes = {f.code for f in validate_paths([path], check_ontology=False).errors}
-    assert {"bad-predicate-modifier", "bad-when-value"} <= codes
+    assert {"bad-when-value", "ungateable-predicate"} <= codes
 
 
-def test_present_absent_pair_is_not_a_duplicate_but_true_duplicates_are(tmp_path: Path):
-    """A value-gated present/absent pair shares subject/predicate/object yet is not a duplicate;
-    two identical conditional rows still are (dedup keys on modifier + when_value too)."""
-    ok = _write_conditional(
-        tmp_path,
-        [
-            _cond_row("b2ai:phq9.feeling_depressed", "HP:0000716", "Depression", when=">=1"),
-            _cond_row("b2ai:phq9.feeling_depressed", "HP:0000716", "Depression", "Not", "==0"),
-        ],
+def test_reintroducing_predicate_modifier_is_an_error(tmp_path: Path):
+    """Absent poles were withdrawn on clinical review; the column cannot come back unnoticed."""
+    path = tmp_path / "cond.sssom.tsv"
+    path.write_text(
+        SSSOM_HEADER + _COND_COLS + "\tpredicate_modifier\n"
+        + _cond_row("b2ai:phq9.feeling_depressed", "HP:0000716", "Depression", when="==0")
+        + "\tNot\n"
     )
-    ok_errors = validate_paths([ok], check_ontology=False).errors
-    assert not [f for f in ok_errors if f.code == "duplicate"]
+    codes = {f.code for f in validate_paths([path], check_ontology=False).errors}
+    assert "withdrawn-column" in codes
 
+
+def test_repeated_conditional_rows_are_duplicates(tmp_path: Path):
+    """Only presence is asserted, so one (subject, predicate, object) triple carries at most one
+    row: a repeat is a duplicate however the when_value differs."""
     dup = _write_conditional(
         tmp_path,
         [
             _cond_row("b2ai:phq9.feeling_depressed", "HP:0000716", "Depression", when=">=1"),
-            _cond_row("b2ai:phq9.feeling_depressed", "HP:0000716", "Depression", when=">=1"),
+            _cond_row("b2ai:phq9.feeling_depressed", "HP:0000716", "Depression", when=">=2"),
         ],
     )
     codes = {f.code for f in validate_paths([dup], check_ontology=False).errors}
