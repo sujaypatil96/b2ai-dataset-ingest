@@ -53,6 +53,7 @@ src/b2ai_dataset_ingest/
 config/         per-dataset YAML mappings (config/voice/) + shared value sets
 mappings/       SSSOM term mappings: B2AI dataset terms (b2ai:) -> HPO, with a validator
 docs/           design docs (SDDs), ADRs, plans, mapping conventions
+examples/       committed sample output: phenopackets built from the synthetic data
 tests/          fixtures + tests, incl. tests/data/multisession/ for time-course
 data_synth/     (gitignored) synthetic input — see scripts/fetch_*synthetic*.sh
 data/           (gitignored) source datasets, accessed under their DUAs
@@ -108,6 +109,14 @@ code is machine-verified against a pinned HPO release (via oaklib) so nothing is
 uv sync --extra validation            # install oaklib (the offline HPO backend)
 uv run b2ai-ingest validate-mappings  # verify no HPO term is hallucinated / obsolete / mislabeled
 ```
+
+### Example output (committed)
+
+`examples/phenopackets/voice-synthetic/` holds 173 phenopackets built from the public
+synthetic Voice data, so downstream tooling can be tested without credentialed access to
+the real dataset. Everything there is synthetic; see its
+[README](examples/phenopackets/voice-synthetic/README.md) for provenance, counts, and the
+known gaps in the snapshot.
 
 ## Getting started
 
