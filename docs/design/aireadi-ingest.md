@@ -120,6 +120,9 @@ and `person.yaml` describe tables and items that no release available here ships
 authored against AI-READI's published crosswalk and the OMOP CDM / CDS specifications, and
 exercised only by the fixture. `validate-aireadi --strict-coverage` against a full release
 is the check that closes that gap, and it is the first thing to run when one is available.
+The flag asserts the release is *complete* -- it promotes both "a configured item is absent"
+and "a whole table is absent" from warning to error. Without it the tool stays usable as a
+preflight on a partial release, which every source available here is.
 
 No golden/snapshot phenopackets: verification is a protobuf round-trip plus structural
 invariants (`_prefixes_used(pkt) <= declared`, and no `TODO` CURIE in any emitted packet).

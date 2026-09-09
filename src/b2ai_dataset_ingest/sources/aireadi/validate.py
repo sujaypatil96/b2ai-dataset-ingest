@@ -109,16 +109,22 @@ def validate_aireadi(
 ) -> ValidationReport:
     """Validate the on-disk AI-READI layout at ``root`` against configs in ``config_dir``.
 
-    ``strict_coverage`` promotes "a configured item is absent from this release" from a
-    warning to an error. It is off by default because coverage is a property of the release,
-    not a contract violation — a small fixture legitimately exercises a handful of items, and
-    the VUMC synthetic release ships two of the six tables. Turn it on against a full release,
-    where a config naming a variable the data does not ship silently emits nothing.
+    ``strict_coverage`` asserts that this release is *complete*, promoting two findings from
+    warning to error: a configured item the release does not ship, and a whole table the
+    release does not ship. Both are off by default because completeness is a property of the
+    release rather than a contract violation — a small fixture legitimately exercises a
+    handful of items, and the VUMC synthetic release ships two of the six tables and still
+    ingests correctly. Turn it on against a full release, where a config naming a variable or
+    a table the data does not have silently emits nothing.
+
+    What is an error *regardless*: a table that is present but malformed — a missing
+    ``person_id``, a missing key column, an unreadable header. Those are contract violations
+    at any coverage level.
     """
     report = ValidationReport()
-    _validate_participants(root, config_dir, report)
-    _validate_person(root, config_dir, report)
-    _validate_visits(root, report)
+    _validate_participants(root, config_dir, report, strict_coverage)
+    _validate_person(root, config_dir, report, strict_coverage)
+    _validate_visits(root, report, strict_coverage)
     _validate_long_table(
         root, config_dir, report, "conditions.yaml", "conditions", strict_coverage
     )
@@ -127,14 +133,16 @@ def validate_aireadi(
 
 
 # -- per-table checks --------------------------------------------------------------
-def _validate_participants(root: Path, config_dir: Path, report: ValidationReport) -> None:
+def _validate_participants(
+    root: Path, config_dir: Path, report: ValidationReport, strict_coverage: bool = False
+) -> None:
     mapping = _load(config_dir / "participants.yaml")
     if mapping is None:
         return
     path = root / mapping.get("file", "participants.tsv")
     header, rows = _read(path, mapping.get("delimiter", "\t"))
     if header is None:
-        report.error("participants", f"table file not found ({path.name})")
+        _note_missing_table(report, "participants", path.name, strict_coverage)
         return
     report.tables_checked.append("participants")
     for column in list(mapping.get("columns") or {}) + [mapping.get("id_column", "person_id")]:
@@ -143,18 +151,20 @@ def _validate_participants(root: Path, config_dir: Path, report: ValidationRepor
     report.info("participants", f"{count(len(rows))} participant row(s)")
 
 
-def _validate_person(root: Path, config_dir: Path, report: ValidationReport) -> None:
+def _validate_person(
+    root: Path, config_dir: Path, report: ValidationReport, strict_coverage: bool = False
+) -> None:
     mapping = _load(config_dir / "person.yaml")
     if mapping is None:
         return
     path = root / "clinical_data" / "person.csv"
     header, rows = _read(path, ",")
     if header is None:
-        report.warning("person", "table not present in this release")
+        _note_missing_table(report, "person", "person.csv", strict_coverage)
         return
     report.tables_checked.append("person")
-    # A fully-redacted mapped column is the finding that stops 100 UNKNOWN_SEX subjects
-    # from reading as a clean run.
+    # A fully-redacted mapped column is the finding that stops a run of all-UNKNOWN_SEX
+    # subjects from reading as a clean run.
     for column in mapping.get("columns") or {}:
         if column not in header:
             report.error("person", f"mapped column absent from header: {column}")
@@ -168,10 +178,12 @@ def _validate_person(root: Path, config_dir: Path, report: ValidationReport) -> 
             )
 
 
-def _validate_visits(root: Path, report: ValidationReport) -> None:
+def _validate_visits(
+    root: Path, report: ValidationReport, strict_coverage: bool = False
+) -> None:
     header, rows = _read(root / "clinical_data" / "visit_occurrence.csv", ",")
     if header is None:
-        report.warning("visit_occurrence", "table not present; observations fall back to row dates")
+        _note_missing_table(report, "visit_occurrence", "visit_occurrence.csv", strict_coverage)
         return
     report.tables_checked.append("visit_occurrence")
     for column in ("visit_occurrence_id", "person_id"):
@@ -194,7 +206,7 @@ def _validate_long_table(
     table = mapping.get("table", "?")
     header, rows = _read(root / "clinical_data" / f"{table}.csv", mapping.get("delimiter", ","))
     if header is None:
-        report.error(table, f"table file not found ({table}.csv)")
+        _note_missing_table(report, table, f"{table}.csv", strict_coverage)
         return
     report.tables_checked.append(table)
     key_column = mapping.get("key_column", f"{table}_source_value")
@@ -217,7 +229,7 @@ def _validate_measurements(
         measures.update((_load(path) or {}).get("measures") or {})
     header, rows = _read(root / "clinical_data" / "measurement.csv", ",")
     if header is None:
-        report.error("measurement", "table file not found (measurement.csv)")
+        _note_missing_table(report, "measurement", "measurement.csv", strict_coverage)
         return
     report.tables_checked.append("measurement")
     if "measurement_source_value" not in header:
@@ -231,6 +243,22 @@ def _validate_measurements(
 
 
 # -- shared checks -----------------------------------------------------------------
+def _note_missing_table(
+    report: ValidationReport, table: str, filename: str, strict_coverage: bool
+) -> None:
+    """An absent table is a completeness finding, not a contract violation.
+
+    The reader degrades to ``tables_missing`` and still emits, which is the right behaviour
+    for a partial release — the VUMC synthetic set ships two of the six tables and ingests
+    correctly. So this warns by default and errors only under ``--strict-coverage``, which is
+    where the caller is asserting the release is complete. Handling every absent table the
+    same way is the point: participants/person/visit previously disagreed with each other.
+    """
+    note = report.error if strict_coverage else report.warning
+    note(table, f"table not present in this release ({filename})")
+
+
+
 def _compare_items(
     rows: list[dict[str, str]],
     key_column: str,
