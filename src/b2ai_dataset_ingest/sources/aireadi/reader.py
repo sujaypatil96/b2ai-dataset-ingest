@@ -439,8 +439,8 @@ def _study_group_measurement(
     """The study arm as a categorical Measurement — never a Disease.
 
     AI-READI's ``study_group`` is a recruitment stratum and it disagrees with the
-    participant's own condition table for 9 of 100 participants, so asserting it as a
-    diagnosis would state something the clinical data does not support.
+    participant's own condition table, so asserting it as a diagnosis would state something
+    the clinical data does not support.
     """
     assay = spec.get("assay")
     if not isinstance(assay, dict) or is_placeholder(assay):

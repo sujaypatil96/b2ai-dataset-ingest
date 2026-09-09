@@ -65,14 +65,15 @@ shape) or `measures:` (item -> `{assay, unit, description?, reference_range?,
 procedure_code?, body_site?}`). A `units:` block crosswalks OMOP `unit_concept_id` to UCUM.
 
 **Absence has two meanings, and which applies depends on the column.** `0` is "no matching
-concept" in a `*_concept_id` column but a *valid answer* in `value_as_number` — 74 of 100
-AI-READI participants answer `0` to the first CES-D-10 item. Hence two null sets. Source
+concept" in a `*_concept_id` column but a *valid answer* in `value_as_number`, where on a
+screening instrument it is typically the *modal* answer. Hence two null sets. Source
 refusal codes (`555`/`777`/`888`/`999`) are dropped separately, which is also why a
 `when_value` cut-point over such a scale is written `== n` and never `>= n`.
 
 **Units are declared in config; the data column is a cross-check.** `Quantity.unit` is
 required by the phenopacket schema, and an OMOP release routinely leaves `unit_source_value`
-blank (7712 of 10407 AI-READI rows), keeping the unit inside the truncated label instead.
+blank (two thirds of rows in the synthetic AI-READI release), keeping the unit inside the
+truncated label instead.
 
 **Laterality is declared per item, on `Measurement.procedure.body_site`** — the only
 laterality slot a GA4GH `Measurement` has. Do not pass `qualifier_concept_id` through: in

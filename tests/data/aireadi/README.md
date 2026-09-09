@@ -36,4 +36,4 @@ AI-READI publishes under CC-BY-4.0 at docs.aireadi.org. Rows are Data; schema is
 | A duplicate condition row | 900002 has `mhterm_dm2` twice — one Disease, not two. |
 | A configured-but-unresolved condition | `mhoccur_ua` — skipped, never emitted as a `TODO` CURIE. |
 | A condition with no config entry at all | `mhoccur_nonesuch` — counted as unmapped. |
-| Fully redacted sex | `gender_concept_id = 0` on every `person.csv` row, as in the real release. |
+| Fully redacted sex | `gender_concept_id = 0` on every `person.csv` row — AI-READI states that sex and race/ethnicity are removed from published releases. |

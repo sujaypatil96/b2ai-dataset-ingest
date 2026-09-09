@@ -17,8 +17,8 @@ from b2ai_dataset_ingest.sources.aireadi import AireadiSource
 CONFIG_DIR = Path(__file__).parents[1] / "config" / "aireadi"
 FIXTURE = Path(__file__).parent / "data" / "aireadi"
 
-# Local-only, licensed releases: never fetched in CI.
-MINI = Path(__file__).parents[1] / "data" / "aireadi-mini" / "dataset"
+# The VUMC synthetic release. Fetched locally by scripts/fetch_aireadi_synthetic.sh and
+# gitignored, so these tests skip on a bare checkout and in CI.
 VUMC = Path(__file__).parents[1] / "data_synth" / "aireadi-synthetic"
 
 
@@ -180,38 +180,69 @@ def _prefixes_used(packet: pp.Phenopacket) -> set[str]:
     return {p for p in _collect_prefixes(packet) if p}
 
 
-# ---------- licensed releases: local only, never in CI
-@pytest.mark.skipif(
-    not (MINI / "clinical_data" / "person.csv").is_file(),
-    reason="AI-READI mini release not present (licensed; scripts/check_aireadi_delivery.sh)",
-)
-def test_real_mini_release_validates_and_ingests(tmp_path):
-    from b2ai_dataset_ingest.sources.aireadi.validate import validate_aireadi
-
-    report = validate_aireadi(MINI, CONFIG_DIR, strict_coverage=True)
-    assert report.errors == [], report.render()
-
-    source = AireadiSource(MINI, CONFIG_DIR)
-    written = PhenopacketEmitter().write_all(source.read(), tmp_path)
-    assert written == 100
-    assert source.report.diseases_emitted > 0
-    # A placeholder CURIE must never reach a packet.
-    for path in tmp_path.glob("*.json"):
-        assert '"TODO"' not in path.read_text()
-
-
-@pytest.mark.skipif(
+# ---------- the VUMC synthetic release: local only, skipped in CI
+requires_vumc = pytest.mark.skipif(
     not (VUMC / "clinical_data" / "measurement.csv").is_file(),
     reason="VUMC synthetic release not fetched (scripts/fetch_aireadi_synthetic.sh)",
 )
+
+
+@requires_vumc
 def test_partial_release_degrades_to_missing_tables_rather_than_crashing():
-    """The VUMC set ships 2 of the 6 tables and one index column instead of two."""
+    """The VUMC set ships 2 of the 6 tables and one index column instead of two.
+
+    A release missing four tables must degrade to `tables_missing` and still emit, not
+    crash — which is also what a future release adding a table has to survive.
+    """
     source = AireadiSource(VUMC, CONFIG_DIR)
     first = next(iter(source.read()), None)
     assert first is not None
-    assert "participants" in source.report.tables_missing
-    assert "person" in source.report.tables_missing
-    assert "measurement" in source.report.tables_read
+    assert {"participants", "person", "visit_occurrence"} <= set(source.report.tables_missing)
+    assert {"condition_occurrence", "measurement"} <= set(source.report.tables_read)
+
+
+@requires_vumc
+def test_synthetic_release_emits_real_content_and_no_placeholder_curie(tmp_path):
+    """Scale plus content, bounded so the test stays quick.
+
+    10,518 synthetic participants and 767,814 measurement rows: the point is that the reader
+    streams them (materializing this table costs ~1.2 GB of RSS against ~18 MB streamed) and
+    that nothing unresolved leaks into a packet.
+    """
+    import itertools
+
+    source = AireadiSource(VUMC, CONFIG_DIR)
+    packets = list(itertools.islice(source.read(), 25))
+    assert len(packets) == 25
+    assert any(p.diseases for p in packets)
+    assert any(p.measurements for p in packets)
+
+    written = PhenopacketEmitter().write_all(packets, tmp_path)
+    assert written == 25
+    for path in tmp_path.glob("*.json"):
+        text = path.read_text()
+        assert '"TODO"' not in text
+        parsed = Parse(text, pp.Phenopacket())
+        declared = {r.namespace_prefix.upper() for r in parsed.meta_data.resources}
+        assert _prefixes_used(parsed) <= declared
+
+
+@requires_vumc
+def test_configured_condition_items_all_exist_in_the_synthetic_release():
+    """The check that catches a config naming a variable no release ships.
+
+    Scoped to conditions because the synthetic release ships only 73 of the measurement
+    items; the ophthalmic config is authored against AI-READI's published crosswalk and has
+    no release here to preflight against.
+    """
+    from b2ai_dataset_ingest.sources.aireadi.validate import validate_aireadi
+
+    report = validate_aireadi(VUMC, CONFIG_DIR)
+    missing = [
+        f for f in report.findings
+        if f.table == "condition_occurrence" and "absent from this release" in f.message
+    ]
+    assert not missing, report.render()
 
 
 def test_fixture_carries_no_real_looking_person_id():

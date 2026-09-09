@@ -7,11 +7,15 @@
 # "integer", "unit": "years"}), so the existing years_to_iso8601 transform applies as-is,
 # and the same value anchors TimePoint.age_iso8601 for every observation.
 #
-# study_group is a RECRUITMENT STRATUM, not a diagnosis, and the data proves the two
-# disagree. Cross-tabulated against condition_occurrence on 2026-09-09: 2 of the 30
-# pre_diabetes_lifestyle_controlled participants carry a Type 2 diabetes condition, 1 of
-# the 6 insulin_dependent participants carries only prediabetes, and 1 oral-medication
-# participant carries neither -- 9 of 100 disagree overall. It is therefore emitted as a
+# SOURCE. The VUMC synthetic release ships no participants.tsv, so this file is authored
+# against the published Clinical Dataset Structure conventions and the four study arms
+# registered at https://clinicaltrials.gov/study/NCT06002048. It is exercised by
+# tests/data/aireadi/; `validate-aireadi --strict-coverage` against a real release is the
+# check that matters.
+#
+# study_group is a RECRUITMENT STRATUM, not a diagnosis, and the two are not
+# interchangeable: a participant recruited into an arm need not carry the corresponding
+# condition in their own medical history, and vice versa. It is therefore emitted as a
 # categorical Measurement with project-local value terms, never as a Disease.
 
 table: participants
@@ -54,10 +58,10 @@ dropped_columns:
     quasi-identifier. No phenopacket slot; recorded on Participant.cohort instead."
   recommended_split: "train/val/test is ML housekeeping, not phenotype."
   study_visit_date: "Day-precision date; see dataset.yaml time_precision."
-  cardiac_ecg: &modality_flag "Modality-availability flag. All nine flags are TRUE for all
-    100 participants in the mini release (verified), so they carry no discriminative
-    information, and the mini ships no modality directories -- a File URI would be
-    fabricated. Full-release handling is deferred."
+  cardiac_ecg: &modality_flag "Modality-availability flag. A flag alone cannot produce a
+    File reference -- the URI needs the dataType/modality/device/<person_id> path, and no
+    release available here ships those directories, so any URI would be fabricated.
+    Full-release handling is deferred; see docs/design/aireadi-ingest.md."
   clinical_data: *modality_flag
   environment: *modality_flag
   retinal_flio: *modality_flag

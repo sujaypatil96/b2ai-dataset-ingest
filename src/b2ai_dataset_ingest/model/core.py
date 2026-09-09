@@ -181,7 +181,7 @@ class Participant(BaseModel):
         default_factory=dict,
         description=(
             "Study-design attributes (arm, site, ML split). Recorded as provenance, never "
-            "emitted as a Disease: AI-READI's study_group disagrees with the participant's "
-            "own condition table for 9 of 100 participants."
+            "emitted as a Disease: AI-READI's study_group is a recruitment stratum and "
+            "disagrees with the participant's own condition table."
         ),
     )

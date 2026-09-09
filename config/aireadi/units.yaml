@@ -2,8 +2,8 @@
 #
 # Units are declared PER ITEM in the measurement configs and this file is the fallback for
 # rows that carry a unit_concept_id. That precedence is not a preference: unit_source_value
-# is blank or a bare space on 7712 of 10407 real measurement rows and "N/A" on a further
-# 372 (verified 2026-09-09). Every non-lab family -- vitals, ophthalmic, MoCA -- carries no
+# is blank, a bare space or "N/A" on 504864 of the 767814 measurement rows in the VUMC
+# synthetic release. Every non-lab family -- vitals, ophthalmic, MoCA -- carries no
 # unit cell at all, keeping its unit inside the 49-character-truncated label
 # ("lbscat_plt, Platelets - x10E3/uL"). A data-first rule would drop three quarters of the
 # table.

@@ -81,7 +81,7 @@ def test_protobuf_rejects_every_unnormalized_omop_spelling(raw):
 
 # ---------- absence has two meanings
 def test_zero_is_absent_in_a_concept_column_but_an_answer_in_a_value_column():
-    """74 of 100 real participants answer 0 to the first CES-D-10 item.
+    """`0` is an ordinary answer -- the modal one on the first CES-D-10 item.
 
     Conflating the two null sets would delete the modal answer of a depression screener.
     """
@@ -106,7 +106,7 @@ def test_sentinel_answers_are_refusal_codes_not_values(raw, expected):
     [
         ("4171756", True),  # "<" — a detection floor, not a measured value
         ("4172703", False),  # "=" — a point value
-        ("0", False),  # "not recorded" — 4800 of 10407 real rows; must still emit
+        ("0", False),  # "not recorded" — the majority spelling on some items; must still emit
         ("", False),
     ],
 )

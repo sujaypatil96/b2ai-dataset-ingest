@@ -1,21 +1,24 @@
 # Mapping: AI-READI clinical_data/person.csv -> Individual (IR)
 #
-# FULLY REDACTED IN THE MINI RELEASE. Verified 2026-09-09: gender_concept_id,
-# race_concept_id and ethnicity_concept_id are 0 on all 100 rows and every *_source_value
-# is blank. dataset_description.json says so outright: "Information related to the sex and
-# race/ethnicity of the participants as well as medication used has also been removed."
-# `validate-aireadi` and the ingest report both surface this as a named redaction count, so
-# a run producing 100 UNKNOWN_SEX subjects cannot be mistaken for a clean run.
+# SOURCE. The VUMC synthetic release ships no person.csv, so this file is authored against
+# the OMOP CDM v5.4 PERSON specification and is exercised by tests/data/aireadi/.
 #
-# This config is written for the FULL release so it needs no rewrite when real demographics
-# land. `"0": null` is the engine's existing recode-to-nothing idiom -- MappingEngine._recode
-# returns the mapped None and individual_fields drops the field -- so the mini leaves
-# Individual.sex unset quietly and correctly instead of logging 100 value_map misses.
+# SEX MAY BE REDACTED, AND THAT MUST BE VISIBLE. AI-READI states that "information related
+# to the sex and race/ethnicity of the participants as well as medication used has also
+# been removed" from published releases, which means `gender_concept_id` can be 0 on every
+# row. `validate-aireadi` and the ingest report both surface that as a named redaction
+# count, so a run producing nothing but UNKNOWN_SEX subjects cannot be mistaken for a clean
+# run.
 #
-# NOT MAPPED: birth_datetime is the sentinel 1970-01-01 00:00:00 and month/day_of_birth are
-# 0. year_of_birth is real, but year of birth combined with a visit date is a
-# re-identification vector, and it disagrees with participants.tsv `age` by more than a
-# year for 4 of 100 participants. Age comes from participants.tsv.
+# `"0": null` is the engine's existing recode-to-nothing idiom -- MappingEngine._recode
+# returns the mapped None and individual_fields drops the field -- so a redacted release
+# leaves Individual.sex unset quietly and correctly instead of logging a value_map miss per
+# row. The config is written for a release that DOES carry demographics, so it needs no
+# rewrite when one lands.
+#
+# NOT MAPPED: birth_datetime and month/day_of_birth are sentinels in published releases,
+# and year_of_birth combined with a visit date is a re-identification vector. Age comes
+# from participants.tsv instead.
 #
 # UNVERIFIED: the OMOP gender concept ids 8507/8532 could not be confirmed against a CONCEPT
 # table in this session -- the release ships none and the Athena API returns HTTP 403 from

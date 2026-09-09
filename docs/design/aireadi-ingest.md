@@ -11,9 +11,21 @@ AI-READI is the second dataset named in [ADR-0001](../adr/0001-name-architecture
 and it exercises the IR + pluggable-emitter claim for the first time: its clinical payload is
 **OMOP CDM v5.4 in CSV**, not the wide ReproSchema TSVs the Voice pipeline was built for.
 
-Developed against the 100-participant "mini" release (`data/aireadi-mini/`, licensed, local
-only) and a hand-authored fixture (`tests/data/aireadi/`, committed, synthetic by
-construction).
+Developed against two sources, neither of them a licensed AI-READI release:
+
+- the **VUMC synthetic AI-READI release** (`data_synth/aireadi-synthetic/`, fetched by
+  `scripts/fetch_aireadi_synthetic.sh`, gitignored) — 10,518 synthetic participants,
+  767,814 measurement rows and 59,169 condition rows, but only two of the six OMOP tables;
+- **AI-READI's own published crosswalk** (`scripts/fetch_aireadi_crosswalk.sh`), which is
+  CC-BY-4.0 *documentation* rather than licensed Data. It supplies the item keys,
+  untruncated labels and laterality for what the synthetic release does not ship.
+
+plus a hand-authored fixture (`tests/data/aireadi/`, committed, synthetic by construction).
+
+**The crosswalk is a candidate generator, never an oracle.** It carries codes that do not
+resolve — it gives `bp1_sysbp_vsorres` `LOINC:2403450`, for which the NLM Clinical Table
+service returns nothing (the real code is `8480-6`). Nothing from it is emitted without
+independent verification.
 
 ## 2. Goals & non-goals
 
@@ -52,13 +64,15 @@ published standard: a second OMOP dataset reuses the module and writes only its 
 - **No `Disease.onset`.** `condition_start_date == condition_end_date` on all 557 rows and
   equals one of that participant's medical-history survey dates — it is the form-fill date.
   Emitting it as onset would assert a false natural history a consumer could not detect.
-- **`study_group` is a Measurement, not a Disease.** The arm disagrees with the participant's
-  own condition table for 9 of 100 participants, so asserting it as a diagnosis would state
-  something the clinical data does not support. It is also recorded on `Participant.cohort`.
+- **`study_group` is a Measurement, not a Disease.** The arm is a recruitment stratum, not a
+  finding: a participant recruited into an arm need not carry the corresponding condition in
+  their own medical history. Asserting it as a diagnosis would state something the clinical
+  data does not support. It is also recorded on `Participant.cohort`.
 - **Units are declared per item in config; the data column is a cross-check.**
-  `unit_source_value` is blank or a bare space on 7712 of 10407 rows and `"N/A"` on 372 more;
-  every non-lab family keeps its unit inside the truncated label. `Quantity.unit` is required
-  by the schema, so a value whose unit resolves to nothing is dropped and counted.
+  `unit_source_value` is blank, a bare space or `"N/A"` on 504,864 of the 767,814 measurement
+  rows in the synthetic release, and every non-lab family keeps its unit inside the truncated
+  label. `Quantity.unit` is required by the schema, so a value whose unit resolves to nothing
+  is dropped and counted.
 - **Laterality is declared per item, not read from `qualifier_concept_id`.** Six
   autorefraction items are per-eye by name and carry no qualifier at all (573 rows), and the
   same column on a medical-history row holds a *condition name*. It goes on
@@ -69,8 +83,9 @@ published standard: a second OMOP dataset reuses the module and writes only its 
   an item's *scoring* range (MoCA naming is 0–3), which is not a reference interval.
 - **Censoring.** `operator_concept_id 4171756` (`<`) marks a bounded result; GA4GH `Quantity`
   has no operator slot, so those rows are dropped and counted rather than reported as
-  measured. Note the polarity: the column is `0` ("not recorded") on 4800 of 10407 rows, so a
-  "must equal `=`" gate would have deleted every ophthalmic, vital and CBC row.
+  measured. Note the polarity: the column is `0` ("not recorded") on 178,806 of the 767,814
+  synthetic rows — every vital and every CBC item — so a "must equal `=`" gate would have
+  deleted them all.
 - **Sentinels.** `555`/`777`/`888`/`999` in `value_as_number` are REDCap refusal codes and are
   dropped. `0` is *not* a sentinel in a value column — it is a valid answer — while `0` in a
   `*_concept_id` column means "no matching concept". Two separate null sets.
@@ -85,17 +100,26 @@ published standard: a second OMOP dataset reuses the module and writes only its 
 
 ## 5. Testing strategy
 
-Three tiers, because the Voice two-tier pattern does not transfer — the VUMC synthetic
-release ships two of the six tables and so covers *less* than the hand fixture.
+Two tiers, and the hand fixture carries more of the weight than Voice's does — the VUMC
+synthetic release ships only two of the six OMOP tables, so on *shape* it covers **less**
+than the fixture does.
 
 - **Tier 1, always run, in CI:** `tests/data/aireadi/` (4 participants, ~30 rows), every row
-  encoding one real-data trap; see that directory's README. Covered by
+  encoding one specific hazard; see that directory's README. Covered by
   `tests/test_aireadi_omop.py` (primitives, no data on disk) and
-  `tests/test_aireadi_reader.py`.
-- **Tier 2, local:** the VUMC synthetic release — asserts graceful degradation to
-  `tables_missing` when four of six tables are absent.
-- **Tier 3, local:** the real mini release — the only tier that runs `validate-aireadi`
-  against the full six-table shape with `--strict-coverage` and requires zero errors.
+  `tests/test_aireadi_reader.py`. This is the only tier that exercises `person`,
+  `visit_occurrence`, laterality, censoring and reference ranges end to end.
+- **Tier 2, local, skipped in CI:** the VUMC synthetic release — scale (bounded with
+  `islice` so it stays quick), graceful degradation to `tables_missing` when four of six
+  tables are absent, and the check that every configured *condition* item exists in a real
+  release. Measurement coverage is deliberately not asserted there, since the release ships
+  73 of the items.
+
+**Gap, stated plainly:** `config/aireadi/measurement/ophthalmic.yaml`, `participants.yaml`
+and `person.yaml` describe tables and items that no release available here ships. They are
+authored against AI-READI's published crosswalk and the OMOP CDM / CDS specifications, and
+exercised only by the fixture. `validate-aireadi --strict-coverage` against a full release
+is the check that closes that gap, and it is the first thing to run when one is available.
 
 No golden/snapshot phenopackets: verification is a protobuf round-trip plus structural
 invariants (`_prefixes_used(pkt) <= declared`, and no `TODO` CURIE in any emitted packet).

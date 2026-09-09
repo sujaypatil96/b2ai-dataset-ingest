@@ -3,7 +3,8 @@
 # THE ITEM KEY IS THE REDCap VARIABLE -- the text before the FIRST COMMA of
 # <domain>_source_value (the whole string when there is no comma, e.g. "naming").
 #
-# NEVER key on concept_id. Verified against data/aireadi-mini/dataset/ on 2026-09-09:
+# NEVER key on concept_id. Verified on 2026-09-09 against the VUMC synthetic release and
+# AI-READI's published CC-BY-4.0 crosswalk (scripts/fetch_aireadi_crosswalk.sh):
 #   measurement 3004249 backs BOTH bp1_sysbp_vsorres AND bp2_sysbp_vsorres
 #   measurement 3012888 backs BOTH bp1_diabp_vsorres AND bp2_diabp_vsorres
 #   measurement 4239408 backs BOTH pulse_vsorres     AND pulse_vsorres_2

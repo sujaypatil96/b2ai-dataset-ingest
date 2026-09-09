@@ -19,7 +19,7 @@ raw tables  ->  source reader  ->  YAML mapping engine  ->  canonical IR  ->  em
 | Dataset | Status | Data |
 | --- | --- | --- |
 | [Bridge2AI-Voice](https://bridge2ai.org/data-voice/) | pilot / in progress | real data is PII/credentialed; we develop against public **synthetic** data ([justaddcoffee/b2ai-voice-synthetic-phenotype](https://github.com/justaddcoffee/b2ai-voice-synthetic-phenotype)) |
-| [Bridge2AI AI-READi](https://bridge2ai.org/data-ai-readi/) | v1 implemented | clinical data is **OMOP CDM v5.4**; developed against the licensed 100-participant mini release and a committed hand-authored fixture. Nothing AI-READI-derived is committed — see below. |
+| [Bridge2AI AI-READi](https://bridge2ai.org/data-ai-readi/) | v1 implemented | clinical data is **OMOP CDM v5.4**; developed against the public [VUMC synthetic release](https://hiplab.vumc.org/synthetix/ai-readi/) plus AI-READI's published CC-BY-4.0 crosswalk, with a committed hand-authored fixture. Nothing AI-READI-derived is committed — see below. |
 
 ## Scope (current)
 
@@ -76,7 +76,7 @@ Two input directories, with different handling:
 
 | | contents | used by the pipeline? |
 | --- | --- | --- |
-| `data_synth/` | synthetic Voice phenotype tables; synthetic AI-READI OMOP tables | yes, by default |
+| `data_synth/` | synthetic Voice phenotype tables; synthetic AI-READI OMOP tables; AI-READI's CC-BY-4.0 published crosswalk (`scripts/fetch_aireadi_crosswalk.sh`) | yes, by default |
 | `data/` | the source datasets (B2AI-Voice, AI-READI `clinical_data`) | only in explicit runs |
 
 Everything routine — tests, fetch scripts, CLI examples — reads from `data_synth/`. The

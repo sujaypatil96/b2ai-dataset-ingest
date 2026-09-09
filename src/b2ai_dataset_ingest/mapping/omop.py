@@ -24,8 +24,8 @@ Four rules encoded here are load-bearing, and each was established against real 
   before a value ever reaches a :class:`~b2ai_dataset_ingest.model.core.TimePoint`.
 - **Blank and zero are different, and which is which depends on the column.** ``"0"`` means
   "no matching concept" in a ``*_concept_id`` column but is a *valid answer* in
-  ``value_as_number`` (74 of 100 AI-READI participants answer ``0`` to the first CES-D-10
-  item). Hence two separate null sets: :data:`NULL_VALUES` and :data:`NULL_CONCEPT_IDS`.
+  ``value_as_number``, where it is an ordinary — often the modal — answer. Hence two
+  separate null sets: :data:`NULL_VALUES` and :data:`NULL_CONCEPT_IDS`.
 """
 
 from __future__ import annotations
@@ -52,9 +52,10 @@ SENTINEL_ANSWERS = frozenset({"555", "777", "888", "999", "555.0", "777.0", "888
 #: below-detection-limit assay. GA4GH ``Quantity`` has no operator slot, so a bounded row
 #: must be dropped rather than reported as a measured value.
 #:
-#: Note the polarity: the operator column is ``0`` ("not recorded") on 4800 of 10407 real
-#: rows and ``4172703`` ("=") on 5535. Gating on "must equal 4172703" would silently delete
-#: every ophthalmic, vital and CBC row. Only an explicit bound disqualifies a value.
+#: Note the polarity: the operator column is very often ``0`` ("not recorded") rather than
+#: ``4172703`` ("="). In the VUMC synthetic release it is ``0`` on 178,806 of 767,814 rows —
+#: every vital and every CBC item — so gating on "must equal 4172703" would delete them
+#: all. Only an explicit bound disqualifies a value.
 BOUNDING_OPERATORS = frozenset({"4171756"})
 
 _DATE_RE = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")

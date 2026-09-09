@@ -6,7 +6,7 @@ Usage (once implemented):
         --input data_synth/b2ai-voice-synthetic-phenotype/output/phenotype \\
         --output out/ --target phenopacket
 
-    b2ai-ingest aireadi --input data/aireadi-mini/dataset --output out/aireadi
+    b2ai-ingest aireadi --input data_synth/aireadi-synthetic --output out/aireadi
 
 Synthetic input lives under ``data_synth/``; ``data/`` holds the source datasets and may be
 owned by a separate account.

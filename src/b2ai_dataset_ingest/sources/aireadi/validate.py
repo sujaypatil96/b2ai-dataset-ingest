@@ -8,8 +8,8 @@ drift. For an OMOP release the drift that matters is different, so the checks ar
 - an item key the config maps is absent from the release (a config naming a variable the
   data does not ship emits nothing, silently);
 - an item key in the data has no config entry (present but not ingested);
-- a field is *fully redacted* — the mini ships ``gender_concept_id = 0`` on every row, so a
-  run of 100 ``UNKNOWN_SEX`` subjects must not look like success;
+- a field is *fully redacted* — a release may ship ``gender_concept_id = 0`` on every row,
+  and a run of all-``UNKNOWN_SEX`` subjects must not look like success;
 - a declared unit disagrees with the unit the data carries where the data carries one.
 
 **Why an item-key inventory is not PHI.** OMOP is EAV, so what Voice keeps in a *header*
@@ -20,8 +20,8 @@ mean the validator could check nothing at all, which is the worse privacy outcom
 
 Everything reported is a variable name, a column name, or a count. Never reported: a
 ``person_id``, a ``value_as_*`` cell, a ``range_*`` bound, or a date. Per-item counts below
-:data:`SMALL_CELL` print as ``<5`` — the real release contains exactly one Parkinson's row,
-and a count of 1 plus outside knowledge is a small-cell disclosure.
+:data:`SMALL_CELL` print as ``<5``: a rare condition can have a single-digit count, and a
+count of 1 plus outside knowledge is a small-cell disclosure.
 """
 
 from __future__ import annotations
