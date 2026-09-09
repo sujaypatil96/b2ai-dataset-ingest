@@ -16,7 +16,9 @@ from b2ai_dataset_ingest.sources.voice import VoiceSource
 CONFIG_DIR = Path(__file__).parents[1] / "config" / "voice"
 SYNTHETIC = (
     Path(__file__).parents[1]
-    / "data_synth"
+    / "data"
+    / "synthetic"
+    / "voice_dgp"
     / "b2ai-voice-synthetic-phenotype"
     / "output"
     / "phenotype"

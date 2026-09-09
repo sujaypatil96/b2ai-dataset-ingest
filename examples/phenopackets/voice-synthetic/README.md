@@ -57,8 +57,8 @@ Output is deterministic — no timestamps — so a rerun on the same inputs prod
 identical diff-free tree.
 
 ```bash
-scripts/fetch_synthetic_data.sh      # clones the synthetic repo into data_synth/
+scripts/fetch_synthetic_data.sh      # clones the synthetic repo into data/synthetic/voice_dgp/
 uv run b2ai-ingest voice \
-  --input data_synth/b2ai-voice-synthetic-phenotype/output/phenotype \
+  --input data/synthetic/voice_dgp/b2ai-voice-synthetic-phenotype/output/phenotype \
   --output examples/phenopackets/voice-synthetic/
 ```

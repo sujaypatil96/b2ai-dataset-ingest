@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fetch the synthetic AI-READI OMOP tables into ./data_synth/ (gitignored).
+# Fetch the synthetic AI-READI OMOP tables into ./data/synthetic/aireadi/ (gitignored).
 #
 # Source: ADVANCE Center @ VUMC "Synthetic AI-READI Dataset for T2DM Research"
 #   portal:  https://hiplab.vumc.org/synthetix/ai-readi/
@@ -32,7 +32,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DEST="${ROOT}/data_synth/aireadi-synthetic"
+DEST="${ROOT}/data/synthetic/aireadi"
 BUCKET="ai-readi-bucket"
 PREFIX="ai-readi/tabular"
 

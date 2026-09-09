@@ -1,9 +1,7 @@
-# Source datasets (large; downloaded under their respective DUAs). Not committed.
+# All raw inputs, real and synthetic. data/real/ is licensed source data under a DUA;
+# data/synthetic/ is generator checkouts and public stand-ins. Neither is committed.
 /data/*
 !/data/.gitkeep
-
-# Synthetic-data generator checkouts (cloned repos, not our source)
-/data_synth/
 
 # Real Bridge2AI-Voice PhysioNet download — credentialed access, HIPAA/PII-sensitive.
 # Must never be committed or pushed.
