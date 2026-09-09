@@ -150,6 +150,37 @@ the real dataset. Everything there is synthetic; see its
 [README](examples/phenopackets/voice-synthetic/README.md) for provenance, counts, and the
 known gaps in the snapshot.
 
+### Exploratory analysis
+
+`scripts/profile_hpo_terms.py` reports how many HPO terms the emitter actually derived,
+per phenopacket and across a cohort. It lives in `scripts/` rather than in the package so
+it does not ship in the wheel, and it is wired into neither the CLI nor CI. It needs the
+`analysis` extra.
+
+```bash
+uv sync --extra analysis
+uv run python scripts/profile_hpo_terms.py \
+  --input out/synthetic/voice_dgp/phenopackets --outdir out/synthetic/voice_dgp/analysis
+```
+
+It counts asserted-present and explicitly-excluded separately and never sums them. Since
+the 2026-08-24 clinical review withdrew the absent pole set-wide, the mappings assert only
+presence and the excluded count should be zero; it is reported anyway so a regression that
+reintroduces absent assertions shows up as a number rather than silently changing what the
+cohort means. The same reason the SSSOM validator rejects a `predicate_modifier` column.
+
+On the synthetic cohort the answer is that there is very little phenotype signal: a mean
+of 0.6 terms present per participant, with 98 of 173 carrying none at all. That is a
+property of the synthetic tables, which are 2.4% dense.
+
+That number is the gate on any clustering. Phenotype-driven clustering needs terms to
+compute similarity over, so run the profiler first and read the terms-per-participant
+figure before investing in a clustering run.
+
+To produce phenopackets from the source data, use `scripts/ingest_real.sh`, which
+validates and ingests under the ownership split above. You supply the input path; it does
+not search `data/real/` for you.
+
 ## Getting started
 
 ```bash

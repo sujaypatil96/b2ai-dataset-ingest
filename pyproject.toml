@@ -23,9 +23,18 @@ dependencies = [
 [project.scripts]
 b2ai-ingest = "b2ai_dataset_ingest.cli:app"
 
+# The `scripts/` analyses over emitted phenopackets are exploratory tooling, not part
+# of the pipeline, and deliberately live outside the package so they do not ship in the
+# wheel. This is an extra rather than an ad-hoc `uv run --with ...` because runs against
+# the source data go through an account that cannot write uv's caches — the deps have to
+# already be in .venv. See scripts/ingest_and_cluster_real.sh.
 [project.optional-dependencies]
 validation = [
     "oaklib>=0.7.2",
+]
+analysis = [
+    "matplotlib>=3.8",
+    "pandas>=2.0",
 ]
 
 [dependency-groups]
