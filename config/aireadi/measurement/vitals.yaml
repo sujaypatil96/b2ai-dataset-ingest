@@ -1,0 +1,74 @@
+# Mapping: AI-READI clinical_data/measurement.csv, vitals and anthropometrics -> MeasurementObservation (IR)
+#
+# 12 items, one row per participant per reading. Blood pressure and pulse are each
+# taken TWICE and the two readings share one OMOP concept (3004249/3012888/4239408
+# back both bp1 and bp2), so `description` is what keeps them distinguishable once
+# they carry the same LOINC assay -- without it the pair is indistinguishable in the
+# emitted packet.
+#
+# No reference ranges: these rows carry no range_low/range_high at all (verified).
+#
+# ASSAY IDENTITY. Items with a verified LOINC code carry it; the rest carry a project-local
+# `b2ai:measurement.<item>` id with a curated label. That stopgap is the documented VHI-10
+# precedent already shipping in config/voice/questionnaire/vhi10.yaml (`b2ai:vhi10.total`),
+# and it decouples delivery from the LOINC curation tranche: a later PR replaces `id:` in
+# place and nothing else changes. A `TODO` id would be SKIPPED at read time, which is why
+# none appears here.
+#
+# LOINC codes below were verified by exact-code lookup against the NLM Clinical Table LOINC
+# service on 2026-09-09 -- the same route config/voice/questionnaire/phq9.yaml used. LOINC
+# is deliberately absent from mappings/*.sssom.tsv: oaklib has no usable LOINC build
+# (`sqlite:obo:loinc` resolves to a 0-byte database and raises OperationalError), so a LOINC
+# SSSOM set would sit behind an anti-hallucination gate that cannot actually check it.
+
+table: measurement
+delimiter: ","
+id_column: person_id
+key_column: measurement_source_value
+date_column: measurement_datetime
+visit_column: visit_occurrence_id
+value_columns: [value_as_number]
+
+measures:
+  bmi_vsorres:
+    assay: { id: "LOINC:39156-5", label: "Body mass index (BMI) [Ratio]" }   # 4245997
+    unit: { id: "UCUM:kg/m2", label: "kg/m2" }
+  bp1_sysbp_vsorres:
+    assay: { id: "LOINC:8480-6", label: "Systolic blood pressure" }   # 3004249 -- shared with bp2
+    unit: { id: "UCUM:mm[Hg]", label: "mmHg" }
+    description: "First reading"
+  bp1_diabp_vsorres:
+    assay: { id: "LOINC:8462-4", label: "Diastolic blood pressure" }   # 3012888 -- shared with bp2
+    unit: { id: "UCUM:mm[Hg]", label: "mmHg" }
+    description: "First reading"
+  bp2_sysbp_vsorres:
+    assay: { id: "LOINC:8480-6", label: "Systolic blood pressure" }   # same concept as bp1
+    unit: { id: "UCUM:mm[Hg]", label: "mmHg" }
+    description: "Second reading"
+  bp2_diabp_vsorres:
+    assay: { id: "LOINC:8462-4", label: "Diastolic blood pressure" }   # same concept as bp1
+    unit: { id: "UCUM:mm[Hg]", label: "mmHg" }
+    description: "Second reading"
+  pulse_vsorres:
+    assay: { id: "LOINC:8867-4", label: "Heart rate" }   # 4239408 -- shared
+    unit: { id: "UCUM:/min", label: "beats per minute" }
+    description: "First reading"
+  pulse_vsorres_2:
+    assay: { id: "LOINC:8867-4", label: "Heart rate" }   # same concept
+    unit: { id: "UCUM:/min", label: "beats per minute" }
+    description: "Second reading"
+  height_vsorres:
+    assay: { id: "LOINC:8302-2", label: "Body height" }   # 3036277
+    unit: { id: "UCUM:cm", label: "cm" }
+  weight_vsorres:
+    assay: { id: "LOINC:29463-7", label: "Body weight" }   # 3025315
+    unit: { id: "UCUM:kg", label: "kg" }
+  waist_vsorres:
+    assay: { id: "LOINC:8280-0", label: "Waist Circumference at umbilicus by Tape measure" }   # 4172830
+    unit: { id: "UCUM:cm", label: "cm" }
+  hip_vsorres:
+    assay: { id: "b2ai:measurement.hip_vsorres", label: "Hip circumference" }   # 4111665 -- NLM has only PhenX protocol codes, not a plain measure
+    unit: { id: "UCUM:cm", label: "cm" }
+  whr_vsorres:
+    assay: { id: "b2ai:measurement.whr_vsorres", label: "Waist to hip ratio" }   # 44809433
+    unit: { id: "UCUM:1", label: "ratio" }

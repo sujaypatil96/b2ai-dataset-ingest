@@ -1,0 +1,68 @@
+# Mapping: AI-READI participants.tsv -> Individual (IR)
+#
+# The one WIDE table in the release, so it feeds MappingEngine.individual_fields -- the
+# existing `columns:` path -- with no adaptation at all.
+#
+# `age` is age in years on the study-visit day (participants.json: {"data_type":
+# "integer", "unit": "years"}), so the existing years_to_iso8601 transform applies as-is,
+# and the same value anchors TimePoint.age_iso8601 for every observation.
+#
+# study_group is a RECRUITMENT STRATUM, not a diagnosis, and the data proves the two
+# disagree. Cross-tabulated against condition_occurrence on 2026-09-09: 2 of the 30
+# pre_diabetes_lifestyle_controlled participants carry a Type 2 diabetes condition, 1 of
+# the 6 insulin_dependent participants carries only prediabetes, and 1 oral-medication
+# participant carries neither -- 9 of 100 disagree overall. It is therefore emitted as a
+# categorical Measurement with project-local value terms, never as a Disease.
+
+table: participants
+file: participants.tsv
+delimiter: "\t"
+produces: Individual
+id_column: person_id
+
+columns:
+  age:
+    target: Individual.age_iso8601
+    transform: years_to_iso8601        # "73" -> "P73Y"; existing transform, unchanged
+
+# The study arm, as a Measurement. Value terms are project-local: there is no ontology
+# coding for a study's own recruitment arms.
+study_group:
+  source_column: study_group
+  assay: { id: "b2ai:participants.study_group", label: "AI-READI study group" }
+  value_terms:
+    healthy:
+      { id: "b2ai:participants.study_group.healthy", label: "Healthy" }
+    pre_diabetes_lifestyle_controlled:
+      { id: "b2ai:participants.study_group.pre_diabetes_lifestyle_controlled",
+        label: "Pre-diabetes or Type 2 diabetes, lifestyle controlled" }
+    oral_medication_and_or_non_insulin_injectable_medication_controlled:
+      { id: "b2ai:participants.study_group.oral_medication_controlled",
+        label: "Type 2 diabetes, oral and/or non-insulin injectable medication controlled" }
+    insulin_dependent:
+      { id: "b2ai:participants.study_group.insulin_dependent",
+        label: "Type 2 diabetes, insulin dependent" }
+
+# Recorded on Participant.cohort as provenance; not emitted into the phenopacket.
+cohort:
+  columns: [study_group, clinical_site, recommended_split]
+
+# Present and deliberately NOT mapped. Listing them is what lets `validate-aireadi`
+# distinguish "dropped by policy" from "nobody looked".
+dropped_columns:
+  clinical_site: "Site (UW/UCSD/UAB): a cohort attribute and a re-identification
+    quasi-identifier. No phenopacket slot; recorded on Participant.cohort instead."
+  recommended_split: "train/val/test is ML housekeeping, not phenotype."
+  study_visit_date: "Day-precision date; see dataset.yaml time_precision."
+  cardiac_ecg: &modality_flag "Modality-availability flag. All nine flags are TRUE for all
+    100 participants in the mini release (verified), so they carry no discriminative
+    information, and the mini ships no modality directories -- a File URI would be
+    fabricated. Full-release handling is deferred."
+  clinical_data: *modality_flag
+  environment: *modality_flag
+  retinal_flio: *modality_flag
+  retinal_oct: *modality_flag
+  retinal_octa: *modality_flag
+  retinal_photography: *modality_flag
+  wearable_activity_monitor: *modality_flag
+  wearable_blood_glucose: *modality_flag

@@ -9,6 +9,10 @@ from b2ai_dataset_ingest.mapping.loaders import load_mapping
 
 CONFIG_DIR = Path(__file__).parents[1] / "config"
 VOICE_CONFIGS = sorted(CONFIG_DIR.glob("voice/**/*.yaml"))
+#: Every shipped per-dataset config. The b2ai-id invariants below are repo-wide, not
+#: voice-specific: scoped to voice/ they would silently stop covering half the repo the
+#: moment a second dataset landed.
+ALL_CONFIGS = sorted(p for p in CONFIG_DIR.glob("*/**/*.yaml") if p.parent.name != "shared")
 
 
 def test_voice_configs_exist():
@@ -87,7 +91,7 @@ def test_sex_column_precedence(assigned: str, at_birth: str, expected: str | Non
 B2AI_ID = re.compile(r"\bb2ai:([A-Za-z0-9_]+)([.-])([A-Za-z0-9_]+)")
 
 
-@pytest.mark.parametrize("path", VOICE_CONFIGS, ids=lambda p: p.name)
+@pytest.mark.parametrize("path", ALL_CONFIGS, ids=lambda p: f"{p.parent.name}/{p.name}")
 def test_config_b2ai_ids_use_dot_separator(path: Path):
     """Config assay ids must be `b2ai:<table>.<column>`, matching the SSSOM subjects.
 
@@ -113,7 +117,7 @@ def test_gated_sssom_subjects_have_a_matching_config_assay():
     from b2ai_dataset_ingest.ontology.sssom_validate import default_mapping_files
 
     config_ids: set[str] = set()
-    for cfg in VOICE_CONFIGS:
+    for cfg in ALL_CONFIGS:
         config_ids |= {m.group(0) for m in B2AI_ID.finditer(cfg.read_text())}
 
     config_tables = {i.split(":", 1)[1].split(".", 1)[0] for i in config_ids}
@@ -128,3 +132,33 @@ def test_gated_sssom_subjects_have_a_matching_config_assay():
             if table in config_tables and subject not in config_ids:
                 orphans.append(subject)
     assert not orphans, f"gated subjects with no matching config assay id: {sorted(set(orphans))}"
+
+
+def test_sssom_table_names_are_disjoint_across_datasets():
+    """No two datasets may claim the same `b2ai:<table>` namespace.
+
+    `hpo_rules.load_conditional_rules` indexes value-gated rules by BARE table name, so a
+    collision would let one dataset's rules fire on another's identically-named table. The
+    readers already scope discovery with `default_mapping_files(dataset=...)`, and this test
+    is the second lock: it fails the moment two sets could collide, rather than waiting for
+    a wrong PhenotypicFeature to appear in someone's output.
+    """
+    from b2ai_dataset_ingest.mapping.sssom_io import default_mapping_files, parse_sssom
+
+    tables_by_dataset: dict[str, set[str]] = {}
+    for path in default_mapping_files(CONFIG_DIR.parent):
+        # mappings/b2ai-<dataset>-<domain>.sssom.tsv
+        dataset = path.name.split("-")[1]
+        _, rows = parse_sssom(path)
+        for row in rows:
+            subject = row.get("subject_id", "")
+            if subject.startswith("b2ai:") and "." in subject:
+                table = subject.split(":", 1)[1].split(".", 1)[0]
+                tables_by_dataset.setdefault(dataset, set()).add(table)
+
+    collisions = {}
+    for dataset, tables in tables_by_dataset.items():
+        for other, other_tables in tables_by_dataset.items():
+            if dataset < other and (shared := tables & other_tables):
+                collisions[f"{dataset}/{other}"] = sorted(shared)
+    assert not collisions, f"b2ai table names shared across datasets: {collisions}"

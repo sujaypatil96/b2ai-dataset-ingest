@@ -1,0 +1,167 @@
+# Mapping: AI-READI clinical_data/measurement.csv, per-eye ophthalmic items -> MeasurementObservation (IR)
+#
+# 26 items: visual acuity, contrast sensitivity and autorefraction, each per eye.
+#
+# LATERALITY IS DECLARED PER ITEM, not read from qualifier_concept_id, and that is
+# load-bearing. The six autorefraction items (viaod*/viaos* sph/cyl/axi) are per-eye by
+# NAME and carry NO qualifier at all -- 573 rows would lose their side. Worse, the same
+# qualifier column on a medical-history observation row holds a CONDITION NAME
+# ('Hypertensive Disorder'), so a passthrough would be actively wrong. The column is a
+# cross-check for validate-aireadi, never the source.
+#
+# body_site goes on Measurement.procedure.body_site -- the only laterality slot a GA4GH
+# Measurement has. UBERON:0004549/0004548 verified against sqlite:obo:uberon on
+# 2026-09-09; NCIT procedure codes verified against sqlite:obo:ncit the same day.
+#
+# ASSAY IDENTITY. Items with a verified LOINC code carry it; the rest carry a project-local
+# `b2ai:measurement.<item>` id with a curated label. That stopgap is the documented VHI-10
+# precedent already shipping in config/voice/questionnaire/vhi10.yaml (`b2ai:vhi10.total`),
+# and it decouples delivery from the LOINC curation tranche: a later PR replaces `id:` in
+# place and nothing else changes. A `TODO` id would be SKIPPED at read time, which is why
+# none appears here.
+#
+# LOINC codes below were verified by exact-code lookup against the NLM Clinical Table LOINC
+# service on 2026-09-09 -- the same route config/voice/questionnaire/phq9.yaml used. LOINC
+# is deliberately absent from mappings/*.sssom.tsv: oaklib has no usable LOINC build
+# (`sqlite:obo:loinc` resolves to a 0-byte database and raises OperationalError), so a LOINC
+# SSSOM set would sit behind an anti-hallucination gate that cannot actually check it.
+
+table: measurement
+delimiter: ","
+id_column: person_id
+key_column: measurement_source_value
+date_column: measurement_datetime
+visit_column: visit_occurrence_id
+value_columns: [value_as_number]
+
+measures:
+  viaodplog:
+    assay: { id: "b2ai:measurement.viaodplog", label: "VA letter score, photopic, right eye" }
+    unit: { id: "UCUM:{score}", label: "score" }
+    procedure_code: { id: "NCIT:C87149", label: "Visual Acuity" }
+    body_site: { id: "UBERON:0004549", label: "right eye" }
+  viaosplog:
+    assay: { id: "b2ai:measurement.viaosplog", label: "VA letter score, photopic, left eye" }
+    unit: { id: "UCUM:{score}", label: "score" }
+    procedure_code: { id: "NCIT:C87149", label: "Visual Acuity" }
+    body_site: { id: "UBERON:0004548", label: "left eye" }
+  viaodpscore:
+    assay: { id: "b2ai:measurement.viaodpscore", label: "Photopic logMAR score, right eye" }
+    unit: { id: "UCUM:1", label: "logMAR" }
+    procedure_code: { id: "NCIT:C87149", label: "Visual Acuity" }
+    body_site: { id: "UBERON:0004549", label: "right eye" }
+  viaospscore:
+    assay: { id: "b2ai:measurement.viaospscore", label: "Photopic logMAR score, left eye" }
+    unit: { id: "UCUM:1", label: "logMAR" }
+    procedure_code: { id: "NCIT:C87149", label: "Visual Acuity" }
+    body_site: { id: "UBERON:0004548", label: "left eye" }
+  viaodmlog:
+    assay: { id: "b2ai:measurement.viaodmlog", label: "Low-luminance VA letter score, mesopic, right eye" }
+    unit: { id: "UCUM:{score}", label: "score" }
+    procedure_code: { id: "NCIT:C87149", label: "Visual Acuity" }
+    body_site: { id: "UBERON:0004549", label: "right eye" }
+  viaosmlog:
+    assay: { id: "b2ai:measurement.viaosmlog", label: "Low-luminance VA letter score, mesopic, left eye" }
+    unit: { id: "UCUM:{score}", label: "score" }
+    procedure_code: { id: "NCIT:C87149", label: "Visual Acuity" }
+    body_site: { id: "UBERON:0004548", label: "left eye" }
+  viaodmscore:
+    assay: { id: "b2ai:measurement.viaodmscore", label: "Mesopic logMAR score, right eye" }
+    unit: { id: "UCUM:1", label: "logMAR" }
+    procedure_code: { id: "NCIT:C87149", label: "Visual Acuity" }
+    body_site: { id: "UBERON:0004549", label: "right eye" }
+  viaosmscore:
+    assay: { id: "b2ai:measurement.viaosmscore", label: "Mesopic logMAR score, left eye" }
+    unit: { id: "UCUM:1", label: "logMAR" }
+    procedure_code: { id: "NCIT:C87149", label: "Visual Acuity" }
+    body_site: { id: "UBERON:0004548", label: "left eye" }
+  plcsodlog:
+    assay: { id: "b2ai:measurement.plcsodlog", label: "Photopic log contrast sensitivity, right eye" }
+    unit: { id: "UCUM:1", label: "logMAR" }
+    procedure_code: { id: "NCIT:C117878", label: "Pelli-Robson Contrast Sensitivity Eye Chart" }
+    body_site: { id: "UBERON:0004549", label: "right eye" }
+  plcsoslog:
+    assay: { id: "b2ai:measurement.plcsoslog", label: "Photopic log contrast sensitivity, left eye" }
+    unit: { id: "UCUM:1", label: "logMAR" }
+    procedure_code: { id: "NCIT:C117878", label: "Pelli-Robson Contrast Sensitivity Eye Chart" }
+    body_site: { id: "UBERON:0004548", label: "left eye" }
+  plcsodfcl:
+    assay: { id: "b2ai:measurement.plcsodfcl", label: "Photopic contrast sensitivity, final correct letter, right eye" }
+    unit: { id: "UCUM:{score}", label: "score" }
+    procedure_code: { id: "NCIT:C117878", label: "Pelli-Robson Contrast Sensitivity Eye Chart" }
+    body_site: { id: "UBERON:0004549", label: "right eye" }
+  plcsosfcl:
+    assay: { id: "b2ai:measurement.plcsosfcl", label: "Photopic contrast sensitivity, final correct letter, left eye" }
+    unit: { id: "UCUM:{score}", label: "score" }
+    procedure_code: { id: "NCIT:C117878", label: "Pelli-Robson Contrast Sensitivity Eye Chart" }
+    body_site: { id: "UBERON:0004548", label: "left eye" }
+  plcsodmiss:
+    assay: { id: "b2ai:measurement.plcsodmiss", label: "Photopic contrast sensitivity, misses before stopping, right eye" }
+    unit: { id: "UCUM:{score}", label: "score" }
+    procedure_code: { id: "NCIT:C117878", label: "Pelli-Robson Contrast Sensitivity Eye Chart" }
+    body_site: { id: "UBERON:0004549", label: "right eye" }
+  plcsosmiss:
+    assay: { id: "b2ai:measurement.plcsosmiss", label: "Photopic contrast sensitivity, misses before stopping, left eye" }
+    unit: { id: "UCUM:{score}", label: "score" }
+    procedure_code: { id: "NCIT:C117878", label: "Pelli-Robson Contrast Sensitivity Eye Chart" }
+    body_site: { id: "UBERON:0004548", label: "left eye" }
+  mlcsodlog:
+    assay: { id: "b2ai:measurement.mlcsodlog", label: "Mesopic log contrast sensitivity, right eye" }
+    unit: { id: "UCUM:1", label: "logMAR" }
+    procedure_code: { id: "NCIT:C117878", label: "Pelli-Robson Contrast Sensitivity Eye Chart" }
+    body_site: { id: "UBERON:0004549", label: "right eye" }
+  mlcsoslog:
+    assay: { id: "b2ai:measurement.mlcsoslog", label: "Mesopic log contrast sensitivity, left eye" }
+    unit: { id: "UCUM:1", label: "logMAR" }
+    procedure_code: { id: "NCIT:C117878", label: "Pelli-Robson Contrast Sensitivity Eye Chart" }
+    body_site: { id: "UBERON:0004548", label: "left eye" }
+  mlcsodfcl:
+    assay: { id: "b2ai:measurement.mlcsodfcl", label: "Mesopic contrast sensitivity, final correct letter, right eye" }
+    unit: { id: "UCUM:{score}", label: "score" }
+    procedure_code: { id: "NCIT:C117878", label: "Pelli-Robson Contrast Sensitivity Eye Chart" }
+    body_site: { id: "UBERON:0004549", label: "right eye" }
+  mlcsosfcl:
+    assay: { id: "b2ai:measurement.mlcsosfcl", label: "Mesopic contrast sensitivity, final correct letter, left eye" }
+    unit: { id: "UCUM:{score}", label: "score" }
+    procedure_code: { id: "NCIT:C117878", label: "Pelli-Robson Contrast Sensitivity Eye Chart" }
+    body_site: { id: "UBERON:0004548", label: "left eye" }
+  mlcsodmiss:
+    assay: { id: "b2ai:measurement.mlcsodmiss", label: "Mesopic contrast sensitivity, misses before stopping, right eye" }
+    unit: { id: "UCUM:{score}", label: "score" }
+    procedure_code: { id: "NCIT:C117878", label: "Pelli-Robson Contrast Sensitivity Eye Chart" }
+    body_site: { id: "UBERON:0004549", label: "right eye" }
+  mlcsosmiss:
+    assay: { id: "b2ai:measurement.mlcsosmiss", label: "Mesopic contrast sensitivity, misses before stopping, left eye" }
+    unit: { id: "UCUM:{score}", label: "score" }
+    procedure_code: { id: "NCIT:C117878", label: "Pelli-Robson Contrast Sensitivity Eye Chart" }
+    body_site: { id: "UBERON:0004548", label: "left eye" }
+  viaodsph:
+    assay: { id: "b2ai:measurement.viaodsph", label: "Autorefraction sphere, right eye" }
+    unit: { id: "UCUM:[diop]", label: "diopter" }
+    procedure_code: { id: "NCIT:C176330", label: "Autorefraction" }
+    body_site: { id: "UBERON:0004549", label: "right eye" }
+  viaossph:
+    assay: { id: "b2ai:measurement.viaossph", label: "Autorefraction sphere, left eye" }
+    unit: { id: "UCUM:[diop]", label: "diopter" }
+    procedure_code: { id: "NCIT:C176330", label: "Autorefraction" }
+    body_site: { id: "UBERON:0004548", label: "left eye" }
+  viaodcyl:
+    assay: { id: "b2ai:measurement.viaodcyl", label: "Autorefraction cylinder, right eye" }
+    unit: { id: "UCUM:[diop]", label: "diopter" }
+    procedure_code: { id: "NCIT:C176330", label: "Autorefraction" }
+    body_site: { id: "UBERON:0004549", label: "right eye" }
+  viaoscyl:
+    assay: { id: "b2ai:measurement.viaoscyl", label: "Autorefraction cylinder, left eye" }
+    unit: { id: "UCUM:[diop]", label: "diopter" }
+    procedure_code: { id: "NCIT:C176330", label: "Autorefraction" }
+    body_site: { id: "UBERON:0004548", label: "left eye" }
+  viaodaxi:
+    assay: { id: "b2ai:measurement.viaodaxi", label: "Autorefraction axis, right eye" }
+    unit: { id: "UCUM:deg", label: "degree" }
+    procedure_code: { id: "NCIT:C176330", label: "Autorefraction" }
+    body_site: { id: "UBERON:0004549", label: "right eye" }
+  viaosaxi:
+    assay: { id: "b2ai:measurement.viaosaxi", label: "Autorefraction axis, left eye" }
+    unit: { id: "UCUM:deg", label: "degree" }
+    procedure_code: { id: "NCIT:C176330", label: "Autorefraction" }
+    body_site: { id: "UBERON:0004548", label: "left eye" }
