@@ -1,0 +1,51 @@
+block	ls data/real
+block	ls data/real/
+block	ls data/real/voice_dgp
+block	cat data/real/voice_dgp/phenotype/demographics/demographics.tsv
+block	find data/real -type d
+block	ls data/real/aireadi
+block	cat /Users/jtr4v/PythonProject/b2ai-dataset-ingest/data/real/voice_dgp/x.tsv
+block	cat /mnt/archive/data/real/voice_dgp/x.tsv
+block	cat data/synthetic/../real/voice_dgp/x.tsv
+block	ls physionet.org
+block	ls out/real
+block	ls out/real/voice_dgp
+block	cat out/real/voice_dgp/phenopackets/x.json
+block	ls out/real/voice_dgp/analysis
+block	ls /Users/jtr4v/PythonProject/b2ai-dataset-ingest/out/real/voice_dgp/phenopackets
+block	ls out/real/aireadi
+block	cat out/synthetic/voice_dgp/../../real/voice_dgp/x.json
+block	ls data
+block	ls data/
+block	ls out
+block	ls out/
+block	find data -maxdepth 2 -type d
+block	find out -maxdepth 3 -type d
+block	du -sh out
+block	ls -R data
+block	ls data/synthetic/aireadi
+block	head data/synthetic/aireadi/clinical_data/measurement.csv
+block	cat data/synthetic/aireadi/synthetic_wearable_activity_glucose.tsv
+block	find data/synthetic/aireadi -type f
+block	ls out/synthetic/aireadi
+block	cat out/synthetic/aireadi/phenopackets/x.json
+block	ls out/synthetic/aireadi/analysis
+block	cat /Users/jtr4v/PythonProject/b2ai-dataset-ingest/data/synthetic/aireadi/clinical_data/measurement.csv
+block	cat data/synthetic/voice_dgp/../aireadi/clinical_data/measurement.csv
+allow	ls data/synthetic
+allow	ls data/synthetic/voice_dgp
+allow	head data/synthetic/voice_dgp/b2ai-voice-synthetic-phenotype/output/phenotype/demographics/demographics.tsv
+allow	find data/synthetic/voice_dgp -maxdepth 2 -type d
+allow	ls out/synthetic
+allow	ls out/synthetic/voice_dgp
+allow	cat out/synthetic/voice_dgp/phenopackets/x.json
+allow	ls out/synthetic/voice_dgp/analysis
+allow	find out/synthetic/voice_dgp -name '*.json'
+allow	ls output
+allow	ls really
+allow	cat metadata/x
+allow	uv run pytest
+allow	uv sync --extra analysis
+allow	git status --short
+allow	ls /tmp/out
+allow	ls /tmp/data
