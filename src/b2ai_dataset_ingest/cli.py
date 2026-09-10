@@ -26,7 +26,7 @@ app = typer.Typer(
 EMITTERS = {"phenopacket": "b2ai_dataset_ingest.emitters:PhenopacketEmitter"}
 
 
-def _clear_or_refuse(output: Path, *, force: bool) -> None:
+def _refuse_if_populated(output: Path, *, force: bool) -> list[Path]:
     """Refuse to write into a directory that already holds phenopackets.
 
     The emitter writes one file per participant, named by participant id. Re-running
@@ -40,7 +40,7 @@ def _clear_or_refuse(output: Path, *, force: bool) -> None:
     """
     existing = sorted(output.glob("*.json")) if output.is_dir() else []
     if not existing:
-        return
+        return []
     if not force:
         # Lead with what happened, not with what a re-run would have done. The
         # reader's first question is whether their existing output survived.
@@ -57,9 +57,22 @@ def _clear_or_refuse(output: Path, *, force: bool) -> None:
             err=True,
         )
         raise typer.Exit(code=2)
+    return existing
+
+
+def _remove(existing: list[Path]) -> None:
+    """Delete the previous set. Call this only once the new one is in hand.
+
+    Deleting before reading the source would mean a failed ingest leaves the
+    caller with neither: the old cohort gone and no new one written. On a real
+    cohort that is not trivially regenerable, so the refusal check runs early
+    and the deletion runs late.
+    """
+    if not existing:
+        return
     for path in existing:
         path.unlink()
-    typer.echo(f"Removed {len(existing)} existing phenopacket(s) from {output}")
+    typer.echo(f"Removed {len(existing)} previous phenopacket(s)")
 
 
 @app.command()
@@ -91,10 +104,14 @@ def voice(
         typer.echo(f"target {target!r} is not implemented yet", err=True)
         raise typer.Exit(code=2)
 
-    _clear_or_refuse(output, force=force)
+    # Refuse early, delete late: a failure between the two must not leave the
+    # caller with neither the old cohort nor a new one.
+    existing = _refuse_if_populated(output, force=force)
 
     source = VoiceSource(root=input, config_dir=config)
     participants = list(source.read())
+
+    _remove(existing)
     written = PhenopacketEmitter().write_all(participants, output)
     typer.echo(f"Wrote {written} phenopackets to {output}")
     # Aggregate, PHI-safe summary so silent degradation (skipped items, un-keyed sessions,

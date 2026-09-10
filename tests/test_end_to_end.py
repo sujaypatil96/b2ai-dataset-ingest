@@ -142,3 +142,24 @@ def test_force_leaves_exactly_the_current_cohort(tmp_path: Path):
     assert result.exit_code == 0
     assert not orphan.exists()
     assert {p.name for p in tmp_path.glob("*.json")} == cohort
+
+
+@pytest.mark.skipif(not SYNTHETIC.is_dir(), reason="synthetic fixture not fetched")
+def test_force_keeps_the_old_set_when_the_ingest_fails(tmp_path: Path, monkeypatch):
+    """Refuse early, delete late.
+
+    Deleting before the source is read would leave a failed run with neither the
+    previous cohort nor a new one, which on a real cohort is not recoverable.
+    """
+    assert _run_voice(tmp_path).exit_code == 0
+    before = {p.name for p in tmp_path.glob("*.json")}
+    assert before
+
+    def explode(self):
+        raise RuntimeError("source blew up mid-read")
+
+    monkeypatch.setattr(VoiceSource, "read", explode)
+    result = _run_voice(tmp_path, "--force")
+
+    assert result.exit_code != 0
+    assert {p.name for p in tmp_path.glob("*.json")} == before
