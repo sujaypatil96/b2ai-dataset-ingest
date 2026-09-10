@@ -186,25 +186,25 @@ randomised cohorts. Install it with the `clustering` extra.
 
 ```bash
 uv sync --extra clustering
-uv run stratiphy setup download -d .stratiphy
-uv run stratiphy preprocess out/synthetic/voice_dgp/analysis \
-  out/synthetic/voice_dgp/phenopackets/*.json -d .stratiphy
-uv run stratiphy compute out/synthetic/voice_dgp/analysis -d .stratiphy
-uv run python scripts/report_stratiphy.py \
-  --results out/synthetic/voice_dgp/analysis/results.pb \
-  --outdir  out/synthetic/voice_dgp/analysis
+scripts/cluster_phenopackets.sh \
+  out/synthetic/voice_dgp/phenopackets out/synthetic/voice_dgp/analysis
 ```
 
-**Always pass `-d`.** It defaults to `./data`, which here is the protected input tree, so
-without it `setup download` writes a 22 MB HPO build into it. `.stratiphy/` is gitignored.
+That runs Stratiphy's `setup`, `preprocess` and `compute`, then the report. Anything after
+the two directories is passed through to `compute`, so `--rand-iter 20 --mc-iter 10000`
+gives a fast coarse pass; the defaults of 100 randomised cohorts and a million Monte-Carlo
+iterations are what a real run wants.
 
-Only the last step is ours. Stratiphy's CLI covers `setup`, `preprocess` and `compute`,
-but its result is a protobuf with no CLI to read it, so `report_stratiphy.py` fills that
-one gap and adds nothing else.
+The script exists for one reason. Stratiphy's `--data` defaults to the repo's own input
+tree, which is protected here, so without an explicit `-d` its `setup download` drops a
+22 MB HPO build into it. Every call passes `-d .stratiphy`, which is gitignored.
+
+Only the report step is ours. Stratiphy's CLI covers the clustering; its result is a
+protobuf with no CLI to read it, so `scripts/report_stratiphy.py` fills that one gap.
 
 The headline it prints is the verdict, not the partition. A partition exists at every k
 whether or not it means anything. On the synthetic cohort the verdict is **do not split**,
-at a split probability of 0.09, and the sizes show why: k=2 gives 171 and 2. That is what
+at a split probability of 0.11, and the sizes show why: k=2 gives 171 and 2. That is what
 0.6 terms per participant buys, and it is the expected answer rather than a failure.
 
 ### The four ingests
