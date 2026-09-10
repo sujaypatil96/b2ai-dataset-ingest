@@ -41,6 +41,7 @@ from typing import Any
 from b2ai_dataset_ingest.mapping.engine import MappingEngine
 from b2ai_dataset_ingest.mapping.loaders import is_placeholder, load_mapping, validate_mapping
 from b2ai_dataset_ingest.mapping.omop import (
+    AgeAnchor,
     LongCell,
     OmopTableSpec,
     as_number,
@@ -124,10 +125,10 @@ class AireadiSource(Source):
             return participants[person_id]
 
         visits = self._read_visits()
-        ages = self._read_participants(accumulator)
+        anchors = self._read_participants(accumulator)
         self._read_person(accumulator)
-        self._read_conditions(accumulator, visits, ages)
-        self._read_measurements(accumulator, visits, ages)
+        self._read_conditions(accumulator, visits, anchors)
+        self._read_measurements(accumulator, visits, anchors)
 
         self.report.participants = len(participants)
         for person_id in sorted(participants):
@@ -160,13 +161,20 @@ class AireadiSource(Source):
         return index
 
     def _timepoint(
-        self, cell: LongCell, visits: dict[str, str], age_iso: str | None
+        self, cell: LongCell, visits: dict[str, str], anchor: AgeAnchor | None
     ) -> TimePoint | None:
         """Build the TimePoint for one long row, at the configured precision.
 
-        ``time_precision: age`` (the default) emits only the participant's age — no date
-        leaves the machine. ``date``/``datetime`` are opt-in and normalize to RFC3339-Z,
-        because protobuf silently rejects every other spelling.
+        ``time_precision: age`` (the default) emits only an age — no date leaves the machine.
+        ``date``/``datetime`` are opt-in and normalize to RFC3339-Z, because protobuf
+        silently rejects every other spelling.
+
+        The age is **derived per row** from the participant's anchor and the row's own date,
+        not reused from the cohort table. OMOP records a date on every row while a cohort
+        table records one age at one reference date; reusing that single value gives every
+        observation the same ``Age``, which is indistinguishable in the output as soon as a
+        participant has observations on more than one date. The date is used only for the
+        arithmetic — it is not emitted unless the precision says so.
         """
         precision = (self.dataset_config.get("time_precision") or "age").lower()
         visit_id = cell.visit_id
@@ -174,6 +182,8 @@ class AireadiSource(Source):
         if resolved is None:
             self.report.rows_without_visit += 1
         session = f"visit-{visit_id}" if resolved else (f"date-{cell.date}" if cell.date else "")
+        observed_on = resolved or cell.date
+        age_iso = anchor.age_at(observed_on) if anchor is not None else None
         stamp = None
         if precision in ("date", "datetime"):
             stamp = resolved or to_rfc3339(cell.date)
@@ -182,20 +192,28 @@ class AireadiSource(Source):
         return TimePoint(session_id=session, timestamp=stamp, age_iso8601=age_iso)
 
     # -- participants.tsv -> Individual + cohort ------------------------------------
-    def _read_participants(self, accumulator: Any) -> dict[str, str]:
-        """Populate Individual from the one wide table; return ``person_id -> age ISO``."""
+    def _read_participants(self, accumulator: Any) -> dict[str, AgeAnchor]:
+        """Populate Individual from the one wide table; return ``person_id -> AgeAnchor``.
+
+        The anchor pairs the cohort table's age with the date it was measured on, so every
+        observation can carry its own derived age (see :meth:`_timepoint`). A release that
+        ships no anchor date still yields ages — the anchor then behaves as the single
+        constant it used to be.
+        """
         mapping = self._config("participants.yaml")
-        ages: dict[str, str] = {}
+        anchors: dict[str, AgeAnchor] = {}
         if mapping is None:
-            return ages
+            return anchors
         path = self.root / mapping.get("file", "participants.tsv")
         rows = _stream_csv(path, delimiter=mapping.get("delimiter", "\t"))
         if rows is None:
             self.report.tables_missing.append("participants")
-            return ages
+            return anchors
         self.report.tables_read.append("participants")
         engine = MappingEngine(mapping)
         id_column = mapping.get("id_column", "person_id")
+        age_column = mapping.get("age_column", "age")
+        anchor_column = mapping.get("anchor_date_column", "")
         cohort_columns = list((mapping.get("cohort") or {}).get("columns") or [])
         group_spec = mapping.get("study_group") or {}
         for row in rows:
@@ -205,14 +223,16 @@ class AireadiSource(Source):
             acc = accumulator(person_id)
             fields = engine.individual_fields(row, report=self.report)
             acc.individual = Individual(id=person_id, **fields)
-            if fields.get("age_iso8601"):
-                ages[person_id] = fields["age_iso8601"]
+            # The anchor date is optional; without it the age is simply a constant.
+            anchor = AgeAnchor.build(row.get(age_column), row.get(anchor_column) or "")
+            if anchor is not None:
+                anchors[person_id] = anchor
             acc.cohort = {c: (row.get(c) or "").strip() for c in cohort_columns if row.get(c)}
-            measurement = _study_group_measurement(row, group_spec, ages.get(person_id))
+            measurement = _study_group_measurement(row, group_spec, anchor)
             if measurement is not None:
                 acc.measurements.append(measurement)
                 self.report.measurements_emitted += 1
-        return ages
+        return anchors
 
     # -- person.csv -> Individual.sex ------------------------------------------------
     def _read_person(self, accumulator: Any) -> None:
@@ -248,7 +268,7 @@ class AireadiSource(Source):
 
     # -- condition_occurrence -> Disease ---------------------------------------------
     def _read_conditions(
-        self, accumulator: Any, visits: dict[str, str], ages: dict[str, str]
+        self, accumulator: Any, visits: dict[str, str], anchors: dict[str, AgeAnchor]
     ) -> None:
         mapping = self._config("conditions.yaml")
         if mapping is None:
@@ -276,7 +296,7 @@ class AireadiSource(Source):
                 self.report.note_placeholder_skipped(spec.table, cell.item)
                 continue
             onset = (
-                self._timepoint(cell, visits, ages.get(person_id)) if emit_onset else None
+                self._timepoint(cell, visits, anchors.get(person_id)) if emit_onset else None
             )
             accumulator(person_id).add_disease(
                 DiseaseObservation(term=OntologyTerm(**term_spec), onset=onset)
@@ -284,7 +304,7 @@ class AireadiSource(Source):
 
     # -- measurement -> Measurement ---------------------------------------------------
     def _read_measurements(
-        self, accumulator: Any, visits: dict[str, str], ages: dict[str, str]
+        self, accumulator: Any, visits: dict[str, str], anchors: dict[str, AgeAnchor]
     ) -> None:
         configs = sorted((self.config_dir / "measurement").glob("*.yaml"))
         if not configs:
@@ -297,7 +317,16 @@ class AireadiSource(Source):
             mapping = self._config(f"measurement/{path.name}") or {}
             base = base or mapping
             table = mapping.get("table", table)
-            measures.update(mapping.get("measures") or {})
+            # A file-level `reference_ranges` applies to every item it declares. Reference
+            # intervals are a property of the *family* -- a lab result has one, a cognitive
+            # subscore's 0-3 bound is a scoring range and not a reference interval -- so the
+            # opt-in belongs at the file that groups the family, not on each item. An item
+            # may still override. Stamping it on here keeps the emit path item-only.
+            default_ranges = bool(mapping.get("reference_ranges", False))
+            for item, item_spec in (mapping.get("measures") or {}).items():
+                if isinstance(item_spec, dict):
+                    item_spec.setdefault("reference_range", default_ranges)
+                measures[item] = item_spec
             units.update(mapping.get("units") or {})
         spec = OmopTableSpec({**base, "table": table})
         rows = _stream_csv(self._clinical(table), delimiter=base.get("delimiter", ","))
@@ -311,7 +340,7 @@ class AireadiSource(Source):
             if cell is None or not person_id:
                 continue
             observation = self._measurement(
-                cell, measures, units, table, visits, ages.get(person_id), row
+                cell, measures, units, table, visits, anchors.get(person_id), row
             )
             if observation is not None:
                 accumulator(person_id).measurements.append(observation)
@@ -324,7 +353,7 @@ class AireadiSource(Source):
         units: dict[Any, dict[str, str]],
         table: str,
         visits: dict[str, str],
-        age_iso: str | None,
+        anchor: AgeAnchor | None,
         row: dict[str, str],
     ) -> MeasurementObservation | None:
         """One long row -> one Measurement, or None with the reason counted."""
@@ -358,7 +387,7 @@ class AireadiSource(Source):
         return MeasurementObservation(
             assay=OntologyTerm(**spec["assay"]),
             value_quantity=quantity,
-            time=self._timepoint(cell, visits, age_iso),
+            time=self._timepoint(cell, visits, anchor),
             description=spec.get("description"),
             procedure=_procedure(spec),
         )
@@ -434,7 +463,7 @@ def _procedure(spec: dict[str, Any]) -> ProcedureContext | None:
 
 
 def _study_group_measurement(
-    row: dict[str, str], spec: dict[str, Any], age_iso: str | None
+    row: dict[str, str], spec: dict[str, Any], anchor: AgeAnchor | None
 ) -> MeasurementObservation | None:
     """The study arm as a categorical Measurement — never a Disease.
 
@@ -453,7 +482,7 @@ def _study_group_measurement(
     return MeasurementObservation(
         assay=OntologyTerm(**assay),
         value_term=OntologyTerm(**term),
-        time=TimePoint(session_id="enrollment", age_iso8601=age_iso) if age_iso else None,
+        time=TimePoint(session_id="enrollment", age_iso8601=anchor.iso) if anchor else None,
     )
 
 

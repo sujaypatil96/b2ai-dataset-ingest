@@ -147,6 +147,26 @@ def test_a_row_without_a_visit_falls_back_to_its_own_date(participants, source_r
     assert source_report.rows_without_visit >= 1
 
 
+def test_two_visits_a_year_apart_stay_distinguishable(participants):
+    """The case that silently collapsed before ages were derived per row.
+
+    900002 has an HbA1c at each of two visits ~15 months apart. At age precision a
+    TimeElement carries an age and nothing else, so if both rows reused the cohort table's
+    single age the two timepoints would be byte-identical in the output — two readings more
+    than a year apart, indistinguishable.
+    """
+    readings = _by_assay(participants["900002"], "LOINC:4548-4")
+    assert len(readings) == 2
+    ages = {m.time.age_iso8601 for m in readings}
+    assert ages == {"P67Y", "P68Y"}, f"expected two distinct derived ages, got {ages}"
+
+
+def test_derived_age_does_not_leak_the_date(participants):
+    """The anchor date is read for the arithmetic only; it must not reach the output."""
+    times = [m.time for m in participants["900002"].measurements if m.time]
+    assert times and all(t.timestamp is None for t in times)
+
+
 def test_default_time_precision_emits_age_never_a_date(participants):
     times = [m.time for p in participants.values() for m in p.measurements if m.time]
     assert times, "expected time-stamped measurements"

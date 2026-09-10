@@ -11,6 +11,7 @@ import pytest
 
 from b2ai_dataset_ingest.mapping.omop import (
     NULL_CONCEPT_IDS,
+    AgeAnchor,
     LongCell,
     OmopTableSpec,
     as_number,
@@ -164,3 +165,56 @@ def test_cell_takes_the_first_non_blank_value_column():
         }
     )
     assert cell is not None and cell.value == "0.0"
+
+
+# ---------- age derivation
+def test_age_is_derived_per_date_not_reused():
+    """A cohort table records one age; OMOP records a date on every row.
+
+    Reusing the single value gives every observation the same `Age`, which at age precision
+    is the *whole* TimeElement — so two visits become indistinguishable in the output.
+    """
+    anchor = AgeAnchor.build("52", "2024-01-15")
+    assert anchor is not None
+    assert anchor.age_at("2024-01-15") == "P52Y"
+    assert anchor.age_at("2025-04-28 08:00:00") == "P53Y"
+    assert anchor.age_at("2027-06-01") == "P55Y"
+
+
+def test_age_advances_on_the_anniversary_not_by_elapsed_days():
+    """A participant is 52 until the day they turn 53; dividing by 365.25 rounds wrongly."""
+    anchor = AgeAnchor.build("52", "2024-01-15")
+    assert anchor.age_at("2025-01-14") == "P52Y"
+    assert anchor.age_at("2025-01-15") == "P53Y"
+
+
+def test_an_observation_before_the_anchor_yields_a_younger_age():
+    """Surveys are completed before the study visit, so this is ordinary, not an error."""
+    anchor = AgeAnchor.build("52", "2024-01-15")
+    assert anchor.age_at("2023-06-01") == "P51Y"
+
+
+def test_a_negative_age_is_refused_rather_than_emitted():
+    anchor = AgeAnchor.build("2", "2024-01-15")
+    assert anchor.age_at("2020-01-01") is None
+
+
+@pytest.mark.parametrize("when", [None, "", "12/12/23", "not-a-date"])
+def test_no_usable_date_falls_back_to_the_anchor_age(when):
+    anchor = AgeAnchor.build("52", "2024-01-15")
+    assert anchor.age_at(when) == "P52Y"
+
+
+def test_an_anchor_without_a_date_is_a_constant():
+    """A release shipping no cohort date degrades to single-age behaviour.
+
+    Assuming an epoch instead would invent an age decades wrong.
+    """
+    anchor = AgeAnchor.build("52")
+    assert anchor is not None and anchor.on_date is None
+    assert anchor.age_at("2030-01-01") == "P52Y"
+
+
+def test_no_age_means_no_anchor():
+    assert AgeAnchor.build("", "2024-01-15") is None
+    assert AgeAnchor.build("not-a-number", "2024-01-15") is None

@@ -2,15 +2,7 @@
 #
 # 29 central-lab analytes (import_*) and 9 site CBC items (lbscat_*).
 #
-# REFERENCE RANGES ARE OPT-IN PER ITEM, and only the lab families opt in. The source
-# reuses range_low/range_high on non-lab rows for an item's SCORING range (MoCA naming
-# is 0-3), which is not a reference interval. A range is emitted only when BOTH bounds
-# are present: proto3 doubles have no field presence, so a one-sided range would read
-# back as 'the normal range is 39 to 0'. One-sided rows are dropped and counted.
-#
-# The intervals are per-row, not per-item -- import_alkaline_phosphatase alone carries
-# 10 distinct (low, high) pairs across participants (age/sex-specific), so they cannot
-# be config constants.
+# Reference ranges are opt-in per FAMILY; see `reference_ranges` below.
 #
 # ASSAY IDENTITY. Items with a verified LOINC code carry it; the rest carry a project-local
 # `b2ai:measurement.<item>` id with a curated label. That stopgap is the documented VHI-10
@@ -25,6 +17,18 @@
 # (`sqlite:obo:loinc` resolves to a 0-byte database and raises OperationalError), so a LOINC
 # SSSOM set would sit behind an anti-hallucination gate that cannot actually check it.
 
+# Reference intervals are a property of this FAMILY, not of individual items: a lab result
+# has a normal range, while a cognitive subscore's 0-3 bound is a *scoring* range and not a
+# reference interval at all. Declaring it once here rather than per item means no item
+# carries an observation about which particular analytes a given release happens to report a
+# range for -- an item with no bounds simply emits none.
+#
+# A range is emitted only when BOTH bounds are present: ReferenceRange.low/.high are proto3
+# doubles with no field presence, so a one-sided range reads back as "the normal range is 39
+# to 0". One-sided rows are dropped and counted. The intervals are per ROW, not per item --
+# OMOP carries them on the row precisely because they can be age- and sex-specific.
+reference_ranges: true
+
 table: measurement
 delimiter: ","
 id_column: person_id
@@ -37,81 +41,63 @@ measures:
   import_albumin:
     assay: { id: "LOINC:1751-7", label: "Albumin [Mass/volume] in Serum or Plasma" }
     unit: { id: "UCUM:g/dL", label: "g/dL" }
-    reference_range: true
   import_alkaline_phosphatase:
     assay: { id: "LOINC:6768-6", label: "Alkaline phosphatase [Enzymatic activity/volume] in Serum or Plasma" }
     unit: { id: "UCUM:[IU]/L", label: "IU/L" }
-    reference_range: true
   import_alt_got:
     assay: { id: "LOINC:1742-6", label: "Alanine aminotransferase [Enzymatic activity/volume] in Serum or Plasma" }
     unit: { id: "UCUM:[IU]/L", label: "IU/L" }
-    reference_range: true
   import_ast_got:
     assay: { id: "LOINC:1920-8", label: "Aspartate aminotransferase [Enzymatic activity/volume] in Serum or Plasma" }
     unit: { id: "UCUM:[IU]/L", label: "IU/L" }
-    reference_range: true
   import_bilirubin_total:
     assay: { id: "LOINC:1975-2", label: "Bilirubin.total [Mass/volume] in Serum or Plasma" }
     unit: { id: "UCUM:mg/dL", label: "mg/dL" }
   import_bun:
     assay: { id: "LOINC:3094-0", label: "Urea nitrogen [Mass/volume] in Serum or Plasma" }
     unit: { id: "UCUM:mg/dL", label: "mg/dL" }
-    reference_range: true
   import_calcium:
     assay: { id: "LOINC:17861-6", label: "Calcium [Mass/volume] in Serum or Plasma" }
     unit: { id: "UCUM:meq/L", label: "mEq/L" }
-    reference_range: true
   import_carbon_dioxide_total:
     assay: { id: "LOINC:2028-9", label: "Carbon dioxide, total [Moles/volume] in Serum or Plasma" }
     unit: { id: "UCUM:meq/L", label: "mEq/L" }
-    reference_range: true
   import_chloride:
     assay: { id: "LOINC:2075-0", label: "Chloride [Moles/volume] in Serum or Plasma" }
     unit: { id: "UCUM:meq/L", label: "mEq/L" }
-    reference_range: true
   import_creatinine:
     assay: { id: "LOINC:2160-0", label: "Creatinine [Mass/volume] in Serum or Plasma" }
     unit: { id: "UCUM:mg/dL", label: "mg/dL" }
-    reference_range: true
   import_crp_hs:
     assay: { id: "LOINC:1988-5", label: "C reactive protein [Mass/volume] in Serum or Plasma" }
     unit: { id: "UCUM:mg/L", label: "mg/L" }
-    reference_range: true
   import_glucose:
     assay: { id: "LOINC:2345-7", label: "Glucose [Mass/volume] in Serum or Plasma" }
     unit: { id: "UCUM:mg/dL", label: "mg/dL" }
-    reference_range: true
   import_hba1c:
     assay: { id: "LOINC:4548-4", label: "Hemoglobin A1c/Hemoglobin.total in Blood" }
     unit: { id: "UCUM:%", label: "%" }
-    reference_range: true
   import_hdl_cholesterol:
     assay: { id: "LOINC:2085-9", label: "Cholesterol in HDL [Mass/volume] in Serum or Plasma" }
     unit: { id: "UCUM:mg/dL", label: "mg/dL" }
   import_ldl_cholesterol:
     assay: { id: "LOINC:2089-1", label: "Cholesterol in LDL [Mass/volume] in Serum or Plasma" }
     unit: { id: "UCUM:mg/dL", label: "mg/dL" }
-    reference_range: true
   import_total_cholesterol:
     assay: { id: "LOINC:2093-3", label: "Cholesterol [Mass/volume] in Serum or Plasma" }
     unit: { id: "UCUM:mg/dL", label: "mg/dL" }
-    reference_range: true
   import_triglycerides:
     assay: { id: "LOINC:2571-8", label: "Triglyceride [Mass/volume] in Serum or Plasma" }
     unit: { id: "UCUM:mg/dL", label: "mg/dL" }
-    reference_range: true
   import_potassium:
     assay: { id: "LOINC:2823-3", label: "Potassium [Moles/volume] in Serum or Plasma" }
     unit: { id: "UCUM:meq/L", label: "mEq/L" }
-    reference_range: true
   import_sodium:
     assay: { id: "LOINC:2951-2", label: "Sodium [Moles/volume] in Serum or Plasma" }
     unit: { id: "UCUM:meq/L", label: "mEq/L" }
-    reference_range: true
   import_protein_total:
     assay: { id: "b2ai:measurement.import_protein_total", label: "Total protein [Mass/volume] in Serum or Plasma" }   # 3020630 -- LOINC not verified yet
     unit: { id: "UCUM:g/dL", label: "g/dL" }
-    reference_range: true
   import_globulin_total:
     assay: { id: "b2ai:measurement.import_globulin_total", label: "Globulin [Mass/volume] in Serum or Plasma" }   # 3021886
     unit: { id: "UCUM:g/dL", label: "g/dL" }
@@ -124,18 +110,15 @@ measures:
   import_c_peptide:
     assay: { id: "b2ai:measurement.import_c_peptide", label: "C peptide [Mass/volume] in Serum or Plasma" }   # 3010084
     unit: { id: "UCUM:ng/L", label: "ng/L" }
-    reference_range: true
   import_insulin:
     assay: { id: "b2ai:measurement.import_insulin", label: "Insulin [Units/volume] in Serum or Plasma" }   # 3016244
     unit: { id: "UCUM:ng/L", label: "ng/L" }
-    reference_range: true
   import_nt_probnp:
     assay: { id: "LOINC:30934-4", label: "Natriuretic peptide B [Mass/volume] in Serum or Plasma" }   # 3029187 -- NT-proBNP; many rows are below the detection limit and are dropped as censored
     unit: { id: "UCUM:pg/mL", label: "pg/mL" }
   import_troponin_t:
     assay: { id: "b2ai:measurement.import_troponin_t", label: "Troponin T.cardiac [Mass/volume] in Serum or Plasma" }   # 40769783
     unit: { id: "UCUM:ng/L", label: "ng/L" }
-    reference_range: true
   import_urine_albumin:
     assay: { id: "b2ai:measurement.import_urine_albumin", label: "Albumin [Mass/volume] in Urine" }   # 3012516 -- source unit cell is mojibake '_g/mL' for ug/mL
     unit: { id: "UCUM:ug/mL", label: "ug/mL" }

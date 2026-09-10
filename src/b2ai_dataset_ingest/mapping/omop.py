@@ -34,6 +34,7 @@ import logging
 import re
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
+from datetime import date
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -119,6 +120,88 @@ def as_number(value: Any) -> float | None:
         return float(raw)
     except ValueError:
         return None
+
+
+def iso_date(value: str) -> date | None:
+    """The calendar date of an OMOP date/datetime cell, or None if unparseable."""
+    normalized = to_rfc3339(value)
+    if normalized is None:
+        return None
+    try:
+        return date.fromisoformat(normalized[:10])
+    except ValueError:  # pragma: no cover - to_rfc3339 already screens the shape
+        return None
+
+
+@dataclass(frozen=True)
+class AgeAnchor:
+    """A participant's age at one known reference date, so age can be derived per row.
+
+    A cohort table records a *single* age -- "age in years on the day of the visit". Reusing
+    that one value for every observation is fine only while a study is cross-sectional. The
+    moment a participant has observations on two dates, every one of them carries the same
+    ``Age`` and the timepoints become indistinguishable in the output, because a phenopacket
+    ``TimeElement`` renders an age and nothing else at age precision.
+
+    Deriving the age from the anchor plus the row's own date fixes that without widening what
+    is emitted: the date is read to do the arithmetic and never leaves the pipeline.
+    """
+
+    years: int
+    #: The date ``years`` was measured on. ``None`` when the cohort table records no date,
+    #: in which case the age is a constant and :meth:`age_at` cannot derive anything from a
+    #: row's date — deriving from an assumed epoch would invent an age decades wrong.
+    on_date: date | None = None
+
+    def age_at(self, when: str | date | None) -> str | None:
+        """ISO-8601 age at ``when`` (``"P63Y"``), or None when it cannot be derived.
+
+        Whole years by anniversary, not by dividing elapsed days -- a participant is 63 until
+        the day they turn 64. A ``when`` that predates the anchor is allowed (an observation
+        recorded before the cohort visit) and yields a correspondingly younger age; a result
+        below zero is refused rather than emitted as a negative duration.
+
+        With no anchor date, or no usable row date, this returns the anchor age unchanged —
+        the single-value behaviour that is correct for a cross-sectional release.
+        """
+        if self.on_date is None or when is None:
+            return self.iso
+        moment = when if isinstance(when, date) else iso_date(when)
+        if moment is None:
+            return self.iso
+        years = self.years + _years_between(self.on_date, moment)
+        return f"P{years}Y" if years >= 0 else None
+
+    @property
+    def iso(self) -> str:
+        """The anchor age itself, used when no date is available at either end."""
+        return f"P{self.years}Y"
+
+    @classmethod
+    def build(cls, age_years: Any, anchor_date: str = "") -> AgeAnchor | None:
+        """Build an anchor from a cohort row, or None when there is no usable age.
+
+        The date is optional: without it the anchor still carries the age and behaves as the
+        constant it is, so a release shipping no cohort date degrades to single-age
+        behaviour rather than losing age entirely.
+        """
+        years = _as_int(age_years)
+        if years is None:
+            return None
+        return cls(years=years, on_date=iso_date(anchor_date))
+
+
+def _years_between(start: date, end: date) -> int:
+    """Whole years from ``start`` to ``end``, negative when ``end`` precedes ``start``."""
+    years = end.year - start.year
+    if (end.month, end.day) < (start.month, start.day):
+        years -= 1
+    return years
+
+
+def _as_int(value: Any) -> int | None:
+    number = as_number(value)
+    return None if number is None else int(number)
 
 
 @dataclass(frozen=True)

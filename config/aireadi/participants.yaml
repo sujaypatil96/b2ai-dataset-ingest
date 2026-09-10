@@ -3,9 +3,9 @@
 # The one WIDE table in the release, so it feeds MappingEngine.individual_fields -- the
 # existing `columns:` path -- with no adaptation at all.
 #
-# `age` is age in years on the study-visit day (participants.json: {"data_type":
-# "integer", "unit": "years"}), so the existing years_to_iso8601 transform applies as-is,
-# and the same value anchors TimePoint.age_iso8601 for every observation.
+# `age` is age in years on the study-visit day, so the existing years_to_iso8601 transform
+# applies as-is for Individual.age_iso8601. Per-observation ages are DERIVED from it rather
+# than copied -- see the age anchor below.
 #
 # SOURCE. The VUMC synthetic release ships no participants.tsv, so this file is authored
 # against the published Clinical Dataset Structure conventions and the four study arms
@@ -23,6 +23,20 @@ file: participants.tsv
 delimiter: "\t"
 produces: Individual
 id_column: person_id
+
+# The age anchor. A cohort table records ONE age -- "age in years on the day of the visit"
+# -- while OMOP records a date on every row, so reusing that single value would give every
+# observation the same Age. Under the default age precision a TimeElement renders an age and
+# nothing else, which makes two visits indistinguishable in the output the moment a study
+# stops being cross-sectional. Pairing the age with the date it was measured on lets each
+# observation carry its own derived age.
+#
+# The anchor date is read for the arithmetic ONLY. It is not emitted (see `dropped_columns`
+# below and `time_precision` in dataset.yaml), so this buys per-visit resolution without
+# putting a day-precision date into the output. A release shipping no such date still gets
+# ages -- the anchor then behaves as the constant it is.
+age_column: age
+anchor_date_column: study_visit_date
 
 columns:
   age:
@@ -57,7 +71,8 @@ dropped_columns:
   clinical_site: "Site (UW/UCSD/UAB): a cohort attribute and a re-identification
     quasi-identifier. No phenopacket slot; recorded on Participant.cohort instead."
   recommended_split: "train/val/test is ML housekeeping, not phenotype."
-  study_visit_date: "Day-precision date; see dataset.yaml time_precision."
+  study_visit_date: "Read as the age anchor above, never emitted -- a day-precision date is
+    a HIPAA identifier. See dataset.yaml time_precision."
   cardiac_ecg: &modality_flag "Modality-availability flag. A flag alone cannot produce a
     File reference -- the URI needs the dataType/modality/device/<person_id> path, and no
     release available here ships those directories, so any URI would be fabricated.

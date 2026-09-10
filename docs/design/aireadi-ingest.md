@@ -79,8 +79,11 @@ published standard: a second OMOP dataset reuses the module and writes only its 
   `Measurement.procedure.body_site`, the only laterality slot a GA4GH `Measurement` has.
 - **A reference range is emitted only when both bounds are present.** `ReferenceRange.low`
   and `.high` are proto3 doubles with no field presence, so a one-sided range would read back
-  as "the normal range is 39 to 0". Opt-in per item: non-lab rows reuse the same columns for
-  an item's *scoring* range (MoCA naming is 0–3), which is not a reference interval.
+  as "the normal range is 39 to 0". Opt-in per **family** (`reference_ranges:` at the top of a
+  measurement config), because a reference interval is a property of the family rather than
+  of one analyte: a lab result has a normal range, while a cognitive subscore's 0–3 bound is
+  a *scoring* range. OMOP carries the interval on the row, not the item, precisely because it
+  can be age- and sex-specific.
 - **Censoring.** `operator_concept_id 4171756` (`<`) marks a bounded result; GA4GH `Quantity`
   has no operator slot, so those rows are dropped and counted rather than reported as
   measured. Note the polarity: the column is `0` ("not recorded") on 178,806 of the 767,814
@@ -94,6 +97,16 @@ published standard: a second OMOP dataset reuses the module and writes only its 
   licence extends to derived output. `date`/`datetime` are opt-in and normalize to RFC3339-Z
   — protobuf rejects every other spelling and the emitter *catches* the error and falls back,
   so an un-normalized value would lose every `time_observed` silently.
+- **Age is derived per observation, not copied.** A cohort table records one age at one
+  reference date; OMOP records a date on every row. Reusing the single value gives every
+  observation the same `Age` — and at age precision the `Age` *is* the whole `TimeElement`,
+  so two visits become byte-identical in the output. `AgeAnchor` pairs the cohort age with
+  the date it was measured on and derives each row's age by anniversary. The date is read for
+  the arithmetic only and is not emitted, so this buys per-visit resolution without widening
+  what leaves the pipeline. A release shipping no anchor date degrades to the single-age
+  behaviour rather than losing age. This matters for AI-READI specifically: the published
+  study design has a follow-up visit for a subgroup, which is the point at which reusing one
+  age stops being harmless.
 - **Sex may be redacted, and that must be visible.** AI-READI states that sex and
   race/ethnicity are removed from published releases, so `gender_concept_id` can be `0` on
   every row. `person.yaml` is written for a release that carries demographics and recodes `0`
