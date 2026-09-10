@@ -36,7 +36,7 @@ independent verification.
 - **Non-goals (now):** `observation.csv` (355 items — the CES-D-10 and PAID-5 instruments,
   the medical-history yes/no grid, the PhenX SDOH modules, the imaging-acquisition flags);
   `procedure_occurrence.csv` (monofilament testing); the eight non-clinical modality
-  directories; medications (the release ships no `drug_exposure` table); race/ethnicity.
+  directories; medications (no `drug_exposure` table is published); race/ethnicity.
 
 ## 3. Design
 
@@ -51,19 +51,19 @@ published standard: a second OMOP dataset reuses the module and writes only its 
 ## 4. Data model / mappings
 
 - **The item key is the REDCap variable**, taken from the text before the first comma of
-  `<domain>_source_value` — never `*_concept_id`. Verified against the release: concept
-  `3004249` backs both `bp1_sysbp_vsorres` and `bp2_sysbp_vsorres`, `3012888` both diastolic
-  readings, `4239408` both pulse readings, and `4047085` all twenty monofilament sites. Every
-  variable maps to exactly one concept, but not the reverse.
+  `<domain>_source_value` — never `*_concept_id`. Concept `3004249` backs both
+  `bp1_sysbp_vsorres` and `bp2_sysbp_vsorres`, `3012888` both diastolic readings, `4239408`
+  both pulse readings, and `4047085` all twenty monofilament sites. Every variable maps to
+  exactly one concept, but not the reverse.
 - **`*_source_value` is truncated at 49 characters**, so its label half is a curator hint and
-  never a label source. Untruncated condition names come from the parallel `observation` row's
-  `qualifier_source_value`.
+  never a label source. Untruncated labels come from AI-READI's published CC-BY-4.0
+  crosswalk.
 - **Subjects and assay ids are `b2ai:<omop_table>.<redcap_var>`.** The table qualifier is
-  mandatory: all 28 `condition_occurrence` variables also appear in `observation`, where they
-  are a self-reported yes/no answer rather than an asserted condition.
-- **No `Disease.onset`.** `condition_start_date == condition_end_date` on all 557 rows and
-  equals one of that participant's medical-history survey dates — it is the form-fill date.
-  Emitting it as onset would assert a false natural history a consumer could not detect.
+  mandatory: the `condition_occurrence` variables also appear in `observation`, where they are
+  a self-reported yes/no answer rather than an asserted condition — a different item.
+- **No `Disease.onset`.** `condition_start_date == condition_end_date` on every row: it
+  records when the medical-history form was filled in, not any onset. Emitting it as onset
+  would assert a false natural history a consumer could not detect.
 - **`study_group` is a Measurement, not a Disease.** The arm is a recruitment stratum, not a
   finding: a participant recruited into an arm need not carry the corresponding condition in
   their own medical history. Asserting it as a diagnosis would state something the clinical
@@ -73,9 +73,9 @@ published standard: a second OMOP dataset reuses the module and writes only its 
   rows in the synthetic release, and every non-lab family keeps its unit inside the truncated
   label. `Quantity.unit` is required by the schema, so a value whose unit resolves to nothing
   is dropped and counted.
-- **Laterality is declared per item, not read from `qualifier_concept_id`.** Six
-  autorefraction items are per-eye by name and carry no qualifier at all (573 rows), and the
-  same column on a medical-history row holds a *condition name*. It goes on
+- **Laterality is declared per item, not read from `qualifier_concept_id`.** Per the
+  published crosswalk, six autorefraction items are per-eye by name and carry no qualifier at
+  all, and the same column on a medical-history row holds a *condition name*. It goes on
   `Measurement.procedure.body_site`, the only laterality slot a GA4GH `Measurement` has.
 - **A reference range is emitted only when both bounds are present.** `ReferenceRange.low`
   and `.high` are proto3 doubles with no field presence, so a one-sided range would read back
@@ -94,9 +94,11 @@ published standard: a second OMOP dataset reuses the module and writes only its 
   licence extends to derived output. `date`/`datetime` are opt-in and normalize to RFC3339-Z
   — protobuf rejects every other spelling and the emitter *catches* the error and falls back,
   so an un-normalized value would lose every `time_observed` silently.
-- **Sex is unavailable in this release.** `gender_concept_id` is `0` on all 100 rows and every
-  `*_source_value` is blank. `person.yaml` is written for the full release and recodes `0` to
-  nothing; the redaction is reported so 100 `UNKNOWN_SEX` subjects cannot read as success.
+- **Sex may be redacted, and that must be visible.** AI-READI states that sex and
+  race/ethnicity are removed from published releases, so `gender_concept_id` can be `0` on
+  every row. `person.yaml` is written for a release that carries demographics and recodes `0`
+  to nothing; the redaction is reported per column, so a run of all-`UNKNOWN_SEX` subjects
+  cannot read as success.
 
 ## 5. Testing strategy
 
