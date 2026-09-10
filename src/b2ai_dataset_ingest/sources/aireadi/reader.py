@@ -370,7 +370,18 @@ class AireadiSource(Source):
             person_id = (row.get(spec.id_column) or "").strip()
             if cell is None or not person_id:
                 continue
-            if cell.item in gated and cell.value:
+            if cell.item in gated and cell.value and not cell.sentinel:
+                # The sentinel screen is NOT redundant with the one on the measurement path,
+                # and leaving it out is a real defect rather than a tidiness issue. A refusal
+                # code reaches the condition evaluator as an ordinary number, and an
+                # open-ended gate fires on it: `>=1` matches an answer of 777, and so does
+                # `>=2`. Returning None for the ordinal does not help either, because
+                # `conditions._match_scalar` falls back to the raw cell. So "declined to
+                # answer" would silently assert the phenotype.
+                #
+                # This is one of two defences; the other is that every shipped `when_value`
+                # is bounded (`in {1,2,3}`, or `>=n & <=m`) rather than open-ended, so a
+                # sentinel that slipped past here still could not fire a gate.
                 answers.setdefault(person_id, {})[cell.item] = cell.value
                 when.setdefault(person_id, self._timepoint(cell, visits, anchors.get(person_id)))
             if cell.item not in items:

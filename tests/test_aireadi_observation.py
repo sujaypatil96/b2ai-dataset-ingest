@@ -44,7 +44,18 @@ def _by_assay(packet, assay_id):
 def test_cesd_items_carry_verified_loinc_assays(participants):
     """CES-D-10 items ship LOINC, unlike PAID-5, which the source gives no public code."""
     assert _by_assay(participants["900001"], "LOINC:100772-3")  # ces3 Feeling depressed
-    assert _by_assay(participants["900001"], "LOINC:100787-1")  # cestl total
+
+
+def test_the_cesd_total_does_not_claim_an_unscoped_loinc_code(participants):
+    """LOINC:100787-1 exists, but its name does not say 10-item or 20-item.
+
+    Those totals range 0-30 and 0-60. Attaching an unscoped code to a 0-30 value would
+    mislabel it in a way no consumer could detect, so the total ships a project-local id
+    until the instrument scope is confirmed. Item-level codes are unambiguous and are used.
+    """
+    totals = _by_assay(participants["900001"], "b2ai:observation.cestl")
+    assert len(totals) == 1 and totals[0].value_quantity.value == 14.0
+    assert not _by_assay(participants["900001"], "LOINC:100787-1")
 
 
 def test_paid_items_ship_project_local_ids(participants):
@@ -167,3 +178,59 @@ def test_no_published_observation_item_is_unaccounted_for():
         f"{len(unaccounted)} published observation item(s) have neither a mapping nor a drop "
         f"rule: {unaccounted[:20]}"
     )
+
+
+# ---------- refusal codes must never assert a phenotype
+def test_a_refusal_code_cannot_fire_an_open_ended_gate():
+    """The trap this pipeline defends against twice over.
+
+    `conditions._match_scalar` falls back to the RAW cell when the ordinal is None, so a
+    refusal code reaches an open-ended comparison as an ordinary number: `>=1` matches an
+    answer of 777, and so does `>=2`. Returning None for the ordinal does not save you.
+    "Declined to answer" would silently assert the phenotype.
+    """
+    from b2ai_dataset_ingest.mapping.conditions import Answer, parse_condition
+
+    for ordinal in (777, None):
+        answer = Answer(raw="777", ordinal=ordinal)
+        assert parse_condition(">=1").matches(answer) is True, "the hazard is real"
+        # ...and the two defences that make it unreachable:
+        assert parse_condition("in {1,2,3}").matches(answer) is False
+        assert parse_condition(">=1 & <=3").matches(answer) is False
+
+
+def test_a_gated_item_answered_with_a_refusal_code_is_not_buffered(source_report):
+    """Defence one: the sentinel is screened before the derivation ever sees it.
+
+    900001 answers ces7 with 777. It must be counted as a refusal, not carried into the
+    gated-answer buffer where an open-ended rule could match it.
+    """
+    assert source_report.sentinel_answers["observation.ces7"] == 1
+
+
+def test_shipped_gates_are_bounded_not_open_ended():
+    """Defence two: no shipped `when_value` is an open-ended comparison.
+
+    Belt and braces with the sentinel screen above — a bounded gate cannot fire on 555/777/
+    888/999 even if a sentinel somehow reached it.
+    """
+    from b2ai_dataset_ingest.mapping.omop import SENTINEL_ANSWERS
+    from b2ai_dataset_ingest.mapping.sssom_io import default_mapping_files, parse_sssom
+
+    checked = 0
+    for path in default_mapping_files(Path(__file__).parents[1], dataset="aireadi"):
+        _, rows = parse_sssom(path)
+        for row in rows:
+            expression = (row.get("when_value") or "").strip()
+            if not expression:
+                continue
+            checked += 1
+            from b2ai_dataset_ingest.mapping.conditions import Answer, parse_condition
+
+            condition = parse_condition(expression)
+            for sentinel in sorted(SENTINEL_ANSWERS):
+                assert not condition.matches(Answer(raw=sentinel, ordinal=int(float(sentinel)))), (
+                    f"{row['subject_id']}: gate {expression!r} fires on refusal code {sentinel}"
+                )
+    # No gated AI-READI rows ship yet; this guards the ones that will.
+    assert checked >= 0

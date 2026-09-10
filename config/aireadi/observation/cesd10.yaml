@@ -79,7 +79,17 @@ measures:
   ces10:
     assay: { id: "LOINC:100786-3", label: "Lack of energy" }
     unit: { id: "UCUM:{score}", label: "score" }
+  # The TOTAL deliberately does NOT carry LOINC:100787-1, even though that code exists and
+  # its long common name is "Total Score CES-D".
+  #
+  # The reason is scope, not existence. NLM knows exactly one CES-D total-score code, and its
+  # name does not say whether it denotes the 10-item short form or the original 20-item
+  # instrument. Those totals have different ranges -- 0-30 versus 0-60 -- so if the code is
+  # the 20-item one, attaching it here would label a 0-30 value with a 0-60 assay, and no
+  # consumer could tell. The item-level codes above are unambiguous and are used; this one is
+  # not, so it ships a project-local id until someone confirms the instrument scope against
+  # LOINC itself.
   cestl:
-    assay: { id: "LOINC:100787-1", label: "Total Score CES-D" }
+    assay: { id: "b2ai:observation.cestl", label: "CES-D-10 total score" }
     unit: { id: "UCUM:{score}", label: "score" }
     description: "Precomputed whole-instrument total (0-30), emitted as the source ships it."

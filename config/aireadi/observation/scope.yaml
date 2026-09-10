@@ -101,6 +101,16 @@ drop_rules:
   # Left OUT of v1 on purpose: it is still self-report, it would add a large number of
   # excluded Diseases per packet, and it is the same clinical judgement the reviewer has
   # already ruled on once. It wants a clinician's sign-off, not a config edit.
+  # LISTED BEFORE `mhoccur_*` ON PURPOSE -- rules are tried in order, and these two are NOT
+  # medical-history condition checkboxes despite sharing the prefix. `mhoccur_fall` asks
+  # "Have you fallen in the last 12 months?" and `mhoccur_fallot` how many times. They have a
+  # 12-month recall window, they are not in condition_occurrence, and the reason attached to
+  # the general rule below would be simply false about them. A prefix is not a family.
+  "mhoccur_fall*": "Falls in the last 12 months, and their count. NOT a medical-history
+    condition checkbox despite the prefix, and not present in condition_occurrence. Falls are
+    a real geriatric outcome and this is INGESTABLE; deferred only because the terms are not
+    curated."
+
   "mhoccur_*": "Medical-history yes/no. Affirmatives are already Diseases from
     condition_occurrence; the negatives would need an absent-pole decision -- see the SDD."
   "mhterm_*": "Medical-history yes/no for the diabetes terms specifically. Same treatment as
