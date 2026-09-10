@@ -1,4 +1,4 @@
-# Plan: finish the Bridge2AI-Voice ingest
+# Plan: remaining work on the Bridge2AI-Voice ingest
 
 - **Date:** 2026-09-10
 - **Related:** [SDD: voice-ingest](../design/voice-ingest.md), [ADR-0001](../adr/0001-name-architecture-tooling.md)
@@ -27,7 +27,8 @@ The layout merged in #24 already expresses the matrix, with `data/{real,syntheti
 mirroring `out/{real,synthetic}/<dgp>/{phenopackets,analysis}`, so no new structure is
 needed to hold the four outputs.
 
-The intended outcome is that both Voice cells run from the same two documented commands,
+The ingest itself works. The intended outcome is that both Voice cells run from the same
+two documented commands,
 with no bespoke wrapper, and that the phenotype yield of each run is measurable.
 
 ## Steps

@@ -209,7 +209,7 @@ For the real cells under the ownership split, the same two commands go through t
 account and call the venv binary directly, since `uv run` needs a writable home. See
 **Separating ownership** above.
 
-See [docs/plans/0001-finish-voice-ingest.md](docs/plans/0001-finish-voice-ingest.md) for
+See [docs/plans/0001-voice-ingest-remaining-work.md](docs/plans/0001-voice-ingest-remaining-work.md) for
 what remains, and why AI-READI is deliberately not being generalised for yet.
 
 ## Getting started
