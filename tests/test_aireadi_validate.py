@@ -114,3 +114,46 @@ def test_no_finding_names_a_value_column():
     for finding in report.findings:
         for column in forbidden:
             assert column not in finding.message, f"{column} leaked into: {finding.message}"
+
+
+# ---------- a wrong root is not an empty release
+def test_a_wrong_root_says_so_instead_of_reporting_five_absent_tables(tmp_path):
+    """Finding nothing is far more often a wrong path than an empty release.
+
+    Every per-table check reports its own table absent, so pointing one directory too high
+    produces five identical "not present in this release" lines and no hint that the release
+    is fine and the path is not. Observed costing a round trip against a real download, which
+    nests everything under a `dataset/` wrapper.
+    """
+    (tmp_path / "dataset" / "clinical_data").mkdir(parents=True)
+    report = validate_aireadi(tmp_path, CONFIG_DIR)
+
+    root_findings = [f for f in report.findings if f.table == "-"]
+    assert root_findings, "expected a finding about the root itself"
+    assert any("root is wrong" in f.message for f in root_findings)
+    # ...and it should point at where the tables actually are.
+    assert any("dataset/" in f.message and "try that root" in f.message for f in root_findings)
+
+
+def test_a_genuinely_partial_release_does_not_trigger_the_wrong_root_hint():
+    """The hint must fire on *nothing found*, not on a release that ships some tables.
+
+    The fixture ships all five, so this also guards against the check misfiring on a healthy
+    root — which would make every clean run carry a spurious error.
+    """
+    report = validate_aireadi(FIXTURE, CONFIG_DIR)
+    assert not [f for f in report.findings if f.table == "-"]
+    assert report.tables_checked
+
+
+def test_an_empty_release_with_clinical_data_present_is_not_called_a_wrong_root(tmp_path):
+    """clinical_data/ at the root is what tells "empty release" from "wrong path" apart.
+
+    If it is there the root is right and the release is genuinely empty — a state the reader
+    degrades through — so claiming the path is wrong would be a lie. Only its absence, with
+    nothing found, means the caller is a directory too high.
+    """
+    (tmp_path / "clinical_data").mkdir()
+    report = validate_aireadi(tmp_path, CONFIG_DIR)
+    assert not [f for f in report.findings if f.table == "-"]
+    assert report.errors == [], report.render()

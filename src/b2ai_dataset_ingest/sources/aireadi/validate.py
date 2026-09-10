@@ -129,7 +129,40 @@ def validate_aireadi(
         root, config_dir, report, "conditions.yaml", "conditions", strict_coverage
     )
     _validate_measurements(root, config_dir, report, strict_coverage)
+    _check_root_looks_like_a_release(root, report)
     return report
+
+
+def _check_root_looks_like_a_release(root: Path, report: ValidationReport) -> None:
+    """Finding *nothing* is a wrong root far more often than an empty release.
+
+    Every per-table check reports its own table as absent, so pointing at the wrong
+    directory produces five identical "not present in this release" lines and no hint that
+    the release is fine and the path is not. Distinguishing the two costs one check and
+    saves the reader guessing.
+
+    The specific trap this exists for: an AI-READI download nests everything under a
+    ``dataset/`` wrapper, so the root a user naturally passes is one level above the one the
+    reader wants.
+
+    ``clinical_data/`` sitting directly under the root is what tells the two apart. If it is
+    there, the root is right and the release really is empty — which is a legitimate state
+    the reader degrades through, so saying "wrong root" would be a lie. Only its absence,
+    with nothing found, means the caller is almost certainly one directory too high.
+    """
+    if report.tables_checked or (root / "clinical_data").is_dir():
+        return
+    report.error(
+        "-",
+        f"no tables found under {root.name or root}/ — this usually means the root is wrong "
+        f"rather than that the release is empty. The reader expects participants.tsv and "
+        f"clinical_data/ directly beneath it; an AI-READI download nests those under a "
+        f"dataset/ wrapper, so try the directory that contains clinical_data/.",
+    )
+    for candidate in ("dataset", "data"):
+        nested = root / candidate / "clinical_data"
+        if nested.is_dir():
+            report.info("-", f"found clinical_data/ at {root.name}/{candidate}/ — try that root")
 
 
 # -- per-table checks --------------------------------------------------------------
