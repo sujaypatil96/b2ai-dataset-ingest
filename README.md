@@ -209,6 +209,33 @@ whether or not it means anything. On the synthetic cohort the verdict is **do no
 at a split probability of 0.11, and the sizes show why: k=2 gives 171 and 2. That is what
 0.6 terms per participant buys, and it is the expected answer rather than a failure.
 
+### The whole thing, in one command
+
+`scripts/voice_pipeline.sh` runs validate, ingest with HPO normalisation, profile,
+cluster and summarise, stopping at the first step that fails.
+
+```bash
+uv sync --extra validation --extra analysis --extra clustering --extra hpo
+scripts/voice_pipeline.sh <the phenotype dir> out/<provenance>/voice_dgp
+```
+
+Anything after the two directories goes to `stratiphy compute`, so
+`--rand-iter 20 --mc-iter 10000` gives a fast coarse pass.
+
+It owns one thing the individual steps cannot: **pinning the ontology**. Term collapsing
+and clustering have to reason over the same graph, and the release the mappings were
+curated against is the one both should use. `stratiphy setup download` fetches the
+*current* release, so this fetches the pinned one into `.stratiphy/hp.json` first and both
+steps agree by construction. The version comes from the SSSOM files, so re-curating moves
+it. Without this the clustering runs on whatever HPO happened to be current, which is how
+`2026-09-01` ended up clustering mappings curated against `2026-02-16`.
+
+It deliberately does not pass `--controversy`. With the ancestor pairs already collapsed
+upstream, a sanitation prompt means something else is wrong and is worth seeing.
+
+The steps below are the same thing spelled out, for when you want to run one of them
+on its own.
+
 ### The four ingests
 
 Four ingests, but only two readers. Real versus synthetic is not a code axis, it is an
