@@ -376,7 +376,7 @@
     "resources": [
       {
         "id": "b2ai",
-        "name": "Bridge2AI project-local codes (b2ai-dataset-ingest)",
+        "name": "Bridge2AI-Voice project-local codes (b2ai-dataset-ingest)",
         "url": "https://github.com/sujaypatil96/b2ai-dataset-ingest",
         "version": "0.0.1",
         "namespacePrefix": "b2ai",

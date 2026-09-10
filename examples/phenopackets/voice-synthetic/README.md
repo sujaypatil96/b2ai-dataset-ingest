@@ -15,7 +15,7 @@ real dataset**.
 | | |
 | --- | --- |
 | Input | [justaddcoffee/b2ai-voice-synthetic-phenotype](https://github.com/justaddcoffee/b2ai-voice-synthetic-phenotype) @ `4338b26` (`output/phenotype/`) |
-| Generator | `b2ai-dataset-ingest` 0.0.1 @ `098fa79` |
+| Generator | `b2ai-dataset-ingest` 0.0.1 @ `55358c2` |
 | Emitter | `phenopacket` (`src/b2ai_dataset_ingest/emitters/phenopacket.py`) |
 | Config | `config/voice/` |
 
