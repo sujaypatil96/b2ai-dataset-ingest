@@ -173,9 +173,39 @@ On the synthetic cohort the answer is that there is very little phenotype signal
 of 0.6 terms present per participant, with 98 of 173 carrying none at all. That is a
 property of the synthetic tables, which are 2.4% dense.
 
-That number is the gate on any clustering. Phenotype-driven clustering needs terms to
-compute similarity over, so run the profiler first and read the terms-per-participant
+That number is the gate on the clustering below. Phenotype-driven clustering needs terms
+to compute similarity over, so run the profiler first and read the terms-per-participant
 figure before investing in a clustering run.
+
+### Clustering
+
+[Stratiphy](https://github.com/P2GX/stratiphy) does the clustering. It reads phenopackets
+directly, groups participants by HPO semantic similarity rather than by flat vectors, and
+decides *whether the cohort should be split at all* using the gap statistic against
+randomised cohorts. Install it with the `clustering` extra.
+
+```bash
+uv sync --extra clustering
+uv run stratiphy setup download -d .stratiphy
+uv run stratiphy preprocess out/synthetic/voice_dgp/analysis \
+  out/synthetic/voice_dgp/phenopackets/*.json -d .stratiphy
+uv run stratiphy compute out/synthetic/voice_dgp/analysis -d .stratiphy
+uv run python scripts/report_stratiphy.py \
+  --results out/synthetic/voice_dgp/analysis/results.pb \
+  --outdir  out/synthetic/voice_dgp/analysis
+```
+
+**Always pass `-d`.** It defaults to `./data`, which here is the protected input tree, so
+without it `setup download` writes a 22 MB HPO build into it. `.stratiphy/` is gitignored.
+
+Only the last step is ours. Stratiphy's CLI covers `setup`, `preprocess` and `compute`,
+but its result is a protobuf with no CLI to read it, so `report_stratiphy.py` fills that
+one gap and adds nothing else.
+
+The headline it prints is the verdict, not the partition. A partition exists at every k
+whether or not it means anything. On the synthetic cohort the verdict is **do not split**,
+at a split probability of 0.09, and the sizes show why: k=2 gives 171 and 2. That is what
+0.6 terms per participant buys, and it is the expected answer rather than a failure.
 
 ### The four ingests
 

@@ -57,11 +57,12 @@ with no bespoke wrapper, and that the phenotype yield of each run is measurable.
    is the measure of whether a run produced anything worth analysing, and it is
    DGP-agnostic so it serves all four cells unchanged.
 
-5. **Wire up [stratiphy](https://github.com/P2GX/stratiphy)** for clustering, in its own
-   PR. It consumes phenopackets directly, pins the same `phenopackets ~= 2.0.2` the
-   emitter produces, and clusters on HPO semantic similarity rather than flat vectors. Its
-   `-d` defaults to `./data`, which is the protected input tree here, so it must always be
-   passed explicitly.
+5. **Wire up [stratiphy](https://github.com/P2GX/stratiphy)** for clustering. Done in the
+   PR stacked on this one. It consumes phenopackets directly, pins the same
+   `phenopackets ~= 2.0.2` the emitter produces, and clusters on HPO semantic similarity
+   rather than flat vectors. Only the result reader is ours: Stratiphy's own CLI covers
+   `setup`, `preprocess` and `compute`, but its output is a protobuf with no CLI to read
+   it.
 
 ## Critical files
 

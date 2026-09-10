@@ -36,6 +36,12 @@ analysis = [
     "matplotlib>=3.8",
     "pandas>=2.0",
 ]
+# Phenotype-driven clustering. Its own extra rather than folded into `analysis`
+# because it is heavy (hpo-toolkit, scikit-learn, scipy, statsmodels) and the HPO
+# profiler must stay installable without it.
+clustering = [
+    "stratiphy>=0.5.1",
+]
 
 [dependency-groups]
 dev = [
