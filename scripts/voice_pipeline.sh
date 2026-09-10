@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
-# Bridge2AI-Voice, end to end: validate, ingest, normalise, profile, cluster, summarise.
+# Bridge2AI-Voice, end to end:
+#
+#   1. fetch the pinned HPO release the mappings declare
+#   2. b2ai-ingest validate            preflight, reads no cell values
+#   3. b2ai-ingest voice --normalize-hpo
+#   4. scripts/profile_hpo_terms.py    terms per participant
+#   5. scripts/cluster_phenopackets.sh which itself runs stratiphy's three
+#      commands and then scripts/summarize_clusters.py
 #
 # Works on any Voice phenotype tree. Real versus synthetic is an input path, not a mode,
 # so there is nothing here that knows which you gave it.
@@ -79,10 +86,20 @@ echo "==> profiling HPO terms -> ${ANALYSIS}"
 uv run python "${ROOT}/scripts/profile_hpo_terms.py" \
   --input "${PACKETS}" --outdir "${ANALYSIS}"
 
-# ------------------------------------------------------- 4. cluster + report ----
+# ------------------------------------------ 4. cluster, 5. summarise ----
+# Both steps, via one delegate. cluster_phenopackets.sh runs, in order:
+#
+#     stratiphy setup download      -> .stratiphy/hp.json (already fetched above)
+#     stratiphy preprocess          -> <analysis>/cohort.pb
+#     stratiphy compute             -> <analysis>/results.pb
+#     scripts/summarize_clusters.py -> stratiphy_summary.json, _assignments.tsv
+#
+# Kept as a delegate rather than inlined because it stands alone against any
+# phenopacket directory, not just one this pipeline produced.
+#
 # Deliberately not passing --controversy: with the ancestor pairs already collapsed
 # upstream, a prompt here means something else is wrong and is worth seeing.
-echo "==> clustering -> ${ANALYSIS}"
+echo "==> clustering and summarising -> ${ANALYSIS}"
 "${ROOT}/scripts/cluster_phenopackets.sh" "${PACKETS}" "${ANALYSIS}" "$@"
 
 echo
