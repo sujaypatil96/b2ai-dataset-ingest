@@ -150,6 +150,68 @@ the real dataset. Everything there is synthetic; see its
 [README](examples/phenopackets/voice-synthetic/README.md) for provenance, counts, and the
 known gaps in the snapshot.
 
+### Exploratory analysis
+
+`scripts/profile_hpo_terms.py` reports how many HPO terms the emitter actually derived,
+per phenopacket and across a cohort. It lives in `scripts/` rather than in the package so
+it does not ship in the wheel, and it is wired into neither the CLI nor CI. It needs the
+`analysis` extra.
+
+```bash
+uv sync --extra analysis
+uv run python scripts/profile_hpo_terms.py \
+  --input out/synthetic/voice_dgp/phenopackets --outdir out/synthetic/voice_dgp/analysis
+```
+
+It counts asserted-present and explicitly-excluded separately and never sums them. Since
+the 2026-08-24 clinical review withdrew the absent pole set-wide, the mappings assert only
+presence and the excluded count should be zero; it is reported anyway so a regression that
+reintroduces absent assertions shows up as a number rather than silently changing what the
+cohort means. The same reason the SSSOM validator rejects a `predicate_modifier` column.
+
+On the synthetic cohort the answer is that there is very little phenotype signal: a mean
+of 0.6 terms present per participant, with 98 of 173 carrying none at all. That is a
+property of the synthetic tables, which are 2.4% dense.
+
+That number is the gate on any clustering. Phenotype-driven clustering needs terms to
+compute similarity over, so run the profiler first and read the terms-per-participant
+figure before investing in a clustering run.
+
+### The four ingests
+
+Four ingests, but only two readers. Real versus synthetic is not a code axis, it is an
+input path: the same reader, config and emitter serve both, and only `--input` differs.
+The only real axis is the data generation project.
+
+| | voice_dgp | aireadi |
+| --- | --- | --- |
+| synthetic | `b2ai-ingest voice` | no reader yet |
+| real | `b2ai-ingest voice` | no reader yet |
+
+So each Voice cell is the same pair of commands against a different input path:
+
+```bash
+uv run b2ai-ingest validate --input <the phenotype dir>
+uv run b2ai-ingest voice    --input <the phenotype dir> \
+                            --output out/<provenance>/voice_dgp/phenopackets
+```
+
+Run `validate` first. It reads headers, dictionary keys and cell counts but never a cell
+value, so it is safe on the source data and tells you whether the configs still match the
+layout before anything is written.
+
+`voice` refuses to write into a directory that already holds phenopackets. The emitter
+writes one file per participant, so a plain re-run overwrites everyone still in the cohort
+but leaves a stale file behind for anyone who has since dropped out, and the directory
+becomes a silent union of two runs. Pass `--force` to delete the existing set first.
+
+For the real cells under the ownership split, the same two commands go through the data
+account and call the venv binary directly, since `uv run` needs a writable home. See
+**Separating ownership** above.
+
+See [docs/plans/0001-voice-ingest-remaining-work.md](docs/plans/0001-voice-ingest-remaining-work.md) for
+what remains, and why AI-READI is deliberately not being generalised for yet.
+
 ## Getting started
 
 ```bash

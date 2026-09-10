@@ -90,3 +90,51 @@ def test_real_synthetic_slice_roundtrips(tmp_path: Path):
         parsed = Parse(path.read_text(), pp.Phenopacket())
         declared = {resource.namespace_prefix for resource in parsed.meta_data.resources}
         assert _prefixes_used(parsed) <= declared
+
+
+# --------------------------------------------------------- re-running the ingest
+
+
+def _run_voice(tmp_path: Path, *extra: str):
+    """Invoke ``b2ai-ingest voice`` against the synthetic fixture."""
+    from typer.testing import CliRunner
+
+    from b2ai_dataset_ingest.cli import app
+
+    return CliRunner().invoke(
+        app,
+        ["voice", "--input", str(SYNTHETIC), "--output", str(tmp_path), *extra],
+    )
+
+
+@pytest.mark.skipif(not SYNTHETIC.is_dir(), reason="synthetic fixture not fetched")
+def test_rerun_into_populated_output_is_refused(tmp_path: Path):
+    """A second run must not silently union itself with the first."""
+    assert _run_voice(tmp_path).exit_code == 0
+    before = {p.name for p in tmp_path.glob("*.json")}
+    assert before
+
+    result = _run_voice(tmp_path)
+    assert result.exit_code == 2
+    assert "--force" in result.output
+    # Refusing must leave the directory exactly as it was.
+    assert {p.name for p in tmp_path.glob("*.json")} == before
+
+
+@pytest.mark.skipif(not SYNTHETIC.is_dir(), reason="synthetic fixture not fetched")
+def test_force_leaves_exactly_the_current_cohort(tmp_path: Path):
+    """``--force`` clears the leftovers, which is the whole reason it exists.
+
+    A participant no longer in the cohort keeps their file on a plain re-run,
+    because the emitter only rewrites ids it still sees.
+    """
+    assert _run_voice(tmp_path).exit_code == 0
+    cohort = {p.name for p in tmp_path.glob("*.json")}
+
+    orphan = tmp_path / "participant-from-an-earlier-cohort.json"
+    orphan.write_text("{}")
+
+    result = _run_voice(tmp_path, "--force")
+    assert result.exit_code == 0
+    assert not orphan.exists()
+    assert {p.name for p in tmp_path.glob("*.json")} == cohort
