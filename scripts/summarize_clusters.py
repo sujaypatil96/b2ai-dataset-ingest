@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Summarise a Stratiphy clustering run into something readable.
+"""Postprocess a clustering run: read `results.pb` and summarise it.
 
-Stratiphy does the clustering; this only reads its output. It has a CLI for
-`setup`, `preprocess` and `compute`, but the result is a protobuf and the only
-way to look inside is the Python API, so this fills that one gap and adds
-nothing else. See the README for the three commands that produce `results.pb`.
+The last step of `scripts/cluster_phenopackets.sh`, which runs it for you. Run it
+directly only to re-summarise an existing `results.pb` without re-clustering.
+
+Stratiphy does the clustering; this only reads its output. Its CLI covers `setup`,
+`preprocess` and `compute`, but the result is a protobuf and the only way to look
+inside is the Python API, so this fills that one gap and adds nothing else.
 
 Two things to know about the file it reads. The top-level message is
 `StratiphyResult`, which *wraps* the `ClusteringWorkflowResult` alongside the

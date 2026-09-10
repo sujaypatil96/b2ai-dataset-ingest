@@ -199,8 +199,10 @@ The script exists for one reason. Stratiphy's `--data` defaults to the repo's ow
 tree, which is protected here, so without an explicit `-d` its `setup download` drops a
 22 MB HPO build into it. Every call passes `-d .stratiphy`, which is gitignored.
 
-Only the report step is ours. Stratiphy's CLI covers the clustering; its result is a
-protobuf with no CLI to read it, so `scripts/report_stratiphy.py` fills that one gap.
+Only the last step is ours. Stratiphy's CLI covers the clustering; its result is a
+protobuf with no CLI to read it, so `scripts/summarize_clusters.py` fills that one gap.
+It runs as part of the script above; call it directly only to re-summarise an existing
+`results.pb` without re-clustering.
 
 The headline it prints is the verdict, not the partition. A partition exists at every k
 whether or not it means anything. On the synthetic cohort the verdict is **do not split**,

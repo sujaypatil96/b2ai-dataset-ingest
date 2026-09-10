@@ -44,5 +44,5 @@ uv run stratiphy preprocess "${ANALYSIS}" "${PACKETS}"/*.json -d "${RESOURCES}"
 
 uv run stratiphy compute "${ANALYSIS}" -d "${RESOURCES}" "$@"
 
-uv run python "${ROOT}/scripts/report_stratiphy.py" \
+uv run python "${ROOT}/scripts/summarize_clusters.py" \
   --results "${ANALYSIS}/results.pb" --outdir "${ANALYSIS}"
