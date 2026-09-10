@@ -39,26 +39,54 @@ def load(results: Path):
     return ClusteringWorkflowResult.from_protobuf(wrapper.clustering_result), wrapper
 
 
-def term_table(associations, k: int, hpo=None, top: int = 10) -> list[dict]:
-    """Per-cluster present-counts for the terms Stratiphy tested at this k."""
+def term_table(associations, k: int, top: int = 10) -> list[dict]:
+    """Which terms distinguish the clusters at this k, and whether that is real.
+
+    Stratiphy tests each term for association with the partition by Monte Carlo and
+    reports both a nominal and a multiple-testing-corrected p-value, alongside the
+    observed effect and the minimum effect the cohort had power to detect. Counts
+    alone would say which terms are common where; only the test says whether the
+    difference is distinguishable from chance, which is the question being asked.
+
+    Sorted by corrected p-value, so the terms that actually separate the clusters
+    come first rather than merely the frequent ones.
+    """
     rows: list[dict] = []
+    untested = 0
     for entry in associations[k]:
+        # Most listed terms are never tested: the power analysis drops any whose
+        # minimum detectable effect exceeds --max-mde, because the cohort could not
+        # have detected a difference in them. Their test messages are absent, and
+        # protobuf yields 0.0 for a missing field, so reading pval blind would rank
+        # every untested term as maximally significant. HasField is the distinction.
+        if not entry.HasField("nominal_test"):
+            untested += 1
+            continue
         per_cluster = {}
         for block in entry.counts:
-            present = next(
-                (c.count for c in block.counts if c.state == 1), 0
-            )  # OBSERVATION_STATE_PRESENT
+            # OBSERVATION_STATE_PRESENT
+            present = next((c.count for c in block.counts if c.state == 1), 0)
             per_cluster[block.cluster_id] = present
-        label = None
-        if hpo is not None:
-            term = hpo.get_term(entry.term_id)
-            label = term.name if term is not None else None
+        nominal = entry.nominal_test
+        effect = float(nominal.effect)
         rows.append(
-            {"hpo_id": entry.term_id, "label": label, "present_by_cluster": per_cluster,
-             "total_present": sum(per_cluster.values())}
+            {
+                "hpo_id": entry.term_id,
+                "present_by_cluster": per_cluster,
+                "total_present": sum(per_cluster.values()),
+                "p_nominal": round(float(nominal.pval), 6),
+                "p_corrected": round(float(entry.corrected_test.pval), 6)
+                if entry.HasField("corrected_test")
+                else None,
+                # nan where the contingency table is degenerate, e.g. a cluster with
+                # no positives; kept as None rather than rendered as a number
+                "effect": None if effect != effect else round(effect, 4),
+                "min_detectable_effect": round(float(nominal.min_detectable_effect), 4),
+            }
         )
-    rows.sort(key=lambda r: r["total_present"], reverse=True)
-    return rows[:top]
+    rows.sort(key=lambda r: (r["p_corrected"] if r["p_corrected"] is not None else 1.0,
+                             -r["total_present"]))
+    return {"tested": rows[:top], "n_tested": len(rows), "n_underpowered": untested}
 
 
 def main() -> None:
@@ -89,6 +117,8 @@ def main() -> None:
         "should_split": bool(check.should_split),
         "split_probability": round(float(check.split_proba), 4),
         "cluster_sizes_by_k": sizes,
+        "alpha": round(float(wrapper.meta_data.association_metadata.alpha), 4),
+        "beta": round(float(wrapper.meta_data.association_metadata.beta), 4),
         "terms_by_k": {k: term_table(result.term_associations, k, top=args.top)
                        for k in sizes},
     }
@@ -103,6 +133,33 @@ def main() -> None:
     if not check.should_split:
         print("\nThe partitions above exist for every k regardless; the verdict is what")
         print("says whether any of them is worth interpreting.")
+
+    # Which terms distinguish the clusters, and whether that survives correction for
+    # having tested many of them. Printed for the smallest k, which is the partition
+    # most likely to be real; the rest are in the JSON.
+    alpha = summary["alpha"]
+    smallest_k = min(sizes)
+    table = summary["terms_by_k"][smallest_k]
+    hits = [
+        r for r in table["tested"]
+        if r["p_corrected"] is not None and r["p_corrected"] <= alpha
+    ]
+    print(
+        f"\nTerm-cluster association at k={smallest_k}: "
+        f"{table['n_tested']} term(s) tested, {table['n_underpowered']} skipped as "
+        f"underpowered"
+    )
+    if not hits:
+        print(f"  none reach corrected p <= {alpha}")
+    for row in hits:
+        counts = " / ".join(f"{c}:{n}" for c, n in sorted(row["present_by_cluster"].items()))
+        effect = "n/a" if row["effect"] is None else f"{row['effect']}"
+        print(f"  {row['hpo_id']:<14} p={row['p_corrected']:<10.2e} "
+              f"effect={effect:<7} counts {counts}")
+    if hits and not check.should_split:
+        print("  These describe a partition the verdict says is not real; read them as")
+        print("  what would separate the clusters if one were imposed, not as findings.")
+
     print(f"\nwrote {args.outdir}/stratiphy_summary.json")
 
     # Per-participant assignment, kept separate: it is participant-level data.
