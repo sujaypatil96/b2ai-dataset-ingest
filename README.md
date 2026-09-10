@@ -177,9 +177,40 @@ That number is the gate on any clustering. Phenotype-driven clustering needs ter
 compute similarity over, so run the profiler first and read the terms-per-participant
 figure before investing in a clustering run.
 
-To produce phenopackets from the source data, use `scripts/ingest_real.sh`, which
-validates and ingests under the ownership split above. You supply the input path; it does
-not search `data/real/` for you.
+### The four ingests
+
+Four ingests, but only two readers. Real versus synthetic is not a code axis, it is an
+input path: the same reader, config and emitter serve both, and only `--input` differs.
+The only real axis is the data generation project.
+
+| | voice_dgp | aireadi |
+| --- | --- | --- |
+| synthetic | `b2ai-ingest voice` | no reader yet |
+| real | `b2ai-ingest voice` | no reader yet |
+
+So each Voice cell is the same pair of commands against a different input path:
+
+```bash
+uv run b2ai-ingest validate --input <the phenotype dir>
+uv run b2ai-ingest voice    --input <the phenotype dir> \
+                            --output out/<provenance>/voice_dgp/phenopackets
+```
+
+Run `validate` first. It reads headers, dictionary keys and cell counts but never a cell
+value, so it is safe on the source data and tells you whether the configs still match the
+layout before anything is written.
+
+`voice` refuses to write into a directory that already holds phenopackets. The emitter
+writes one file per participant, so a plain re-run overwrites everyone still in the cohort
+but leaves a stale file behind for anyone who has since dropped out, and the directory
+becomes a silent union of two runs. Pass `--force` to delete the existing set first.
+
+For the real cells under the ownership split, the same two commands go through the data
+account and call the venv binary directly, since `uv run` needs a writable home. See
+**Separating ownership** above.
+
+See [docs/plans/0001-finish-voice-ingest.md](docs/plans/0001-finish-voice-ingest.md) for
+what remains, and why AI-READI is deliberately not being generalised for yet.
 
 ## Getting started
 

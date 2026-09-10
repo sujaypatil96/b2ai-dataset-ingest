@@ -26,6 +26,36 @@ app = typer.Typer(
 EMITTERS = {"phenopacket": "b2ai_dataset_ingest.emitters:PhenopacketEmitter"}
 
 
+def _clear_or_refuse(output: Path, *, force: bool) -> None:
+    """Refuse to write into a directory that already holds phenopackets.
+
+    The emitter writes one file per participant, named by participant id. Re-running
+    over an existing set therefore overwrites everyone still in the cohort but leaves
+    a stale file behind for anyone who has since dropped out, so the directory becomes
+    a silent union of two runs and nothing in the output says so.
+
+    `--force` is named for what it overrides, not for what it does to each file:
+    overwriting is already the default, and the leftovers it deletes are exactly the
+    files that would *not* have been overwritten.
+    """
+    existing = sorted(output.glob("*.json")) if output.is_dir() else []
+    if not existing:
+        return
+    if not force:
+        typer.echo(
+            f"{output} already holds {len(existing)} phenopacket(s).\n"
+            "A re-run overwrites per participant, so anyone dropped from the cohort "
+            "would keep a stale file here and silently join the next analysis.\n"
+            f"Pass --force to delete those {len(existing)} file(s) first, or choose an "
+            "empty --output.",
+            err=True,
+        )
+        raise typer.Exit(code=2)
+    for path in existing:
+        path.unlink()
+    typer.echo(f"Removed {len(existing)} existing phenopacket(s) from {output}")
+
+
 @app.command()
 def voice(
     input: Path = typer.Option(..., "--input", "-i", help="Path to the voice phenotype/ dir."),
@@ -34,6 +64,9 @@ def voice(
         Path("config/voice"), "--config", "-c", help="Mapping config dir."
     ),
     target: str = typer.Option("phenopacket", "--target", "-t", help="Output target."),
+    force: bool = typer.Option(
+        False, "--force", help="Delete existing phenopackets in --output first."
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Log per-table warnings."),
 ) -> None:
     """Ingest the Bridge2AI-Voice dataset into one phenopacket per participant."""
@@ -51,6 +84,8 @@ def voice(
     if target != "phenopacket":  # only the phenopacket emitter is wired in v1
         typer.echo(f"target {target!r} is not implemented yet", err=True)
         raise typer.Exit(code=2)
+
+    _clear_or_refuse(output, force=force)
 
     source = VoiceSource(root=input, config_dir=config)
     participants = list(source.read())
