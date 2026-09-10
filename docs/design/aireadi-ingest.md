@@ -33,10 +33,22 @@ independent verification.
   `TimePoint`; `condition_occurrence` → `Disease` (MONDO); `measurement` → `Measurement`
   with UCUM units, per-row reference ranges and per-eye laterality; one phenopacket per
   participant; a PHI-safe preflight (`validate-aireadi`) and run report.
-- **Non-goals (now):** `observation.csv` (355 items — the CES-D-10 and PAID-5 instruments,
-  the medical-history yes/no grid, the PhenX SDOH modules, the imaging-acquisition flags);
-  `procedure_occurrence.csv` (monofilament testing); the eight non-clinical modality
-  directories; medications (no `drug_exposure` table is published); race/ethnicity.
+  `observation.csv` contributes the CES-D-10 and PAID-5 instruments as ordinal Measurements,
+  with every other family covered by an explicit, reviewable drop policy.
+- **Non-goals (now):** the rest of `observation.csv` — the medical-history yes/no grid, the
+  PhenX SDOH modules, the imaging-acquisition flags, and several instruments that are
+  ingestable but uncurated (each with a stated reason in
+  `config/aireadi/observation/scope.yaml`); the eight non-clinical modality directories;
+  medications (no `drug_exposure` table is published); race/ethnicity.
+- **`procedure_occurrence.csv` is not ingested, and that is a conclusion rather than a
+  deferral.** It carries 22 monofilament rows per participant — ten sites per foot plus two
+  "foot tested" flags — and every one records only that a site *was tested*. None carries a
+  result. The finding, the count of sites felt per foot, lives in `measurement.csv` as
+  `mssrffl`/`msslffl`, and that is what is ingested
+  (`config/aireadi/measurement/monofilament.yaml`). Ingesting the procedure table would emit
+  twenty `MedicalAction`s per participant asserting that a test happened, with the finding
+  stored elsewhere — more output, no more information. Revisit only if a release starts
+  carrying per-site results.
 
 ## 3. Design
 
@@ -97,6 +109,14 @@ published standard: a second OMOP dataset reuses the module and writes only its 
   licence extends to derived output. `date`/`datetime` are opt-in and normalize to RFC3339-Z
   — protobuf rejects every other spelling and the emitter *catches* the error and falls back,
   so an un-normalized value would lose every `time_observed` silently.
+- **Laterality is structural where the ontology allows it, and in the label where it does
+  not.** The per-eye ophthalmic items carry `UBERON:0004549 right eye` / `UBERON:0004548
+  left eye` on `Measurement.procedure.body_site`. The per-foot monofilament items cannot:
+  UBERON has `UBERON:0002387 pes` and no lateralized child, so they carry `pes` as the site
+  and the side in the curated assay label. `UBERON:8300003`/`8300004` look like the missing
+  terms and are not — they are *hindlimb*, the whole limb. The asymmetry is deliberate and
+  documented at both configs; a consumer filtering on `body_site` can separate the eyes but
+  not the feet.
 - **Age is derived per observation, not copied.** A cohort table records one age at one
   reference date; OMOP records a date on every row. Reusing the single value gives every
   observation the same `Age` — and at age precision the `Age` *is* the whole `TimeElement`,

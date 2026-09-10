@@ -234,3 +234,30 @@ def test_shipped_gates_are_bounded_not_open_ended():
                 )
     # No gated AI-READI rows ship yet; this guards the ones that will.
     assert checked >= 0
+
+
+# ---------- monofilament: the procedure_occurrence decision, in practice
+def test_monofilament_results_come_from_measurement_not_procedure(participants):
+    """procedure_occurrence records only that a site was TESTED; the finding is here.
+
+    Ingesting the 22 procedure rows would emit twenty "a test happened" actions per
+    participant with the result stored elsewhere, so they are deliberately not ingested.
+    """
+    right = _by_assay(participants["900003"], "b2ai:measurement.mssrffl")
+    left = _by_assay(participants["900003"], "b2ai:measurement.msslffl")
+    assert right and left
+    assert right[0].value_quantity.value == 10.0
+    assert left[0].value_quantity.value == 7.0
+
+
+def test_monofilament_carries_the_examination_but_an_unlateralized_site(participants):
+    """UBERON has `pes` and no lateralized foot, so the side is in the assay label.
+
+    The per-eye items do encode their side structurally because UBERON *does* carry right
+    and left eye. Asserting a lateralized foot would mean using `UBERON:8300003`, which is
+    "right hindlimb" -- the whole limb, not the foot, and simply the wrong site.
+    """
+    right = _by_assay(participants["900003"], "b2ai:measurement.mssrffl")[0]
+    assert right.procedure.code.id == "NCIT:C129294"
+    assert right.procedure.body_site.id == "UBERON:0002387"  # pes, unlateralized
+    assert "Right foot" in right.assay.label
