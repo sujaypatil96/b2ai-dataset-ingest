@@ -66,7 +66,12 @@ def main() -> None:
     ap.add_argument("--outdir", type=Path, required=True)
     ap.add_argument("--top", type=int, default=10, help="terms to report per k")
     args = ap.parse_args()
-    args.outdir.mkdir(parents=True, exist_ok=True)
+    # Owner-only: stratiphy_assignments.tsv is per-participant, and derived from the
+    # source data it carries that data's restrictions. The default umask would leave
+    # it group- and world-readable. Set explicitly, since mkdir's mode is masked when
+    # creating and ignored when the directory already exists.
+    args.outdir.mkdir(parents=True, exist_ok=True, mode=0o700)
+    args.outdir.chmod(0o700)
 
     result, wrapper = load(args.results)
     sizes = {

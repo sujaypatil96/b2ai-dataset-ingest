@@ -108,6 +108,23 @@ def _run_voice(tmp_path: Path, *extra: str):
 
 
 @pytest.mark.skipif(not SYNTHETIC.is_dir(), reason="synthetic fixture not fetched")
+def test_output_directory_is_owner_only(tmp_path: Path):
+    """Phenopackets are per-participant records; the default umask leaves them
+    group- and world-readable, which is wrong for anything derived from the
+    source datasets."""
+    target = tmp_path / "packets"
+    assert _run_voice(target).exit_code == 0
+    assert target.stat().st_mode & 0o777 == 0o700
+
+    # And an existing loose directory gets tightened rather than left alone.
+    loose = tmp_path / "loose"
+    loose.mkdir(mode=0o755)
+    loose.chmod(0o755)
+    assert _run_voice(loose).exit_code == 0
+    assert loose.stat().st_mode & 0o777 == 0o700
+
+
+@pytest.mark.skipif(not SYNTHETIC.is_dir(), reason="synthetic fixture not fetched")
 def test_rerun_into_populated_output_is_refused(tmp_path: Path):
     """A second run must not silently union itself with the first."""
     assert _run_voice(tmp_path).exit_code == 0
