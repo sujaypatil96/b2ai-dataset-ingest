@@ -48,12 +48,16 @@ def _refuse_if_populated(output: Path, *, force: bool) -> list[Path]:
             f"Refused: nothing was written. The {len(existing)} phenopacket(s) already "
             f"in {output} are unchanged.\n"
             "\n"
-            "A re-run writes one file per participant, so it would overwrite everyone "
-            "still in the cohort but leave a stale file behind for anyone who has since "
-            "dropped out, silently mixing two runs.\n"
+            "Why: the ingest writes one file per participant. Re-running here would "
+            "overwrite everyone still in the cohort but leave a stale file behind for "
+            "anyone who has since dropped out, so the directory would become a silent "
+            "mix of two runs.\n"
             "\n"
-            f"Pass --force to delete those {len(existing)} file(s) and write a clean set, "
-            "or point --output at an empty directory.",
+            f"--force DELETES all {len(existing)} existing .json file(s) in {output}, "
+            "permanently and with no backup, and then writes the new cohort. It does "
+            "NOT merge the two.\n"
+            "\n"
+            "To keep what is there, point --output at an empty directory instead.",
             err=True,
         )
         raise typer.Exit(code=2)
@@ -72,7 +76,10 @@ def _remove(existing: list[Path]) -> None:
         return
     for path in existing:
         path.unlink()
-    typer.echo(f"Removed {len(existing)} previous phenopacket(s)")
+    typer.echo(
+        f"--force: permanently deleted {len(existing)} previous phenopacket(s); "
+        "writing a fresh set"
+    )
 
 
 @app.command()
@@ -84,7 +91,10 @@ def voice(
     ),
     target: str = typer.Option("phenopacket", "--target", "-t", help="Output target."),
     force: bool = typer.Option(
-        False, "--force", help="Delete existing phenopackets in --output first."
+        False,
+        "--force",
+        help="Permanently delete existing phenopackets in --output, then write a "
+        "fresh set. Does not merge.",
     ),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Log per-table warnings."),
 ) -> None:

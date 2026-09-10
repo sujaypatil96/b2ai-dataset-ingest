@@ -121,6 +121,10 @@ def test_rerun_into_populated_output_is_refused(tmp_path: Path):
     # the reader's first question is whether their existing output survived.
     assert "nothing was written" in result.output
     assert "unchanged" in result.output
+    # And it must be unambiguous that --force destroys rather than merges, since
+    # that is the question a reader actually has before typing it.
+    assert "DELETES" in result.output
+    assert "NOT merge" in result.output
     # And it must actually be true.
     assert {p.name for p in tmp_path.glob("*.json")} == before
 
