@@ -26,10 +26,24 @@ RESOURCES="${ROOT}/.stratiphy"
 PACKETS="${1:-}"
 ANALYSIS="${2:-}"
 if [ -z "${PACKETS}" ] || [ -z "${ANALYSIS}" ]; then
-  echo "usage: $0 <phenopacket dir> <analysis dir> [stratiphy compute options...]" >&2
+  echo "usage: $0 <phenopacket dir> <analysis dir> [--controversy LEVEL]" \
+       "[stratiphy compute options...]" >&2
   exit 1
 fi
 shift 2
+
+# --controversy belongs to `preprocess`, everything else to `compute`, so pull it
+# out rather than forwarding the whole tail to one of them.
+CONTROVERSY=()
+REST=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --controversy) CONTROVERSY=(--controversy "${2:?--controversy needs a level}"); shift 2 ;;
+    --controversy=*) CONTROVERSY=(--controversy "${1#*=}"); shift ;;
+    *) REST+=("$1"); shift ;;
+  esac
+done
+set -- "${REST[@]+"${REST[@]}"}"
 
 [ -d "${PACKETS}" ] || { echo "no such phenopacket dir: ${PACKETS}" >&2; exit 1; }
 mkdir -p "${ANALYSIS}"
@@ -37,10 +51,14 @@ mkdir -p "${ANALYSIS}"
 # Idempotent: skips the download when the HPO build is already there.
 uv run stratiphy setup download -d "${RESOURCES}"
 
-# Prompts interactively if a phenopacket carries contradictory annotations, and exits
-# non-zero rather than hanging when stdin is not a terminal. That is a signal about the
-# emitter, so it is deliberately not suppressed here.
-uv run stratiphy preprocess "${ANALYSIS}" "${PACKETS}"/*.json -d "${RESOURCES}"
+# Prompts for every annotation issue at or above the controversy threshold, which
+# defaults to `small`. On a cohort whose mappings assert both a term and its ancestor
+# that is one prompt per participant. `--controversy high` lets Stratiphy apply its own
+# default action instead, which for the ancestor case is to keep the more specific term
+# and drop the ancestor; it still prints what it decided. The genuinely ambiguous cases
+# are ranked HIGH and keep prompting even then, which is what you want.
+uv run stratiphy preprocess "${ANALYSIS}" "${PACKETS}"/*.json -d "${RESOURCES}" \
+  "${CONTROVERSY[@]+"${CONTROVERSY[@]}"}"
 
 uv run stratiphy compute "${ANALYSIS}" -d "${RESOURCES}" "$@"
 
