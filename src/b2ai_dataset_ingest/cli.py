@@ -3,10 +3,10 @@
 Usage (once implemented):
 
     b2ai-ingest voice \\
-        --input data_synth/b2ai-voice-synthetic-phenotype/output/phenotype \\
+        --input data/synthetic/voice_dgp/b2ai-voice-synthetic-phenotype/output/phenotype \\
         --output out/ --target phenopacket
 
-Synthetic input lives under ``data_synth/``; ``data/`` holds the source datasets and may be
+Synthetic input lives under ``data/synthetic/``; ``data/real/`` holds the source datasets and may be
 owned by a separate account.
 """
 
