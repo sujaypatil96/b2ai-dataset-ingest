@@ -118,7 +118,19 @@ def test_gated_sssom_subjects_have_a_matching_config_assay():
 
     config_ids: set[str] = set()
     for cfg in ALL_CONFIGS:
+        # Ids that appear literally, i.e. items whose assay IS a project-local code.
         config_ids |= {m.group(0) for m in B2AI_ID.finditer(cfg.read_text())}
+        # ...plus the id each ingested item WOULD have, synthesised from the config's own
+        # keys. Text-scanning alone only sees items that happen to carry a b2ai: assay, so an
+        # item mapped to a real ontology code (CES-D-10's `ces1` -> LOINC:100767-3) looks
+        # absent and a gated row naming it reads as an orphan — a false positive that would
+        # fire the moment any such row ships.
+        mapping = load_mapping(cfg)
+        table = mapping.get("table")
+        if not table:
+            continue
+        for block in ("items", "measures", "conditions"):
+            config_ids |= {f"b2ai:{table}.{item}" for item in (mapping.get(block) or {})}
 
     config_tables = {i.split(":", 1)[1].split(".", 1)[0] for i in config_ids}
     orphans = []

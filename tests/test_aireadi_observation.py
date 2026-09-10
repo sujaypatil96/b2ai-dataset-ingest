@@ -261,3 +261,74 @@ def test_monofilament_carries_the_examination_but_an_unlateralized_site(particip
     assert right.procedure.code.id == "NCIT:C129294"
     assert right.procedure.body_site.id == "UBERON:0002387"  # pes, unlateralized
     assert "Right foot" in right.assay.label
+
+
+# ---------- the value-gated HPO path
+#
+# No curated AI-READI -> HPO rows ship. An adversarial review of ten proposed CES-D-10
+# mappings refuted five of seven that got as far as judging, on predicate direction and on
+# cut-point, so the curation is not settled — and in this repo a cut-point is a curator
+# judgement that took clinical review for the Voice set. The machinery is therefore proven
+# here against an INJECTED mapping, exactly as tests/test_conditional_features.py does for
+# Voice, and the shipped sets stay empty until a clinician signs off.
+GATED_SET = """# curie_map:
+#   b2ai: https://github.com/sujaypatil96/b2ai-dataset-ingest#
+#   HP: http://purl.obolibrary.org/obo/HP_
+#   skos: http://www.w3.org/2004/02/skos/core#
+#   semapv: https://w3id.org/semapv/vocab/
+#   obo: http://purl.obolibrary.org/obo/
+# mapping_set_id: https://example.org/test/b2ai-aireadi-probe.sssom.tsv
+# license: https://creativecommons.org/publicdomain/zero/1.0/
+# subject_source: test
+# object_source: obo:hp
+# extension_definitions:
+#   - slot_name: when_value
+#     property: b2ai:when_value
+#     type_hint: xsd:string
+""" + "\t".join([
+    "subject_id", "subject_label", "predicate_id", "object_id", "object_label",
+    "mapping_justification", "confidence", "comment", "when_value",
+]) + "\n" + "\t".join([
+    "b2ai:observation.ces7", "My sleep was restless", "skos:broadMatch",
+    "HP:0025199", "Fragmented sleep", "semapv:ManualMappingCuration", "0.8", "",
+    "in {2,3}",
+]) + "\n"
+
+
+def _injected(tmp_path):
+    path = tmp_path / "b2ai-aireadi-probe.sssom.tsv"
+    path.write_text(GATED_SET)
+    return [path]
+
+
+def test_a_gated_rule_derives_a_feature_with_self_report_evidence(tmp_path):
+    """End to end: pivoted OMOP row -> derive_features -> PhenotypicFeature.
+
+    900002 answers ces7 at 2, which is inside the gate. The derivation runs on the existing
+    dataset-agnostic `hpo_rules` with no OMOP-specific changes.
+    """
+    source = AireadiSource(FIXTURE, CONFIG_DIR, mappings=_injected(tmp_path))
+    packets = {p.individual.id: p for p in source.read()}
+    features = packets["900002"].phenotypic_features
+    assert len(features) == 1
+    assert features[0].type.id == "HP:0025199"
+    assert features[0].evidence[0].evidence_code.id == "ECO:0006160"  # self-report
+    assert features[0].evidence[0].reference.id == "b2ai:observation.ces7"
+    assert source.report.features_derived == 1
+
+
+def test_a_refusal_code_on_a_gated_item_derives_nothing(tmp_path):
+    """900001 answers ces7 with 777. Declining to answer must assert nothing."""
+    source = AireadiSource(FIXTURE, CONFIG_DIR, mappings=_injected(tmp_path))
+    packets = {p.individual.id: p for p in source.read()}
+    assert packets["900001"].phenotypic_features == []
+
+
+def test_no_curated_hpo_rows_ship_for_aireadi_yet():
+    """Guards the deferral: shipping rows should be a deliberate, reviewed act.
+
+    Delete this test in the commit that lands a clinically-reviewed mapping set.
+    """
+    from b2ai_dataset_ingest.mapping.hpo_rules import load_conditional_rules
+
+    assert load_conditional_rules(dataset="aireadi") == {}
