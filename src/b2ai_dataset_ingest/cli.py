@@ -108,7 +108,12 @@ def validate_aireadi_cmd(
     strict_coverage: bool = typer.Option(
         False,
         "--strict-coverage",
-        help="Fail if a configured item is absent (use against a full release, not a fixture).",
+        help=(
+            "Assert this release is COMPLETE: a configured item or table it does not ship "
+            "becomes an error. Use against a full release. On a subset release a "
+            "low-prevalence item is absent by sampling rather than by schema, so this will "
+            "flag it -- see config/aireadi/conditions.yaml."
+        ),
     ),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Log details."),
 ) -> None:

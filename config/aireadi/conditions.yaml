@@ -60,6 +60,16 @@ conditions:
   mhoccur_amd:   { id: "MONDO:0005150", label: "age-related macular degeneration" } # 374028      n=456
   mhoccur_pdr:   { id: "MONDO:0005266", label: "diabetic retinopathy" }             # 4174977     n=332
   mhoccur_cogn:  { id: "MONDO:0002039", label: "cognitive disorder" }               # 439795      n=280
+  # The tail of the prevalence distribution. `n=` is the count in the ~10,400-participant
+  # synthetic release, so these run from 0.9% down to 0.06% -- which means a SUBSET release
+  # will not contain them at all. A 100-participant subset expects 0.9 occurrences of
+  # mhoccur_rvo and 0.1 of mhoccur_ad, and duly ships neither.
+  #
+  # That is sampling, not schema: the items are real and the mapping is right.
+  # `validate-aireadi --strict-coverage` will still flag them as "configured but absent",
+  # because the flag asserts the release is COMPLETE and a subset is not. Expected, and not
+  # a reason to remove them -- dropping a mapping because a small sample lacks the condition
+  # would silently lose it on the full release.
   mhoccur_rvo:   { id: "MONDO:0002089", label: "retinal vascular occlusion" }       # 440392      n=91
   mhoccur_pd:    { id: "MONDO:0005180", label: "Parkinson disease" }                # 381270      n=39
   mhoccur_ms:    { id: "MONDO:0005301", label: "multiple sclerosis" }               # 374919      n=29
