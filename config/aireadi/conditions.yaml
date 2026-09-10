@@ -6,7 +6,7 @@
 #
 # SOURCES. Two, and neither is a licensed release:
 #   - item keys, concept ids and row counts: the VUMC synthetic AI-READI release
-#     (data_synth/aireadi-synthetic/, scripts/fetch_aireadi_synthetic.sh) -- 59169 rows over
+#     (data/synthetic/aireadi/, scripts/fetch_aireadi_synthetic.sh) -- 59169 rows over
 #     10414 synthetic participants.
 #   - untruncated labels: AI-READI's own published crosswalk, which is CC-BY-4.0
 #     *documentation* rather than licensed Data (scripts/fetch_aireadi_crosswalk.sh).

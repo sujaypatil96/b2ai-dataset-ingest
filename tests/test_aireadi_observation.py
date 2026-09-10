@@ -129,7 +129,7 @@ def test_every_drop_rule_states_a_reason():
 
 # ---------- completeness against the published item list (local only)
 CROSSWALK = (
-    Path(__file__).parents[1] / "data_synth" / "aireadi-docs" / "mappings.json"
+    Path(__file__).parents[1] / "data" / "synthetic" / "aireadi-docs" / "mappings.json"
 )
 
 

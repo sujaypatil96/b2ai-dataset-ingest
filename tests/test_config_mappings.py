@@ -31,7 +31,9 @@ def test_mapping_parses(path: Path):
 
 SYNTHETIC = (
     Path(__file__).parents[1]
-    / "data_synth"
+    / "data"
+    / "synthetic"
+    / "voice_dgp"
     / "b2ai-voice-synthetic-phenotype"
     / "output"
     / "phenotype"

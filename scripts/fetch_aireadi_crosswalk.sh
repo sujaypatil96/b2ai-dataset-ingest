@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fetch AI-READI's published item -> concept crosswalk into ./data_synth/ (gitignored).
+# Fetch AI-READI's published item -> concept crosswalk into ./data/synthetic/ (gitignored).
 #
 # Source: the AI-READI documentation repository, which is CC-BY-4.0.
 #   repo:    https://github.com/ai-readi/ai-readi-docs
@@ -14,7 +14,15 @@
 # CC-BY-4.0, which is what makes it usable here.
 #
 # It is fetched rather than vendored so that (a) the provenance stays a URL rather than a
-# copy, and (b) `data_synth/` remains the single gitignored home for inputs.
+# copy, and (b) `data/` remains the single gitignored home for inputs.
+#
+# It lands in its OWN directory, `aireadi-docs/`, deliberately NOT inside the licensed
+# `aireadi/` tree. That tree is protected -- the WashU AI-READI Synthetic Data License
+# Agreement §4.A limits sharing and §1.B/C extend every restriction to data generated from
+# it -- and this crosswalk is CC-BY-4.0 documentation under none of that. Putting public
+# documentation inside a protected tree would mean carving an exemption out of it, which is
+# exactly what `.claude/hooks/guard_data_dir.py` says has caused every access-control hole
+# this repo has had. The unprotected thing gets its own name instead.
 #
 # WHAT IT IS USED FOR
 # -------------------
@@ -37,7 +45,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DEST="${ROOT}/data_synth/aireadi-docs"
+DEST="${ROOT}/data/synthetic/aireadi-docs"
 BASE="https://raw.githubusercontent.com/ai-readi/ai-readi-docs/main/docs/static/json"
 
 command -v curl >/dev/null || { echo "error: curl not found" >&2; exit 1; }
@@ -53,5 +61,5 @@ for f in mappings.json moCA.json clinicalLabData.json; do
 done
 
 echo
-echo "NOTE: ${DEST} is gitignored (all of data_synth/ is) and must stay that way."
+echo "NOTE: ${DEST} is gitignored (all of data/ is) and must stay that way."
 echo "Attribution: AI-READI Consortium, ai-readi-docs, CC-BY-4.0."

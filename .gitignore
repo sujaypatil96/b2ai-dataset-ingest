@@ -1,8 +1,13 @@
-# Source datasets (large; downloaded under their respective DUAs). Not committed.
+# All raw inputs, real and synthetic. data/real/ is licensed source data under a DUA;
+# data/synthetic/ is generator checkouts and public stand-ins. Neither is committed.
 /data/*
 !/data/.gitkeep
 
-# Synthetic-data generator checkouts (cloned repos, not our source)
+# Legacy input tree, from before the real/synthetic restructure. Kept ignored on purpose:
+# a checkout that predates the move still has this directory on disk, and it stopped being
+# ignored the moment the old rule was replaced above — so the next `git add -A` stages the
+# whole synthetic tree, licensed AI-READI data included. Observed, not hypothetical.
+# Safe to delete this line once no working copy still carries the directory.
 /data_synth/
 
 # Real Bridge2AI-Voice PhysioNet download — credentialed access, HIPAA/PII-sensitive.

@@ -13,7 +13,7 @@ and it exercises the IR + pluggable-emitter claim for the first time: its clinic
 
 Developed against two sources, neither of them a licensed AI-READI release:
 
-- the **VUMC synthetic AI-READI release** (`data_synth/aireadi-synthetic/`, fetched by
+- the **VUMC synthetic AI-READI release** (`data/synthetic/aireadi/`, fetched by
   `scripts/fetch_aireadi_synthetic.sh`, gitignored) — 10,518 synthetic participants,
   767,814 measurement rows and 59,169 condition rows, but only two of the six OMOP tables;
 - **AI-READI's own published crosswalk** (`scripts/fetch_aireadi_crosswalk.sh`), which is

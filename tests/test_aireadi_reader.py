@@ -19,7 +19,7 @@ FIXTURE = Path(__file__).parent / "data" / "aireadi"
 
 # The VUMC synthetic release. Fetched locally by scripts/fetch_aireadi_synthetic.sh and
 # gitignored, so these tests skip on a bare checkout and in CI.
-VUMC = Path(__file__).parents[1] / "data_synth" / "aireadi-synthetic"
+VUMC = Path(__file__).parents[1] / "data" / "synthetic" / "aireadi"
 
 
 @pytest.fixture

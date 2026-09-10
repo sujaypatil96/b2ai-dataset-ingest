@@ -3,13 +3,15 @@
 Usage (once implemented):
 
     b2ai-ingest voice \\
-        --input data_synth/b2ai-voice-synthetic-phenotype/output/phenotype \\
+        --input data/synthetic/voice_dgp/b2ai-voice-synthetic-phenotype/output/phenotype \\
         --output out/ --target phenopacket
 
-    b2ai-ingest aireadi --input data_synth/aireadi-synthetic --output out/aireadi
+    b2ai-ingest aireadi \\
+        --input data/synthetic/aireadi \\
+        --output out/synthetic/aireadi/phenopackets
 
-Synthetic input lives under ``data_synth/``; ``data/`` holds the source datasets and may be
-owned by a separate account.
+Synthetic input lives under ``data/synthetic/``; ``data/real/`` holds the source datasets
+and may be owned by a separate account.
 """
 
 from __future__ import annotations
