@@ -42,12 +42,18 @@ def _clear_or_refuse(output: Path, *, force: bool) -> None:
     if not existing:
         return
     if not force:
+        # Lead with what happened, not with what a re-run would have done. The
+        # reader's first question is whether their existing output survived.
         typer.echo(
-            f"{output} already holds {len(existing)} phenopacket(s).\n"
-            "A re-run overwrites per participant, so anyone dropped from the cohort "
-            "would keep a stale file here and silently join the next analysis.\n"
-            f"Pass --force to delete those {len(existing)} file(s) first, or choose an "
-            "empty --output.",
+            f"Refused: nothing was written. The {len(existing)} phenopacket(s) already "
+            f"in {output} are unchanged.\n"
+            "\n"
+            "A re-run writes one file per participant, so it would overwrite everyone "
+            "still in the cohort but leave a stale file behind for anyone who has since "
+            "dropped out, silently mixing two runs.\n"
+            "\n"
+            f"Pass --force to delete those {len(existing)} file(s) and write a clean set, "
+            "or point --output at an empty directory.",
             err=True,
         )
         raise typer.Exit(code=2)

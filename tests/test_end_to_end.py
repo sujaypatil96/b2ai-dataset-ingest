@@ -117,7 +117,11 @@ def test_rerun_into_populated_output_is_refused(tmp_path: Path):
     result = _run_voice(tmp_path)
     assert result.exit_code == 2
     assert "--force" in result.output
-    # Refusing must leave the directory exactly as it was.
+    # The message must say what happened, not only what a re-run would have done:
+    # the reader's first question is whether their existing output survived.
+    assert "nothing was written" in result.output
+    assert "unchanged" in result.output
+    # And it must actually be true.
     assert {p.name for p in tmp_path.glob("*.json")} == before
 
 
