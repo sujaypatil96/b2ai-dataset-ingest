@@ -35,10 +35,16 @@ import csv
 import logging
 from collections import OrderedDict
 from collections.abc import Iterable, Iterator
+from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any
 
 from b2ai_dataset_ingest.mapping.engine import MappingEngine
+from b2ai_dataset_ingest.mapping.hpo_rules import (
+    ConditionalRule,
+    derive_features,
+    load_conditional_rules,
+)
 from b2ai_dataset_ingest.mapping.loaders import is_placeholder, load_mapping, validate_mapping
 from b2ai_dataset_ingest.mapping.omop import (
     AgeAnchor,
@@ -55,6 +61,7 @@ from b2ai_dataset_ingest.model import (
     MeasurementObservation,
     OntologyTerm,
     Participant,
+    PhenotypicFeatureObservation,
     ProcedureContext,
     Quantity,
     ReferenceRange,
@@ -77,6 +84,7 @@ class _Accumulator:
         self.cohort: dict[str, str] = {}
         self.diseases: list[DiseaseObservation] = []
         self.measurements: list[MeasurementObservation] = []
+        self.phenotypic_features: list[PhenotypicFeatureObservation] = []
         self._disease_ids: set[str] = set()
 
     def add_disease(self, disease: DiseaseObservation) -> None:
@@ -88,11 +96,16 @@ class _Accumulator:
 class AireadiSource(Source):
     dataset_id = "bridge2ai-aireadi"
 
-    def __init__(self, root: Path, config_dir: Path) -> None:
+    def __init__(
+        self, root: Path, config_dir: Path, mappings: Iterable[Path] | None = None
+    ) -> None:
         super().__init__(root, config_dir)
         #: Aggregate, PHI-safe counts for the most recent :meth:`read`. The CLI prints it.
         self.report = IngestReport()
         self._dataset_cfg: dict[str, Any] | None = None
+        #: SSSOM files carrying value-gated rules; None -> the shipped aireadi sets.
+        self._mappings = list(mappings) if mappings is not None else None
+        self._hpo_rules: dict[str, dict[str, list[ConditionalRule]]] | None = None
 
     # -- config --------------------------------------------------------------------
     @property
@@ -129,6 +142,7 @@ class AireadiSource(Source):
         self._read_person(accumulator)
         self._read_conditions(accumulator, visits, anchors)
         self._read_measurements(accumulator, visits, anchors)
+        self._read_observations(accumulator, visits, anchors)
 
         self.report.participants = len(participants)
         for person_id in sorted(participants):
@@ -139,6 +153,7 @@ class AireadiSource(Source):
                 individual=individual,
                 diseases=acc.diseases,
                 measurements=acc.measurements,
+                phenotypic_features=acc.phenotypic_features,
                 source_dataset=self.dataset_id,
                 cohort=acc.cohort,
             )
@@ -301,6 +316,89 @@ class AireadiSource(Source):
             accumulator(person_id).add_disease(
                 DiseaseObservation(term=OntologyTerm(**term_spec), onset=onset)
             )
+
+    # -- observation -> Measurement (+ value-gated PhenotypicFeature) ------------------
+    def _conditional_rules(self) -> dict[str, dict[str, list[ConditionalRule]]]:
+        """Value-gated rules for this dataset, indexed ``table -> item -> [rules]``.
+
+        Scoped to ``aireadi``: the index key is a bare table name, so an unscoped load would
+        let another dataset's gated rules fire on a table that happens to share its name.
+        """
+        if self._hpo_rules is None:
+            self._hpo_rules = load_conditional_rules(self._mappings, dataset="aireadi")
+        return self._hpo_rules
+
+    def _read_observations(
+        self, accumulator: Any, visits: dict[str, str], anchors: dict[str, AgeAnchor]
+    ) -> None:
+        """Ingest the configured observation items, and derive gated HPO features.
+
+        Two things happen in one pass, and the split is what keeps memory flat. Measurements
+        are emitted **per row** as the table streams. The value-gated HPO derivation needs a
+        whole *row* of a participant's answers at once, so it buffers — but only the handful
+        of items that actually carry a rule, never the ~355 the table holds. On a full
+        release that is the difference between a few thousand buffered strings and a couple
+        of million.
+        """
+        configs = sorted((self.config_dir / "observation").glob("*.yaml"))
+        if not configs:
+            return
+        items: dict[str, dict[str, Any]] = {}
+        dropped: dict[str, str] = {}
+        table = "observation"
+        base: dict[str, Any] = {}
+        for path in configs:
+            mapping = self._config(f"observation/{path.name}") or {}
+            base = base or mapping
+            table = mapping.get("table", table)
+            items.update(mapping.get("measures") or {})
+            dropped.update(_drop_prefixes(mapping))
+        spec = OmopTableSpec({**base, "table": table})
+        rows = _stream_csv(self._clinical(table), delimiter=base.get("delimiter", ","))
+        if rows is None:
+            self.report.tables_missing.append(table)
+            return
+        self.report.tables_read.append(table)
+
+        table_rules = self._conditional_rules().get(table, {})
+        gated = set(table_rules)
+        answers: dict[str, dict[str, str]] = {}
+        when: dict[str, TimePoint | None] = {}
+
+        for row in rows:
+            cell = spec.cell(row)
+            person_id = (row.get(spec.id_column) or "").strip()
+            if cell is None or not person_id:
+                continue
+            if cell.item in gated and cell.value:
+                answers.setdefault(person_id, {})[cell.item] = cell.value
+                when.setdefault(person_id, self._timepoint(cell, visits, anchors.get(person_id)))
+            if cell.item not in items:
+                # Dropped by policy is a different fact from nobody-looked-at-it, and the
+                # report must be able to tell them apart.
+                reason = _drop_reason(cell.item, dropped)
+                if reason is None:
+                    self.report.note_item_unmapped(table, cell.item)
+                else:
+                    self.report.note_item_dropped(table, cell.item)
+                continue
+            observation = self._measurement(
+                cell, items, {}, table, visits, anchors.get(person_id), row
+            )
+            if observation is not None:
+                accumulator(person_id).measurements.append(observation)
+                self.report.measurements_emitted += 1
+
+        if not table_rules:
+            return
+        # `as_row`'s whole reason for existing: the derivation is dataset-agnostic and runs
+        # over a plain {item: value} dict, so the OMOP path reuses it with no changes.
+        resolve = _ordinal_of
+        for person_id, row_answers in answers.items():
+            features = derive_features(
+                row_answers, table_rules, resolve, when.get(person_id), self.report
+            )
+            accumulator(person_id).phenotypic_features.extend(features)
 
     # -- measurement -> Measurement ---------------------------------------------------
     def _read_measurements(
@@ -505,3 +603,43 @@ def _stream_csv(path: Path, delimiter: str = ",") -> Iterator[dict[str, str]] | 
 
 
 __all__ = ["AireadiSource", "item_key"]
+
+
+def _drop_prefixes(mapping: dict[str, Any]) -> dict[str, str]:
+    """``drop_rules`` as ``pattern -> reason``.
+
+    Naming the families a config deliberately ignores is what lets the report distinguish
+    "dropped by policy" from "nobody has looked at this yet". Silence cannot tell them apart,
+    and on a table with hundreds of items that difference is the whole signal.
+    """
+    return {
+        str(pattern): str(reason)
+        for pattern, reason in (mapping.get("drop_rules") or {}).items()
+    }
+
+
+def _drop_reason(item: str, dropped: dict[str, str]) -> str | None:
+    """The policy reason this item is ignored, or None if no rule covers it.
+
+    Patterns are shell globs, because REDCap families are named at both ends: an instrument
+    is a *prefix* (``rtsm_*`` retinal imaging) while the administrative fields it carries are
+    a *suffix* (``*cmpdat`` completion date, ``*startts`` start timestamp). A prefix-only
+    match would force one rule per instrument for what is really one policy.
+    """
+    for pattern, reason in dropped.items():
+        if item == pattern or fnmatch(item, pattern):
+            return reason
+    return None
+
+
+def _ordinal_of(_item: str, raw: str) -> int | None:
+    """Resolve an answer to its ordinal score, for the value-gated rule evaluator.
+
+    Unlike Voice, no per-item ``choices`` lookup is needed: OMOP stores the resolved ordinal
+    in ``value_as_number`` directly. Reverse-scored items are stored already reversed by the
+    source (a positively-worded CES-D-10 item codes "rarely" as 3), so the stored integer is
+    directionally consistent across an instrument and a ``>=`` cut-point means the same thing
+    on every item of it.
+    """
+    number = as_number(raw)
+    return None if number is None else int(number)

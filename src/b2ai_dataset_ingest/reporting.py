@@ -52,6 +52,10 @@ class IngestReport:
     # -- OMOP long-table counters (see sources/aireadi/) --
     #: "table.item" -> count of long rows whose item has no mapping config entry.
     items_unmapped: Counter = field(default_factory=Counter)
+    #: "table.item" -> count of long rows a config deliberately ignores (drop_rules).
+    #: Kept separate from items_unmapped: "we decided not to" and "nobody looked" are
+    #: different facts, and on a 355-item table the difference is the whole signal.
+    items_dropped: Counter = field(default_factory=Counter)
     #: "table.item" -> count of values dropped because an operator marked them censored
     #: (e.g. a below-detection-limit assay). GA4GH Quantity has no operator slot.
     values_censored: Counter = field(default_factory=Counter)
@@ -81,6 +85,9 @@ class IngestReport:
 
     def note_item_unmapped(self, table: str, item: str) -> None:
         self.items_unmapped[f"{table}.{item}"] += 1
+
+    def note_item_dropped(self, table: str, item: str) -> None:
+        self.items_dropped[f"{table}.{item}"] += 1
 
     def note_value_censored(self, table: str, item: str) -> None:
         self.values_censored[f"{table}.{item}"] += 1
@@ -149,6 +156,7 @@ class IngestReport:
             ("totals skipped (non-numeric)", self.totals_unparsed),
             ("items skipped (placeholder term)", self.placeholders_skipped),
             ("long rows skipped (item not mapped)", self.items_unmapped),
+            ("long rows skipped (dropped by policy)", self.items_dropped),
             ("values dropped (censored by operator)", self.values_censored),
             ("answers dropped (refusal/unknown code)", self.sentinel_answers),
             ("values dropped (unit not in UCUM map)", self.units_unmapped),
