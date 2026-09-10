@@ -173,9 +173,41 @@ On the synthetic cohort the answer is that there is very little phenotype signal
 of 0.6 terms present per participant, with 98 of 173 carrying none at all. That is a
 property of the synthetic tables, which are 2.4% dense.
 
-That number is the gate on any clustering. Phenotype-driven clustering needs terms to
-compute similarity over, so run the profiler first and read the terms-per-participant
+That number is the gate on the clustering below. Phenotype-driven clustering needs terms
+to compute similarity over, so run the profiler first and read the terms-per-participant
 figure before investing in a clustering run.
+
+### Clustering
+
+[Stratiphy](https://github.com/P2GX/stratiphy) does the clustering. It reads phenopackets
+directly, groups participants by HPO semantic similarity rather than by flat vectors, and
+decides *whether the cohort should be split at all* using the gap statistic against
+randomised cohorts. Install it with the `clustering` extra.
+
+```bash
+uv sync --extra clustering
+scripts/cluster_phenopackets.sh \
+  out/synthetic/voice_dgp/phenopackets out/synthetic/voice_dgp/analysis
+```
+
+That runs Stratiphy's `setup`, `preprocess` and `compute`, then the report. Anything after
+the two directories is passed through to `compute`, so `--rand-iter 20 --mc-iter 10000`
+gives a fast coarse pass; the defaults of 100 randomised cohorts and a million Monte-Carlo
+iterations are what a real run wants.
+
+The script exists for one reason. Stratiphy's `--data` defaults to the repo's own input
+tree, which is protected here, so without an explicit `-d` its `setup download` drops a
+22 MB HPO build into it. Every call passes `-d .stratiphy`, which is gitignored.
+
+Only the last step is ours. Stratiphy's CLI covers the clustering; its result is a
+protobuf with no CLI to read it, so `scripts/summarize_clusters.py` fills that one gap.
+It runs as part of the script above; call it directly only to re-summarise an existing
+`results.pb` without re-clustering.
+
+The headline it prints is the verdict, not the partition. A partition exists at every k
+whether or not it means anything. On the synthetic cohort the verdict is **do not split**,
+at a split probability of 0.11, and the sizes show why: k=2 gives 171 and 2. That is what
+0.6 terms per participant buys, and it is the expected answer rather than a failure.
 
 ### The four ingests
 

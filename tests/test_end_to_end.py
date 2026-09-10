@@ -108,6 +108,23 @@ def _run_voice(tmp_path: Path, *extra: str):
 
 
 @pytest.mark.skipif(not SYNTHETIC.is_dir(), reason="synthetic fixture not fetched")
+def test_output_directory_is_owner_only(tmp_path: Path):
+    """Phenopackets are per-participant records; the default umask leaves them
+    group- and world-readable, which is wrong for anything derived from the
+    source datasets."""
+    target = tmp_path / "packets"
+    assert _run_voice(target).exit_code == 0
+    assert target.stat().st_mode & 0o777 == 0o700
+
+    # And an existing loose directory gets tightened rather than left alone.
+    loose = tmp_path / "loose"
+    loose.mkdir(mode=0o755)
+    loose.chmod(0o755)
+    assert _run_voice(loose).exit_code == 0
+    assert loose.stat().st_mode & 0o777 == 0o700
+
+
+@pytest.mark.skipif(not SYNTHETIC.is_dir(), reason="synthetic fixture not fetched")
 def test_rerun_into_populated_output_is_refused(tmp_path: Path):
     """A second run must not silently union itself with the first."""
     assert _run_voice(tmp_path).exit_code == 0
@@ -117,7 +134,15 @@ def test_rerun_into_populated_output_is_refused(tmp_path: Path):
     result = _run_voice(tmp_path)
     assert result.exit_code == 2
     assert "--force" in result.output
-    # Refusing must leave the directory exactly as it was.
+    # The message must say what happened, not only what a re-run would have done:
+    # the reader's first question is whether their existing output survived.
+    assert "nothing was written" in result.output
+    assert "unchanged" in result.output
+    # And it must be unambiguous that --force destroys rather than merges, since
+    # that is the question a reader actually has before typing it.
+    assert "DELETES" in result.output
+    assert "NOT merge" in result.output
+    # And it must actually be true.
     assert {p.name for p in tmp_path.glob("*.json")} == before
 
 
@@ -138,3 +163,24 @@ def test_force_leaves_exactly_the_current_cohort(tmp_path: Path):
     assert result.exit_code == 0
     assert not orphan.exists()
     assert {p.name for p in tmp_path.glob("*.json")} == cohort
+
+
+@pytest.mark.skipif(not SYNTHETIC.is_dir(), reason="synthetic fixture not fetched")
+def test_force_keeps_the_old_set_when_the_ingest_fails(tmp_path: Path, monkeypatch):
+    """Refuse early, delete late.
+
+    Deleting before the source is read would leave a failed run with neither the
+    previous cohort nor a new one, which on a real cohort is not recoverable.
+    """
+    assert _run_voice(tmp_path).exit_code == 0
+    before = {p.name for p in tmp_path.glob("*.json")}
+    assert before
+
+    def explode(self):
+        raise RuntimeError("source blew up mid-read")
+
+    monkeypatch.setattr(VoiceSource, "read", explode)
+    result = _run_voice(tmp_path, "--force")
+
+    assert result.exit_code != 0
+    assert {p.name for p in tmp_path.glob("*.json")} == before

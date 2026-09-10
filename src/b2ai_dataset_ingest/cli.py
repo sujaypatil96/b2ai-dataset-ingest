@@ -26,7 +26,7 @@ app = typer.Typer(
 EMITTERS = {"phenopacket": "b2ai_dataset_ingest.emitters:PhenopacketEmitter"}
 
 
-def _clear_or_refuse(output: Path, *, force: bool) -> None:
+def _refuse_if_populated(output: Path, *, force: bool) -> list[Path]:
     """Refuse to write into a directory that already holds phenopackets.
 
     The emitter writes one file per participant, named by participant id. Re-running
@@ -40,20 +40,46 @@ def _clear_or_refuse(output: Path, *, force: bool) -> None:
     """
     existing = sorted(output.glob("*.json")) if output.is_dir() else []
     if not existing:
-        return
+        return []
     if not force:
+        # Lead with what happened, not with what a re-run would have done. The
+        # reader's first question is whether their existing output survived.
         typer.echo(
-            f"{output} already holds {len(existing)} phenopacket(s).\n"
-            "A re-run overwrites per participant, so anyone dropped from the cohort "
-            "would keep a stale file here and silently join the next analysis.\n"
-            f"Pass --force to delete those {len(existing)} file(s) first, or choose an "
-            "empty --output.",
+            f"Refused: nothing was written. The {len(existing)} phenopacket(s) already "
+            f"in {output} are unchanged.\n"
+            "\n"
+            "Why: the ingest writes one file per participant. Re-running here would "
+            "overwrite everyone still in the cohort but leave a stale file behind for "
+            "anyone who has since dropped out, so the directory would become a silent "
+            "mix of two runs.\n"
+            "\n"
+            f"--force DELETES all {len(existing)} existing .json file(s) in {output}, "
+            "permanently and with no backup, and then writes the new cohort. It does "
+            "NOT merge the two.\n"
+            "\n"
+            "To keep what is there, point --output at an empty directory instead.",
             err=True,
         )
         raise typer.Exit(code=2)
+    return existing
+
+
+def _remove(existing: list[Path]) -> None:
+    """Delete the previous set. Call this only once the new one is in hand.
+
+    Deleting before reading the source would mean a failed ingest leaves the
+    caller with neither: the old cohort gone and no new one written. On a real
+    cohort that is not trivially regenerable, so the refusal check runs early
+    and the deletion runs late.
+    """
+    if not existing:
+        return
     for path in existing:
         path.unlink()
-    typer.echo(f"Removed {len(existing)} existing phenopacket(s) from {output}")
+    typer.echo(
+        f"--force: permanently deleted {len(existing)} previous phenopacket(s); "
+        "writing a fresh set"
+    )
 
 
 @app.command()
@@ -65,7 +91,10 @@ def voice(
     ),
     target: str = typer.Option("phenopacket", "--target", "-t", help="Output target."),
     force: bool = typer.Option(
-        False, "--force", help="Delete existing phenopackets in --output first."
+        False,
+        "--force",
+        help="Permanently delete existing phenopackets in --output, then write a "
+        "fresh set. Does not merge.",
     ),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Log per-table warnings."),
 ) -> None:
@@ -85,10 +114,14 @@ def voice(
         typer.echo(f"target {target!r} is not implemented yet", err=True)
         raise typer.Exit(code=2)
 
-    _clear_or_refuse(output, force=force)
+    # Refuse early, delete late: a failure between the two must not leave the
+    # caller with neither the old cohort nor a new one.
+    existing = _refuse_if_populated(output, force=force)
 
     source = VoiceSource(root=input, config_dir=config)
     participants = list(source.read())
+
+    _remove(existing)
     written = PhenopacketEmitter().write_all(participants, output)
     typer.echo(f"Wrote {written} phenopackets to {output}")
     # Aggregate, PHI-safe summary so silent degradation (skipped items, un-keyed sessions,

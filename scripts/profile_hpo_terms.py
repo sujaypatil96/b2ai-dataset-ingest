@@ -162,7 +162,12 @@ def main() -> None:
                     help="provenance label for the figure; defaults to the input path")
     ap.add_argument("--no-plot", action="store_true")
     args = ap.parse_args()
-    args.outdir.mkdir(parents=True, exist_ok=True)
+    # Owner-only: hpo_per_packet.tsv is per-participant, and derived from the source
+    # data it carries that data's restrictions. The default umask would leave it
+    # group- and world-readable. Set explicitly, since mkdir's mode is masked when
+    # creating and ignored when the directory already exists.
+    args.outdir.mkdir(parents=True, exist_ok=True, mode=0o700)
+    args.outdir.chmod(0o700)
 
     per_packet, present_tally, excluded_tally, labels = load(args.input)
     label = args.label or source_label(args.input)
