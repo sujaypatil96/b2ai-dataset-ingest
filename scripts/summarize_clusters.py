@@ -27,6 +27,7 @@ import argparse
 import json
 from collections import Counter
 from pathlib import Path
+from typing import Any
 
 
 def load(results: Path):
@@ -39,7 +40,7 @@ def load(results: Path):
     return ClusteringWorkflowResult.from_protobuf(wrapper.clustering_result), wrapper
 
 
-def term_table(associations, k: int, top: int = 10) -> list[dict]:
+def term_table(associations, k: int, top: int = 10) -> dict[str, Any]:
     """Which terms distinguish the clusters at this k, and whether that is real.
 
     Stratiphy tests each term for association with the partition by Monte Carlo and
@@ -108,14 +109,18 @@ def main() -> None:
         k: sorted(Counter(list(labels)).values(), reverse=True)
         for k, labels in sorted(result.cluster_labels.items())
     }
+    # split_check is optional on the workflow result. Absent means the gap statistic
+    # was never computed, not that the cohort should not be split, so say so rather
+    # than reporting a verdict there is no evidence for.
     check = result.split_check
+    should_split = None if check is None else bool(check.should_split)
 
     summary = {
         "stratiphy_version": wrapper.meta_data.stratiphy_version,
         "hpo_version": wrapper.meta_data.hpo_version,
         "n_samples": len(next(iter(result.cluster_labels.values()))),
-        "should_split": bool(check.should_split),
-        "split_probability": round(float(check.split_proba), 4),
+        "should_split": should_split,
+        "split_probability": None if check is None else round(float(check.split_proba), 4),
         "cluster_sizes_by_k": sizes,
         "alpha": round(float(wrapper.meta_data.association_metadata.alpha), 4),
         "beta": round(float(wrapper.meta_data.association_metadata.beta), 4),
@@ -124,13 +129,15 @@ def main() -> None:
     }
     (args.outdir / "stratiphy_summary.json").write_text(json.dumps(summary, indent=2))
 
-    verdict = "SPLIT" if check.should_split else "DO NOT SPLIT"
+    verdict = {True: "SPLIT", False: "DO NOT SPLIT", None: "NO VERDICT (not computed)"}[
+        should_split
+    ]
     print(f"stratiphy {summary['stratiphy_version']}, HPO {summary['hpo_version']}")
     print(f"{summary['n_samples']} samples")
     print(f"verdict: {verdict}  (split probability {summary['split_probability']})")
     for k, s in sizes.items():
         print(f"  k={k}: sizes {s}")
-    if not check.should_split:
+    if should_split is False:
         print("\nThe partitions above exist for every k regardless; the verdict is what")
         print("says whether any of them is worth interpreting.")
 
@@ -156,7 +163,7 @@ def main() -> None:
         effect = "n/a" if row["effect"] is None else f"{row['effect']}"
         print(f"  {row['hpo_id']:<14} p={row['p_corrected']:<10.2e} "
               f"effect={effect:<7} counts {counts}")
-    if hits and not check.should_split:
+    if hits and should_split is False:
         print("  These describe a partition the verdict says is not real; read them as")
         print("  what would separate the clusters if one were imposed, not as findings.")
 
