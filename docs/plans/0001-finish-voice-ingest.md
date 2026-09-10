@@ -37,12 +37,17 @@ with no bespoke wrapper, and that the phenotype yield of each run is measurable.
    except the privilege dance is ordinary logic that belongs where pytest and ruff can see
    it. The privilege dance is already a documented one-liner in the README.
 
-2. **Refuse a non-empty output directory in `b2ai-ingest voice`.** The ingest writes one
-   file per participant, keyed by participant id. Re-running into a populated directory
-   overwrites everyone still in the cohort but leaves a stale file behind for anyone who
-   has since dropped out, so the output silently becomes a mix of two runs. Fail with a
-   clear error telling the caller to remove the directory. No flag: deleting participant
-   data as a side effect of a convenience flag is worse than an error message.
+2. **Refuse a non-empty output directory in `b2ai-ingest voice`, with `--force` to
+   proceed.** The ingest writes one file per participant, keyed by participant id.
+   Re-running into a populated directory overwrites everyone still in the cohort but
+   leaves a stale file behind for anyone who has since dropped out, so the output silently
+   becomes a mix of two runs. Default is to fail; `--force` removes the existing
+   phenopackets first and writes a clean set.
+
+   Named `--force` rather than `--overwrite` because overwriting is what already happens
+   by default, and is the bug: the flag's actual job is to delete the leftovers from
+   participants who are *not* being overwritten. The error message must say what `--force`
+   deletes, since the flag name cannot carry that on its own.
 
 3. **Document the four commands** in the README as two subcommands against four input
    paths, so the matrix is visible rather than implied.
@@ -60,8 +65,10 @@ with no bespoke wrapper, and that the phenotype yield of each run is measurable.
 ## Critical files
 
 - `scripts/ingest_real.sh` — deleted.
-- `src/b2ai_dataset_ingest/cli.py` — `voice` refuses a non-empty output directory.
-- `tests/test_end_to_end.py` — cover that refusal.
+- `src/b2ai_dataset_ingest/cli.py` — `voice` refuses a non-empty output directory, with
+  `--force` to remove the existing phenopackets and write a clean set.
+- `tests/test_end_to_end.py` — cover the refusal, and that `--force` leaves behind exactly
+  the current cohort with no stale files from a previous run.
 - `README.md` — the four commands, replacing the wrapper's documentation.
 - `scripts/profile_hpo_terms.py` — unchanged, lands via #26.
 
