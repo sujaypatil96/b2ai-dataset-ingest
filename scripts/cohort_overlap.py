@@ -67,6 +67,91 @@ def mapped_instruments(config_dir: Path) -> set[str]:
     return tables
 
 
+def hpo_counts(packets: Path) -> dict[str, int]:
+    """participant id -> count of HPO terms asserted present."""
+    counts: dict[str, int] = {}
+    for path in sorted(packets.glob("*.json")):
+        packet = json.loads(path.read_text())
+        present = {
+            f["type"]["id"]
+            for f in packet.get("phenotypicFeatures", [])
+            if not f.get("excluded")
+        }
+        counts[packet["id"]] = len(present)
+    return counts
+
+
+def _stats(values: list[int]) -> dict[str, float]:
+    if not values:
+        return {"n": 0, "mean": 0.0, "median": 0.0, "zero": 0, "max": 0}
+    ordered = sorted(values)
+    mid = len(ordered) // 2
+    median = (
+        ordered[mid] if len(ordered) % 2 else (ordered[mid - 1] + ordered[mid]) / 2
+    )
+    return {
+        "n": len(values),
+        "mean": round(sum(values) / len(values), 2),
+        "median": float(median),
+        "zero": sum(1 for v in values if v == 0),
+        "max": max(values),
+    }
+
+
+def report_by_coverage(
+    offered: dict[str, set[str]], mapped: set[str], counts: dict[str, int]
+) -> dict[str, object]:
+    """Terms per participant against how much of the battery they were offered.
+
+    The question this answers: is the phenotype signal concentrated in the minority
+    who received the add-on instruments? If participants offered only the universal
+    battery carry almost no terms, then equalising coverage by restricting terms to
+    that battery leaves nothing to cluster, and a profile-matched subcohort is the
+    only option that keeps signal.
+
+    Buckets on the number of *mapped* instruments offered, since an instrument with
+    no mapping config cannot contribute a term however widely it was administered.
+    """
+    by_depth: dict[int, list[int]] = defaultdict(list)
+    for pid, instruments in offered.items():
+        if pid in counts:
+            by_depth[len(instruments & mapped)].append(counts[pid])
+
+    print("\nHPO terms per participant, by how many mapped instruments they were offered")
+    print(f"  {'mapped offered':>14} {'participants':>13} {'mean':>7} {'median':>7} "
+          f"{'zero':>6} {'max':>5}")
+    depth_rows = []
+    for depth in sorted(by_depth):
+        s = _stats(by_depth[depth])
+        depth_rows.append({"mapped_offered": depth, **s})
+        print(f"  {depth:>14} {s['n']:>13} {s['mean']:>7} {s['median']:>7} "
+              f"{s['zero']:>6} {s['max']:>5}")
+
+    # Per instrument: does being offered it move the term count? This is the direct
+    # measure of which instruments carry the signal, and so of what restricting the
+    # term set would cost.
+    print("\nMean terms among participants offered each instrument, vs not offered")
+    print(f"  {'instrument':<34} {'offered n':>10} {'mean in':>8} {'mean out':>9} "
+          f"{'delta':>7}")
+    per_instrument = []
+    for name in sorted(mapped):
+        yes = [counts[p] for p, v in offered.items() if name in v and p in counts]
+        no = [counts[p] for p, v in offered.items() if name not in v and p in counts]
+        if not yes or not no:
+            continue
+        mi, mo = sum(yes) / len(yes), sum(no) / len(no)
+        per_instrument.append(
+            {"instrument": name, "offered": len(yes), "mean_offered": round(mi, 2),
+             "mean_not_offered": round(mo, 2), "delta": round(mi - mo, 2)}
+        )
+    per_instrument.sort(key=lambda r: -r["delta"])
+    for row in per_instrument:
+        print(f"  {row['instrument']:<34} {row['offered']:>10} "
+              f"{row['mean_offered']:>8} {row['mean_not_offered']:>9} "
+              f"{row['delta']:>7}")
+    return {"by_mapped_offered": depth_rows, "per_instrument_effect": per_instrument}
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -80,6 +165,9 @@ def main() -> None:
     ap.add_argument("--outdir", type=Path, default=None,
                     help="where to write cohort.txt and cohort_overlap.json")
     ap.add_argument("--top-pairs", type=int, default=12)
+    ap.add_argument("--phenopackets", type=Path, default=None,
+                    help="emitted phenopackets; adds terms-per-participant broken "
+                         "down by how much of the battery each was offered")
     args = ap.parse_args()
 
     offered, rows_per = read_offered(args.input, args.subdirs.split(","))
@@ -130,6 +218,19 @@ def main() -> None:
         "greedy_curve": curve,
         "top_pairs": [{"a": a, "b": b, "both": c} for (a, b), c in pairs.most_common(50)],
     }
+
+    if args.phenopackets:
+        counts = hpo_counts(args.phenopackets)
+        matched = set(counts) & set(offered)
+        if not matched:
+            raise SystemExit(
+                f"no participant ids in {args.phenopackets} match the questionnaire "
+                "tables; is this the phenopacket set built from --input?"
+            )
+        if len(matched) < len(counts):
+            print(f"\nnote: {len(counts) - len(matched)} phenopacket(s) have no "
+                  "questionnaire row and are excluded from the breakdown below")
+        summary.update(report_by_coverage(offered, mapped, counts))
 
     cohort: list[str] = []
     if args.require:
