@@ -1,0 +1,6 @@
+studyid,race___c17459,race___c41260,race___c16352,race___c77820,race___c41219,race___c77813,race___c41261,race___888,race___777,raceot,race2,ethnic___c41222,ethnic___c67113,ethnic___c67112,ethnic___c107608,ethnic___c67117,ethnic___c67118,ethnic___c126532,ethnic___c999,ethnic___888,ethnic___777,ethnicot,racetrib,ancestry,scrsex,genderid,genderidot,rp_childpot,cl_maristat,mhcat_dmtaot,mhoccur_cnsot,mhoccur_cnrot,pxhic6,pxhic9,dvenvlocn
+900001,0,0,0,0,0,0,1,0,0,,,1,0,0,0,0,0,0,0,0,0,,,CANARY-ANCESTRY-900001,F,2,,0,C51773,,,,0,,CANARY-SENSOR-ROOM
+900002,1,1,0,0,0,0,0,0,0,,C41260,0,1,0,0,0,0,0,1,0,0,,CANARY-TRIBE,CANARY-ANCESTRY-900002,M,1,,0,C51774,,CANARY-CNS-TEXT,,0,,CANARY-SENSOR-ROOM
+900003,0,0,0,0,0,0,0,0,1,,,0,0,0,0,0,0,0,0,1,0,CANARY-ETHNIC-OTHER,,,I,3,,0,777,,,CANARY-CANCER-TEXT,777,,
+900004,0,0,0,0,0,0,0,1,0,CANARY-RACE-OTHER,,1,0,0,0,0,0,0,0,0,0,,,,777,777,,0,C51773,,,,1,CANARY-INSURANCE,
+900099,0,0,0,0,0,0,1,0,0,,,1,0,0,0,0,0,0,0,0,0,,,CANARY-ANCESTRY-900099,F,2,,0,C51773,,,,0,,

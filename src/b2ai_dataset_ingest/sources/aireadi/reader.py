@@ -10,6 +10,10 @@ The AI-READI release is a CDS-v0.1.1 tree whose clinical payload is OMOP CDM v5.
                                               + value-gated PhenotypicFeature (HPO, per row)
     clinical_data/observation.csv          -> MeasurementObservation (instrument items)
                                               + value-gated PhenotypicFeature (HPO, per answer)
+    --protected <dir>  (REDCap exports)    -> Individual.sex / .gender / .race / .ethnicity
+                                              + TreatmentObservation (medications); the
+                                              controlled variables AI-READI withholds from
+                                              public releases -- see protected.py
 
 Where this diverges from :mod:`sources.voice.reader`, and why:
 
@@ -37,7 +41,7 @@ from __future__ import annotations
 import csv
 import logging
 from collections import OrderedDict
-from collections.abc import Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from fnmatch import fnmatch
 from pathlib import Path
 from typing import Any
@@ -58,6 +62,7 @@ from b2ai_dataset_ingest.mapping.omop import (
     item_key,
     to_rfc3339,
 )
+from b2ai_dataset_ingest.mapping.redcap import locate_files, stream_rows
 from b2ai_dataset_ingest.model import (
     DiseaseObservation,
     Individual,
@@ -69,8 +74,10 @@ from b2ai_dataset_ingest.model import (
     Quantity,
     ReferenceRange,
     TimePoint,
+    TreatmentObservation,
 )
 from b2ai_dataset_ingest.reporting import IngestReport
+from b2ai_dataset_ingest.sources.aireadi.protected import apply_demographics, apply_medications
 from b2ai_dataset_ingest.sources.base import Source
 
 logger = logging.getLogger(__name__)
@@ -88,6 +95,7 @@ class _Accumulator:
         self.diseases: list[DiseaseObservation] = []
         self.measurements: list[MeasurementObservation] = []
         self.phenotypic_features: list[PhenotypicFeatureObservation] = []
+        self.treatments: list[TreatmentObservation] = []
         self._disease_ids: set[str] = set()
 
     def add_disease(self, disease: DiseaseObservation) -> None:
@@ -100,7 +108,11 @@ class AireadiSource(Source):
     dataset_id = "bridge2ai-aireadi"
 
     def __init__(
-        self, root: Path, config_dir: Path, mappings: Iterable[Path] | None = None
+        self,
+        root: Path,
+        config_dir: Path,
+        mappings: Iterable[Path] | None = None,
+        protected_dir: Path | None = None,
     ) -> None:
         super().__init__(root, config_dir)
         #: Aggregate, PHI-safe counts for the most recent :meth:`read`. The CLI prints it.
@@ -109,6 +121,8 @@ class AireadiSource(Source):
         #: SSSOM files carrying value-gated rules; None -> the shipped aireadi sets.
         self._mappings = list(mappings) if mappings is not None else None
         self._hpo_rules: dict[str, dict[str, list[ConditionalRule]]] | None = None
+        #: Directory holding the protected supplement's REDCap exports; None -> not read.
+        self.protected_dir = Path(protected_dir) if protected_dir is not None else None
 
     # -- config --------------------------------------------------------------------
     @property
@@ -146,6 +160,10 @@ class AireadiSource(Source):
         self._read_conditions(accumulator, visits, anchors)
         self._read_measurements(accumulator, visits, anchors)
         self._read_observations(accumulator, visits, anchors)
+        # Last, and with a lookup rather than the accumulator factory: the supplement enriches
+        # the participants the clinical tables established and never creates one. See
+        # protected.py for why.
+        self._read_protected(participants.get, anchors)
 
         self.report.participants = len(participants)
         for person_id in sorted(participants):
@@ -157,9 +175,46 @@ class AireadiSource(Source):
                 diseases=acc.diseases,
                 measurements=acc.measurements,
                 phenotypic_features=acc.phenotypic_features,
+                treatments=acc.treatments,
                 source_dataset=self.dataset_id,
                 cohort=acc.cohort,
             )
+
+    # -- the protected supplement (REDCap exports) -----------------------------------
+    def _read_protected(
+        self, lookup: Callable[[str], _Accumulator | None], anchors: dict[str, AgeAnchor]
+    ) -> None:
+        """Enrich established participants from the REDCap exports under ``protected_dir``.
+
+        One config per export under ``config/aireadi/protected/``; each names its file by a
+        glob so the delivered ``.xlsx`` and a ``.csv`` conversion of it both match. Zero or
+        several matches is a missing table, never a guess.
+        """
+        if self.protected_dir is None:
+            return
+        configs = sorted((self.config_dir / "protected").glob("*.yaml"))
+        if not configs:
+            logger.warning(
+                "--protected given, but %s/protected/ holds no *.yaml", self.config_dir
+            )
+            return
+        for path in configs:
+            mapping = self._config(f"protected/{path.name}") or {}
+            table = str(mapping.get("table", path.stem))
+            pattern = str(mapping.get("file_glob", ""))
+            matches = locate_files(self.protected_dir, pattern)
+            if len(matches) != 1:
+                self.report.tables_missing.append(table)
+                logger.warning(
+                    "%s: expected one export matching %r, found %d", table, pattern, len(matches)
+                )
+                continue
+            rows = stream_rows(matches[0], mapping.get("sheet"))
+            self.report.tables_read.append(table)
+            if mapping.get("produces") == "TreatmentObservation":
+                apply_medications(mapping, rows, lookup, anchors, self.report)
+            else:
+                apply_demographics(mapping, rows, lookup, self.report)
 
     # -- time ----------------------------------------------------------------------
     def _read_visits(self) -> dict[str, str]:

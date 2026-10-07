@@ -8,6 +8,7 @@ phenopackets, a ``TimeElement``).
 """
 
 from b2ai_dataset_ingest.model.core import (
+    DRUG_TYPES,
     DiseaseObservation,
     Evidence,
     ExternalReference,
@@ -20,9 +21,11 @@ from b2ai_dataset_ingest.model.core import (
     Quantity,
     ReferenceRange,
     TimePoint,
+    TreatmentObservation,
 )
 
 __all__ = [
+    "DRUG_TYPES",
     "DiseaseObservation",
     "Evidence",
     "ExternalReference",
@@ -35,4 +38,5 @@ __all__ = [
     "Quantity",
     "ReferenceRange",
     "TimePoint",
+    "TreatmentObservation",
 ]

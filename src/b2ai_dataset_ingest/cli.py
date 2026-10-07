@@ -227,6 +227,15 @@ def aireadi(
         Path("config/aireadi"), "--config", "-c", help="Mapping config dir."
     ),
     target: str = typer.Option("phenopacket", "--target", "-t", help="Output target."),
+    protected: Path = typer.Option(
+        None,
+        "--protected",
+        "-p",
+        help="Directory holding the protected supplement: the REDCap Demographics and "
+        "Medications exports AI-READI releases under a separate DUA (sex, race/ethnicity, "
+        "medications). Rows enrich participants the clinical tables establish and never "
+        "create one. See config/aireadi/protected/.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Log per-table warnings."),
 ) -> None:
     """Ingest the Bridge2AI AI-READI dataset (OMOP CDM) into one phenopacket per participant."""
@@ -245,7 +254,7 @@ def aireadi(
         typer.echo(f"target {target!r} is not implemented yet", err=True)
         raise typer.Exit(code=2)
 
-    source = AireadiSource(root=input, config_dir=config)
+    source = AireadiSource(root=input, config_dir=config, protected_dir=protected)
     # The generator is handed straight to the emitter: OMOP tables are large (the synthetic
     # measurement table is 768k rows) and write_all holds nothing.
     written = PhenopacketEmitter().write_all(source.read(), output)
@@ -269,6 +278,14 @@ def validate_aireadi_cmd(
             "flag it -- see config/aireadi/conditions.yaml."
         ),
     ),
+    protected: Path = typer.Option(
+        None,
+        "--protected",
+        "-p",
+        help="Directory holding the protected supplement (REDCap Demographics and Medications "
+        "exports). Checked on the same PHI-safe terms: headers, code sets, counts, and an "
+        "over-the-counter ingredient tally that settles drug_type; never a cell.",
+    ),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Log details."),
 ) -> None:
     """Preflight-check the AI-READI OMOP layout against its configs.
@@ -283,7 +300,9 @@ def validate_aireadi_cmd(
         level=logging.INFO if verbose else logging.WARNING,
         format="%(levelname)s %(name)s: %(message)s",
     )
-    report = validate_aireadi(root=input, config_dir=config, strict_coverage=strict_coverage)
+    report = validate_aireadi(
+        root=input, config_dir=config, strict_coverage=strict_coverage, protected=protected
+    )
     typer.echo(report.render())
     if report.errors:
         raise typer.Exit(code=1)

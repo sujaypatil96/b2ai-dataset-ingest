@@ -13,4 +13,6 @@ taxonomy:
   id: "NCBITaxon:9606"
   label: "Homo sapiens"
 
-# ethnicity / race codings: TODO (decide ontology — NCIT / HANCESTRO).
+# ethnicity / race codings: NCIT, decided 2026-10-06 — see config/aireadi/protected/demographics.yaml.
+# Carried on Individual.race / .ethnicity in the IR only: the phenopacket schema has no slot for
+# them (verified against schema v2 the same day), so no emitter writes them.

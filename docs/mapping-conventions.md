@@ -88,6 +88,48 @@ rejects `2023-12-12`, `2023-12-12 08:19:00` and `2023-12-12T08:19:00` alike, and
 catches that error and falls back — so an un-normalized value loses every `time_observed`
 without anything failing. Normalize with `omop.to_rfc3339` before building a `TimePoint`.
 
+## REDCap exports (AI-READI protected supplement)
+
+The controlled variables AI-READI withholds from public releases — sex, race/ethnicity,
+medications — arrive as raw REDCap exports, one workbook per form, not as OMOP tables.
+`mapping/redcap.py` holds the primitives, `config/aireadi/protected/` the configs, and
+`--protected <dir>` on the `aireadi` commands reads them. Three conventions carry the weight.
+
+- **A checkbox field is one column per choice**, `<field>___<code>` with the code
+  *lower-cased* in the export (`race___c41261` for choice `C41261`), holding `1`/`0`. A config
+  declares the group once, under `checkbox_groups:`, as `<field>: {target: Individual.<list
+  field>, choices: {<code>: {id, label} | null}}`. `null` means "a real answer with no term" (an
+  *Other* whose free-text companion is never read) and is counted as dropped by policy; a code
+  listed in `refusal_codes` is counted as a refusal instead.
+- **Choice codes are never CURIEs.** AI-READI used NCIT concept codes as its choice codes, which
+  is convenient and wrong once: `C17459` labels *American Indian or Alaska Native* on the form
+  and *Hispanic or Latino* in NCIT. Map every code explicitly to a term verified against the
+  ontology, and keep the source code only as the column name.
+- **Excel types cells, and the types lie.** The same code column is `int` on one row and `str`
+  on the next; a dose entered as `1-2` arrives as a *datetime*. `redcap.cell_text` reduces every
+  cell to the text a CSV would carry, so readers see one shape, and renders a datetime in a form
+  no numeric parser accepts — the mangled dose is counted, never read as a number. The validator
+  reads cells typed so it can report how many were converted.
+
+Per-table keys: `table` (also the report namespace), `produces` (`Individual` or
+`TreatmentObservation`), `file_glob` (matched under `--protected`; lock files and unsupported
+extensions are skipped, so name the form, not the extension), `id_column`, `refusal_codes`, and
+`dropped_columns` — every column present and deliberately unread, with its reason; a free-text
+column *must* appear there, and the validator names it as present-and-unread. The demographics
+shape reuses `columns:` from the Voice demographics config, with one addition: a `value_map`
+entry may recode onto an `{id, label}` term (gender identity) as well as onto an enum string. The
+medications shape adds `instrument` / `instrument_column` / `instance_column` for the repeating
+instrument, `agent: {code_column, label_column, prefix, pattern}`, `route:` and `frequency:` as
+`{column, terms}`, `dose: {value_column, unit_column, units}`, `drug_type`, and an
+`otc_watchlist` the preflight tallies.
+
+**The supplement enriches; it never creates.** A row whose id matches no participant the
+clinical tables established is counted and dropped, so the ingest reads the supplement last.
+
+**Nothing from the supplement is a `b2ai:` subject.** No HPO derivation runs over it and no
+SSSOM set names its tables; the `table` names (`protected_demographics`, `protected_medications`)
+are chosen not to collide with any dataset's `b2ai:<table>` namespace.
+
 ## Time
 
 - Every observation gets a `TimePoint` from its `session_id`. The reader attaches an NCIT

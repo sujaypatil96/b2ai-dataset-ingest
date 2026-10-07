@@ -10,6 +10,8 @@ module is the natural thing to promote to a LinkML schema (see docs/adr/0001).
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -76,6 +78,19 @@ class Individual(BaseModel):
     )
     taxonomy: OntologyTerm | None = Field(
         default=None, description="Defaults to Homo sapiens (NCBITaxon:9606) at emit time."
+    )
+    # IR-ONLY. The phenopacket schema has no race/ethnicity/ancestry field anywhere -- checked
+    # 2026-10-06 against v2 individual.proto, phenopackets.proto and base.proto, and upstream
+    # issue phenopacket-schema#231 ("Ethnicity") has been open since 2020. The emitter does
+    # not write these; they are here for the run report and for a future target that has a
+    # slot. Both are multi-select on the source form, hence lists.
+    race: list[OntologyTerm] = Field(
+        default_factory=list,
+        description="Self-identified race, multi-select (NCIT). Not emitted to phenopackets.",
+    )
+    ethnicity: list[OntologyTerm] = Field(
+        default_factory=list,
+        description="Self-identified ethnicity, multi-select (NCIT). Not emitted to phenopackets.",
     )
 
 
@@ -163,6 +178,48 @@ class PhenotypicFeatureObservation(BaseModel):
     )
 
 
+#: The GA4GH ``DrugType`` enum names (medical_action.proto). The IR carries the name rather than
+#: the number so a source reader never imports the phenopackets package.
+DRUG_TYPES = (
+    "UNKNOWN_DRUG_TYPE",
+    "PRESCRIPTION",
+    "EHR_MEDICATION_LIST",
+    "ADMINISTRATION_RELATED_TO_PROCEDURE",
+)
+
+
+class TreatmentObservation(BaseModel):
+    """A medication the participant takes -- the GA4GH ``MedicalAction.treatment`` analogue.
+
+    Modelled on a self-reported *current medications* list, so deliberately thin: an agent, how
+    it is taken, and the dose and frequency as stated. ``dose`` and ``frequency`` are kept here
+    but the phenopacket emitter does not write them: a ``DoseInterval`` also requires a
+    timestamped ``interval``, which an undated medication list cannot honestly supply (and at
+    age precision no date may leave the pipeline). The emitter writes agent, route and drug
+    type and the run report counts the doses withheld. See docs/design/aireadi-ingest.md §8.
+    """
+
+    agent: OntologyTerm = Field(..., description="The drug, e.g. rxnorm:10582 levothyroxine.")
+    route: OntologyTerm | None = Field(None, description="NCIT route of administration.")
+    dose: Quantity | None = Field(None, description="Amount per administration, UCUM unit.")
+    frequency: OntologyTerm | None = Field(
+        None, description="NCIT schedule frequency, e.g. NCIT:C125004 Once Daily."
+    )
+    drug_type: Literal[
+        "UNKNOWN_DRUG_TYPE",
+        "PRESCRIPTION",
+        "EHR_MEDICATION_LIST",
+        "ADMINISTRATION_RELATED_TO_PROCEDURE",
+    ] = Field(
+        "UNKNOWN_DRUG_TYPE",
+        description="The setting the record came from (GA4GH DrugType name); not its reliability.",
+    )
+    time: TimePoint | None = Field(
+        None, description="When the list was taken, if known. Not emitted (no slot)."
+    )
+    description: str | None = None
+
+
 class Participant(BaseModel):
     """One participant = the unit of one output phenopacket."""
 
@@ -170,6 +227,10 @@ class Participant(BaseModel):
     diseases: list[DiseaseObservation] = Field(default_factory=list)
     measurements: list[MeasurementObservation] = Field(default_factory=list)
     phenotypic_features: list[PhenotypicFeatureObservation] = Field(default_factory=list)
+    treatments: list[TreatmentObservation] = Field(
+        default_factory=list,
+        description="Medications; each becomes a MedicalAction with a Treatment.",
+    )
     source_dataset: str | None = Field(
         None, description="e.g. 'bridge2ai-voice' — recorded in output metadata."
     )

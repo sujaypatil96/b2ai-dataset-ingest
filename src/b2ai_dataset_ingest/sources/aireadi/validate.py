@@ -27,13 +27,24 @@ count of 1 plus outside knowledge is a small-cell disclosure.
 from __future__ import annotations
 
 import csv
+import re
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from b2ai_dataset_ingest.mapping.loaders import is_placeholder, load_mapping
-from b2ai_dataset_ingest.mapping.omop import is_blank, item_key
+from b2ai_dataset_ingest.mapping.omop import as_number, is_blank, item_key
+from b2ai_dataset_ingest.mapping.redcap import (
+    ExcelSupportMissing,
+    cell_text,
+    checkbox_column,
+    locate_files,
+    looks_like_datetime,
+    normalize_id,
+    read_header,
+    stream_rows,
+)
 
 #: Counts at or below this print as "<5" rather than the exact number.
 SMALL_CELL = 5
@@ -105,7 +116,10 @@ def count(n: int) -> str:
 
 
 def validate_aireadi(
-    root: Path, config_dir: Path, strict_coverage: bool = False
+    root: Path,
+    config_dir: Path,
+    strict_coverage: bool = False,
+    protected: Path | None = None,
 ) -> ValidationReport:
     """Validate the on-disk AI-READI layout at ``root`` against configs in ``config_dir``.
 
@@ -120,6 +134,10 @@ def validate_aireadi(
     What is an error *regardless*: a table that is present but malformed — a missing
     ``person_id``, a missing key column, an unreadable header. Those are contract violations
     at any coverage level.
+
+    ``protected`` names the directory holding the protected supplement's REDCap exports (sex,
+    race/ethnicity, medications). Those are checked on the same PHI terms — see
+    :func:`_validate_protected`.
     """
     report = ValidationReport()
     _validate_participants(root, config_dir, report, strict_coverage)
@@ -130,6 +148,8 @@ def validate_aireadi(
     )
     _validate_measurements(root, config_dir, report, strict_coverage)
     _check_root_looks_like_a_release(root, report)
+    if protected is not None:
+        _validate_protected(root, config_dir, Path(protected), report)
     return report
 
 
@@ -406,3 +426,420 @@ def _read(path: Path, delimiter: str) -> tuple[list[str] | None, list[dict[str, 
         rows = list(reader)
         header = list(reader.fieldnames) if reader.fieldnames else []
     return header, rows
+
+
+# -- the protected supplement (REDCap exports) ---------------------------------------------
+#
+# Same terms as the OMOP checks: column names, choice codes and watchlist ingredient names are
+# vocabulary; everything else is a count, small cells suppressed. The free-text columns are
+# named only as *present and unread*; nothing about their contents is summarised, not even a
+# fill count.
+
+
+def _validate_protected(
+    root: Path, config_dir: Path, protected_dir: Path, report: ValidationReport
+) -> None:
+    configs = sorted((config_dir / "protected").glob("*.yaml"))
+    if not configs:
+        report.warning(
+            "protected", f"--protected given, but {config_dir}/protected/ holds no *.yaml"
+        )
+        return
+    cohort = _cohort_ids(root, config_dir)
+    for path in configs:
+        mapping = _load(path) or {}
+        table = str(mapping.get("table", path.stem))
+        pattern = str(mapping.get("file_glob", ""))
+        matches = locate_files(protected_dir, pattern)
+        if len(matches) != 1:
+            report.error(
+                table,
+                f"expected exactly one export matching {pattern!r} under "
+                f"{protected_dir.name or protected_dir}/, found {len(matches)}",
+            )
+            continue
+        report.tables_checked.append(table)
+        try:
+            header = read_header(matches[0], mapping.get("sheet"))
+            rows = list(stream_rows(matches[0], mapping.get("sheet"), typed=True))
+        except ExcelSupportMissing as exc:
+            report.error(table, str(exc))
+            continue
+        if mapping.get("produces") == "TreatmentObservation":
+            _check_medications(mapping, table, header, rows, cohort, report)
+        else:
+            _check_demographics(mapping, table, header, rows, cohort, report)
+
+
+def _cohort_ids(root: Path, config_dir: Path) -> set[str] | None:
+    """Every ``person_id`` the clinical tables establish, or None when no table is present.
+
+    All tables, not only ``participants.tsv``: the reader creates a participant from any table
+    that names one (a measurement-only participant still gets a packet), so the overlap check
+    must use the same universe or it would call a matched row unmatched. Streams the id
+    column only -- ``measurement.csv`` is the large one.
+    """
+    ids: set[str] = set()
+    found = False
+    mapping = _load(config_dir / "participants.yaml") or {}
+    cohort_ids = _ids_in(
+        root / mapping.get("file", "participants.tsv"),
+        mapping.get("id_column", "person_id"),
+        mapping.get("delimiter", "\t"),
+    )
+    if cohort_ids is not None:
+        found, ids = True, ids | cohort_ids
+    for table in ("person", "condition_occurrence", "measurement", "observation"):
+        table_ids = _ids_in(root / "clinical_data" / f"{table}.csv", "person_id", ",")
+        if table_ids is not None:
+            found, ids = True, ids | table_ids
+    return ids if found else None
+
+
+def _ids_in(path: Path, column: str, delimiter: str) -> set[str] | None:
+    if not path.exists():
+        return None
+    with open(path, newline="", encoding="utf-8") as fh:
+        ids = {normalize_id(row.get(column)) for row in csv.DictReader(fh, delimiter=delimiter)}
+    ids.discard("")
+    return ids
+
+
+def _header_map(header: list[str]) -> dict[str, str]:
+    return {name.lower(): name for name in header if name}
+
+
+def _require(
+    table: str, header_map: dict[str, str], wanted: list[str], report: ValidationReport
+) -> None:
+    for name in wanted:
+        if name.lower() not in header_map:
+            report.error(table, f"mapped column absent from header: {name}")
+
+
+def _describe_header(
+    table: str,
+    header: list[str],
+    documented: set[str],
+    dropped: dict[str, Any],
+    header_map: dict[str, str],
+    report: ValidationReport,
+) -> None:
+    """Every export column is either mapped or listed as deliberately unread, and says why."""
+    undocumented = [name for name in header if name and name.lower() not in documented]
+    if undocumented:
+        report.warning(
+            table,
+            f"{len(undocumented)} column(s) in the export are described by neither the "
+            "mapping nor dropped_columns: "
+            + ", ".join(undocumented[:12])
+            + (" ..." if len(undocumented) > 12 else ""),
+        )
+    absent = sorted(str(c) for c in dropped if str(c).lower() not in header_map)
+    if absent:
+        report.info(
+            table, f"{len(absent)} documented column(s) not in this export: " + ", ".join(absent)
+        )
+    free_text = sorted(
+        str(c)
+        for c, why in dropped.items()
+        if "free text" in str(why).lower() and str(c).lower() in header_map
+    )
+    if free_text:
+        report.info(
+            table,
+            f"{len(free_text)} free-text column(s) present and never read: " + ", ".join(free_text),
+        )
+
+
+def _overlap(
+    table: str, ids: set[str], cohort: set[str] | None, report: ValidationReport, noun: str
+) -> None:
+    if cohort is None:
+        report.info(table, "no clinical tables under the root; id overlap not checked")
+        return
+    unmatched = len(ids - cohort)
+    if unmatched:
+        report.warning(
+            table,
+            f"{count(unmatched)} supplement id(s) match no participant in the clinical tables "
+            "(those rows are dropped: the supplement enriches, it never creates)",
+        )
+    report.info(
+        table,
+        f"{count(len(ids & cohort))} of {count(len(cohort))} cohort participant(s) have "
+        f"{noun}; {count(len(cohort - ids))} have none",
+    )
+
+
+def _check_demographics(
+    mapping: dict[str, Any],
+    table: str,
+    header: list[str],
+    rows: list[dict[str, Any]],
+    cohort: set[str] | None,
+    report: ValidationReport,
+) -> None:
+    header_map = _header_map(header)
+    id_column = str(mapping.get("id_column", "studyid"))
+    columns: dict[str, Any] = mapping.get("columns") or {}
+    groups: dict[str, Any] = mapping.get("checkbox_groups") or {}
+    dropped: dict[str, Any] = mapping.get("dropped_columns") or {}
+    refusals = {str(code) for code in (mapping.get("refusal_codes") or [])}
+    checkbox_columns = [
+        checkbox_column(group, code)
+        for group, spec in groups.items()
+        for code in ((spec or {}).get("choices") or {})
+    ]
+    required = [id_column, *columns, *checkbox_columns]
+    _require(table, header_map, required, report)
+    documented = {c.lower() for c in required} | {str(c).lower() for c in dropped}
+    _describe_header(table, header, documented, dropped, header_map, report)
+
+    id_actual = header_map.get(id_column.lower())
+    ids = Counter(normalize_id(row.get(id_actual)) for row in rows) if id_actual else Counter()
+    ids.pop("", None)
+    report.info(table, f"{count(len(rows))} row(s), {count(len(ids))} distinct id(s)")
+    duplicated = sum(1 for n in ids.values() if n > 1)
+    if duplicated:
+        report.warning(
+            table,
+            f"{count(duplicated)} id(s) appear on more than one row; the reader keeps the first",
+        )
+    _overlap(table, set(ids), cohort, report, "a demographics row")
+
+    for column, spec in columns.items():
+        actual = header_map.get(column.lower())
+        if actual is None:
+            continue
+        keys = {str(k).lower() for k in ((spec or {}).get("value_map") or {})}
+        outside = refused = 0
+        for row in rows:
+            text = normalize_id(row.get(actual))
+            if not text:
+                continue
+            if text.lower() in keys:
+                refused += text in refusals
+            else:
+                outside += 1
+        if outside:
+            report.warning(
+                table,
+                f"{column}: {count(outside)} value(s) outside the dictionary's code set "
+                "(dropped by the reader)",
+            )
+        if refused:
+            report.info(table, f"{column}: {count(refused)} refusal(s) leave the field unset")
+    for column in checkbox_columns:
+        actual = header_map.get(column.lower())
+        if actual is None:
+            continue
+        bad = sum(1 for row in rows if cell_text(row.get(actual)) not in {"", "0", "1"})
+        if bad:
+            report.warning(table, f"{column}: {count(bad)} cell(s) are not 0/1")
+
+
+def _check_medications(
+    mapping: dict[str, Any],
+    table: str,
+    header: list[str],
+    rows: list[dict[str, Any]],
+    cohort: set[str] | None,
+    report: ValidationReport,
+) -> None:
+    header_map = _header_map(header)
+    id_column = str(mapping.get("id_column", "studyid"))
+    instrument_column = mapping.get("instrument_column")
+    instrument = mapping.get("instrument")
+    instance_column = mapping.get("instance_column")
+    agent: dict[str, Any] = mapping.get("agent") or {}
+    code_column = str(agent.get("code_column", "rxnorm_code"))
+    label_column = str(agent.get("label_column", "rxnorm_term"))
+    pattern = re.compile(str(agent.get("pattern", r"^[0-9]{1,7}$")))
+    route: dict[str, Any] = mapping.get("route") or {}
+    dose: dict[str, Any] = mapping.get("dose") or {}
+    frequency: dict[str, Any] = mapping.get("frequency") or {}
+    dropped: dict[str, Any] = mapping.get("dropped_columns") or {}
+    coded: list[tuple[str, dict[Any, Any]]] = [
+        (str(route.get("column", "")), route.get("terms") or {}),
+        (str(dose.get("unit_column", "")), dose.get("units") or {}),
+        (str(frequency.get("column", "")), frequency.get("terms") or {}),
+    ]
+    dose_column = str(dose.get("value_column", ""))
+    required = [
+        name
+        for name in [
+            id_column,
+            str(instrument_column or ""),
+            str(instance_column or ""),
+            code_column,
+            label_column,
+            dose_column,
+            *[column for column, _ in coded],
+        ]
+        if name
+    ]
+    _require(table, header_map, required, report)
+    documented = {c.lower() for c in required} | {str(c).lower() for c in dropped}
+    _describe_header(table, header, documented, dropped, header_map, report)
+
+    id_actual = header_map.get(id_column.lower())
+    ids = Counter(normalize_id(row.get(id_actual)) for row in rows) if id_actual else Counter()
+    ids.pop("", None)
+    report.info(table, f"{count(len(rows))} row(s), {count(len(ids))} distinct id(s)")
+    _overlap(table, set(ids), cohort, report, "a medication row")
+
+    if instrument_column and instrument and header_map.get(str(instrument_column).lower()):
+        actual = header_map[str(instrument_column).lower()]
+        other = sum(1 for row in rows if cell_text(row.get(actual)) not in {"", str(instrument)})
+        if other:
+            report.warning(
+                table, f"{count(other)} row(s) belong to another instrument and are skipped"
+            )
+    if instance_column and id_actual and header_map.get(str(instance_column).lower()):
+        actual = header_map[str(instance_column).lower()]
+        pairs = Counter(
+            (normalize_id(row.get(id_actual)), normalize_id(row.get(actual))) for row in rows
+        )
+        duplicated = sum(1 for n in pairs.values() if n > 1)
+        if duplicated:
+            report.warning(
+                table,
+                f"{count(duplicated)} (id, instance) pair(s) appear more than once; the reader "
+                "keeps the first",
+            )
+
+    code_actual = header_map.get(code_column.lower())
+    label_actual = header_map.get(label_column.lower())
+    if code_actual and label_actual:
+        blank = malformed = 0
+        terms_by_code: dict[str, set[str]] = {}
+        codes_by_term: dict[str, set[str]] = {}
+        for row in rows:
+            code = normalize_id(row.get(code_actual))
+            term = cell_text(row.get(label_actual)).lower()
+            if not code:
+                blank += 1
+                continue
+            if not pattern.match(code):
+                malformed += 1
+                continue
+            if term:
+                terms_by_code.setdefault(code, set()).add(term)
+                codes_by_term.setdefault(term, set()).add(code)
+        if blank:
+            report.info(table, f"{count(blank)} row(s) carry no RxNorm code and emit no agent")
+        if malformed:
+            report.warning(
+                table, f"{count(malformed)} row(s) carry an RxNorm code that is not a bare RXCUI"
+            )
+        multi_terms = sum(1 for terms in terms_by_code.values() if len(terms) > 1)
+        multi_codes = sum(1 for codes in codes_by_term.values() if len(codes) > 1)
+        if multi_terms:
+            report.warning(
+                table,
+                f"{count(multi_terms)} RxNorm code(s) carry more than one distinct term; the "
+                "reader keeps each row's own term, but a code should name one concept",
+            )
+        else:
+            report.info(
+                table, f"{count(len(terms_by_code))} distinct RxNorm code(s), each with one term"
+            )
+        if multi_codes:
+            report.info(table, f"{count(multi_codes)} term(s) appear under more than one code")
+
+    for column, terms in coded:
+        actual = header_map.get(column.lower()) if column else None
+        if actual is None:
+            continue
+        keys = {str(k).lower(): k for k in terms}
+        outside = policy = 0
+        for row in rows:
+            text = normalize_id(row.get(actual))
+            if not text:
+                continue
+            key = keys.get(text.lower())
+            if key is None:
+                outside += 1
+            elif terms[key] is None:
+                policy += 1
+        if outside:
+            report.warning(
+                table,
+                f"{column}: {count(outside)} value(s) not in the config's code set (dropped by "
+                "the reader)",
+            )
+        if policy:
+            report.info(
+                table,
+                f"{column}: {count(policy)} value(s) map to no term by design (Other / no NCIT "
+                "term); that slot is left unset",
+            )
+
+    dose_actual = header_map.get(dose_column.lower()) if dose_column else None
+    if dose_actual:
+        dated = other = 0
+        for row in rows:
+            raw = row.get(dose_actual)
+            text = cell_text(raw)
+            if not text or as_number(text) is not None:
+                continue
+            if looks_like_datetime(raw):
+                dated += 1
+            else:
+                other += 1
+        if dated:
+            report.warning(
+                table,
+                f"{dose_column}: {count(dated)} cell(s) are typed as dates -- Excel "
+                "auto-converted free text such as '1-2' on entry; the dose is dropped and the "
+                "medication kept",
+            )
+        if other:
+            report.info(table, f"{dose_column}: {count(other)} other non-numeric cell(s) dropped")
+
+    watchlist = [str(item) for item in (mapping.get("otc_watchlist") or [])]
+    if watchlist and label_actual and id_actual:
+        patterns = [
+            (item, re.compile(r"\b" + re.escape(item.lower()) + r"\b")) for item in watchlist
+        ]
+        hits: Counter = Counter()
+        people: set[str] = set()
+        for row in rows:
+            term = cell_text(row.get(label_actual)).lower()
+            if not term:
+                continue
+            matched = False
+            for item, regex in patterns:
+                if regex.search(term):
+                    hits[item] += 1
+                    matched = True
+            if matched:
+                people.add(normalize_id(row.get(id_actual)))
+        declared = str(mapping.get("drug_type") or "UNKNOWN_DRUG_TYPE")
+        total = sum(hits.values())
+        if total:
+            detail = ", ".join(f"{item}={count(n)}" for item, n in hits.most_common())
+            report.info(
+                table,
+                f"over-the-counter watchlist: {count(total)} row(s) across "
+                f"{count(len(people))} participant(s) name a watchlist ingredient [{detail}]",
+            )
+            if declared == "UNKNOWN_DRUG_TYPE":
+                report.info(
+                    table,
+                    "drug_type: the list is not prescription-only, so UNKNOWN_DRUG_TYPE is the "
+                    "only DrugType true of every row",
+                )
+            else:
+                report.warning(
+                    table,
+                    f"drug_type: config declares {declared}, which is false for the "
+                    "over-the-counter rows above",
+                )
+        else:
+            report.info(
+                table,
+                "over-the-counter watchlist: no match; a prescription-only list is possible -- "
+                "confirm with AI-READI before changing drug_type",
+            )

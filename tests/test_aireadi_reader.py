@@ -279,7 +279,8 @@ def test_fixture_carries_no_real_looking_person_id():
         delimiter = "\t" if path.suffix == ".tsv" else ","
         with open(path, newline="") as fh:
             for row in csv.DictReader(fh, delimiter=delimiter):
-                person_id = (row.get("person_id") or "").strip()
+                # The protected supplement's exports key on the REDCap record id `studyid`.
+                person_id = (row.get("person_id") or row.get("studyid") or "").strip()
                 assert person_id.startswith("9000"), (
                     f"{path.name} carries {person_id!r}, which is not a 9000xx fixture id"
                 )

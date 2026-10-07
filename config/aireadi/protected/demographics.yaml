@@ -1,0 +1,137 @@
+# Mapping: AI-READI protected supplement, "Demographics and Other" REDCap export -> Individual (IR)
+#
+# WHAT THIS FILE IS. AI-READI withholds sex, race/ethnicity, medications and 5-digit zip from
+# its public releases (docs.aireadi.org/docs/3/controlled-variables) and delivers them to
+# approved users, under a separate DUA, as raw REDCap exports -- NOT OMOP. This form is one wide
+# row per participant, keyed by the REDCap record id `studyid`, which is the same 4-digit
+# integer the OMOP tables carry as person_id. The export received 2026-10-06
+# ("Protected Dataset_PilotthruWave4") has 36 columns; its dictionary lists 20 fields, one of
+# which (`exportzip`) is not in the file. Its row count equals the cumulative participant count
+# of dataset v3.0.0, so it pairs with that release.
+#
+# WHICH FIELDS MATTER FOR A PHENOPACKET, AND WHICH DO NOT
+#   scrsex    sex assigned at birth    -> Individual.sex        The schema's Sex enum is
+#                                                                 phenotypic sex "as determined
+#                                                                 at birth", so this column and
+#                                                                 not genderid.
+#   genderid  gender identity          -> Individual.gender     An OntologyClass; the schema
+#                                                                 recommends no vocabulary. NCIT,
+#                                                                 see below.
+#   race      checkbox, 9 choices      -> Individual.race       IR ONLY -- no phenopacket slot.
+#   ethnic    checkbox, 10 choices     -> Individual.ethnicity  IR ONLY.
+# Everything else is dropped by policy (`dropped_columns`), and the FREE-TEXT columns are never
+# read by any code path: `ancestry` is filled on most rows and is as identifying as a surname.
+#
+# RACE/ETHNICITY HAVE NO PHENOPACKET SLOT -- VERIFIED, NOT ASSUMED. Checked 2026-10-06 against
+# phenopacket-schema v2: individual.proto (id, alternate_ids, date_of_birth,
+# time_at_last_encounter, vital_status, sex, karyotypic_sex, gender, taxonomy), phenopackets.proto
+# (Phenopacket, Family, Cohort) and base.proto carry nothing for race, ethnicity, ancestry or
+# population; upstream issue phenopackets/phenopacket-schema#231 ("Ethnicity") has been open
+# since 2020-07. Coercing them into a Measurement would assert a clinical finding where none was
+# measured -- the reason config/aireadi/observation/scope.yaml leaves the PhenX social
+# determinants out. Decision 2026-10-06: carry them in the IR and the run report; the
+# phenopacket emitter writes neither.
+#
+# THE CHOICE CODES LOOK LIKE NCIT CODES, AND ONE IS WRONG. REDCap exports a checkbox as one
+# column per choice, `<field>___<code>` with the code lower-cased (race___c41261). AI-READI used
+# NCIT concept codes as the choice codes, which is convenient and must not be trusted. Resolving
+# every code against OLS4 on 2026-10-06:
+#   race   C17459 "American Indian or Alaska Native"  -> NCIT:C17459 is *Hispanic or Latino*.
+#          The mapping below uses the correct NCIT:C41259. The COLUMN keeps the source's code,
+#          because that is what the export is named.
+#   ethnic C999   "Yes, Chicano"                      -> not an NCIT ethnicity code at all (it
+#          resolves to a drug). NCIT:C209381 Chicano exists and is used.
+#   C77813 "North African" is NCIT "North Coast of Africa"; C41219 and C41261 differ in wording.
+# Every other code resolved to the intended concept. Labels below are NCIT's, not the form's.
+#
+# GENDER IDENTITY VOCABULARY. The phenopacket docs recommend nothing for Individual.gender. NCIT
+# is used because it is already a declared Resource and carries gender-identity terms (verified
+# 2026-10-06): C205467 Male Gender Identity, C205466 Female Gender Identity, C160941 Non-Binary
+# Gender. GSSO (GSSO:000370 man / GSSO:000369 woman / GSSO:002328 nonbinary gender identity) is
+# the alternative if a consumer prefers it: swap the three ids in place and add the Resource.
+#
+# REFUSALS AND "OTHER". 777 "Prefer not to say" leaves the field unset and is counted
+# (`refusal_codes`). 888 "Other" has a free-text companion that is never read, so it too leaves
+# the field unset; on the checkboxes it simply adds no term and is counted as dropped by policy.
+# Sex 888 "Other" and I "Intersex" both recode to OTHER_SEX -- the enum's "it is not possible to
+# accurately assess the applicability of MALE/FEMALE".
+
+table: protected_demographics
+produces: Individual
+file_glob: "*Demographics*Protected*"    # the delivered .xlsx, or a .csv conversion of it
+id_column: studyid
+refusal_codes: ["777"]
+
+columns:
+  scrsex:
+    target: Individual.sex
+    value_map:
+      F: FEMALE
+      M: MALE
+      I: OTHER_SEX
+      "888": OTHER_SEX
+      "777": null
+  genderid:
+    target: Individual.gender
+    value_map:
+      "1": { id: "NCIT:C205467", label: "Male Gender Identity" }     # "Man (including transgender men)"
+      "2": { id: "NCIT:C205466", label: "Female Gender Identity" }   # "Woman (including transgender women)"
+      "3": { id: "NCIT:C160941", label: "Non-Binary Gender" }
+      "888": null                                                    # Other: free text `genderidot`, never read
+      "777": null
+
+checkbox_groups:
+  race:
+    target: Individual.race
+    choices:
+      C17459: { id: "NCIT:C41259", label: "American Indian or Alaska Native" }  # source code is WRONG; see header
+      C41260: { id: "NCIT:C41260", label: "Asian" }
+      C16352: { id: "NCIT:C16352", label: "Black or African American" }
+      C77820: { id: "NCIT:C77820", label: "Middle Eastern" }
+      C41219: { id: "NCIT:C41219", label: "Native Hawaiian or Other Pacific Islander" }
+      C77813: { id: "NCIT:C77813", label: "North Coast of Africa" }    # form says "North African"
+      C41261: { id: "NCIT:C41261", label: "White" }                    # form says "White or Caucasian"
+      "888": null   # Other race, ethnicity or origin: free text `raceot`, never read
+      "777": null   # Prefer not to say (a refusal code: counted as such)
+  ethnic:
+    target: Individual.ethnicity
+    choices:
+      C41222:  { id: "NCIT:C41222",  label: "Not Hispanic or Latino" }
+      C67113:  { id: "NCIT:C67113",  label: "Mexican" }
+      C67112:  { id: "NCIT:C67112",  label: "Puerto Rican" }
+      C107608: { id: "NCIT:C107608", label: "Cuban" }
+      C67117:  { id: "NCIT:C67117",  label: "Dominican" }
+      C67118:  { id: "NCIT:C67118",  label: "Central American" }
+      C126532: { id: "NCIT:C126532", label: "South American" }
+      C999:    { id: "NCIT:C209381", label: "Chicano" }   # source code C999 is not NCIT; see header
+      "888": null   # Other: free text `ethnicot`, never read
+      "777": null
+
+# Present and deliberately NOT mapped. Listing them is what lets `validate-aireadi --protected`
+# distinguish "dropped by policy" from "nobody looked", and name the free-text columns as unread.
+dropped_columns:
+  raceot: "Free text: 'Other race (please describe)'. Identifying; never read."
+  race2: "'Which one best represents your race', asked only when two or more boxes are checked.
+    Redundant with the checkbox set carried on Individual.race; a single-category race would be
+    a modelling decision for a future emitter, not a config line."
+  ethnicot: "Free text: 'Other (please specify)'. Never read."
+  racetrib: "Free text: tribal affiliation. Identifying; never read."
+  ancestry: "Free text: 'What is your ancestry or ethnic origin?'. Filled on most rows and as
+    identifying as a surname. Never read."
+  genderidot: "Free text: 'Other (please specify)'. Never read."
+  rp_childpot: "'Are you currently pregnant?' -- a screening item. Pregnancy is an EXCLUSION
+    criterion (NCT06002048), so this is an eligibility gate, not a phenotype of the enrolled
+    cohort."
+  cl_maristat: "Marital status (NCIT codes). A social attribute with no phenopacket slot; the
+    policy config/aireadi/observation/scope.yaml already applies to the same variable."
+  mhcat_dmtaot: "Free text: medical-history follow-up ('please specify'). Never read."
+  mhoccur_cnsot: "Free text: 'if yes, please specify' for nervous-system conditions. Never read;
+    the coded answer is already a Disease via condition_occurrence."
+  mhoccur_cnrot: "Free text: 'if yes, please specify' for cancer. Never read; same as above."
+  pxhic6: "Indian Health Service coverage. A PhenX health-insurance item: a social determinant,
+    out of scope (scope.yaml px*), and a proxy for Native American identity."
+  pxhic9: "Free text: insurance type. Never read."
+  dvenvlocn: "Free text: where the environmental sensor sat in the home. Study operations
+    (scope.yaml dv*)."
+  exportzip: "5-digit zip. In the dictionary, NOT in the delivered file; a HIPAA identifier
+    either way."
