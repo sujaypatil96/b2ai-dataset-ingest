@@ -3,8 +3,8 @@
 AI-READI withholds sex, race/ethnicity, medications and 5-digit zip from its public releases
 (docs.aireadi.org/docs/3/controlled-variables) and delivers them, under a separate DUA, as raw
 REDCap exports keyed by the REDCap record id ``studyid`` -- the same 4-digit integer the OMOP
-tables carry as ``person_id``. Two forms arrived with the Pilot-through-Wave-4 release
-(2026-10):
+tables carry as ``person_id``. Two forms arrived in 2026-10, ahead of the matching OMOP tables
+(dataset v3.0.0, Pilot through Wave 4):
 
     Demographics and Other   one row per participant     -> Individual.sex / .gender,
                                                              Individual.race / .ethnicity (IR only)

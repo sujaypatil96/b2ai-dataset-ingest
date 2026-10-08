@@ -252,12 +252,15 @@ there is no `examples/phenopackets/aireadi-*/` counterpart to the Voice examples
 
 AI-READI withholds four variables from every public release — sex, race/ethnicity,
 medications and 5-digit zip ([controlled variables](https://docs.aireadi.org/docs/3/controlled-variables))
-— and releases them to approved users under a separate DUA. They arrived with the
-Pilot-through-Wave-4 release not as OMOP tables but as **raw REDCap exports**, one Excel
-workbook per form, keyed by the REDCap record id `studyid`, which is the 4-digit integer the
-OMOP tables carry as `person_id`. The demographics export has one row per participant and its
-row count equals the cumulative participant count of dataset v3.0.0, so the supplement pairs
-with that release.
+— and releases them to approved users under a separate DUA. They arrived first, in 2026-10,
+ahead of the matching OMOP tables (dataset v3.0.0, Pilot through Wave 4, still to be delivered
+as of 2026-10-08), and not as OMOP tables but as **raw REDCap exports**: one Excel workbook per
+form, keyed by the REDCap record id `studyid`, which is the 4-digit integer the OMOP tables
+carry as `person_id`. The demographics export has one row per participant and its row count
+equals the cumulative participant count of dataset v3.0.0, so the supplement pairs with that
+release. Until those tables land, `--protected` on its own emits nothing, by design (see
+*enriches, never creates* below); the 100-participant mini release is drawn from the same
+cohort and pairs with the supplement for an interim run.
 
 | Export | Shape | → |
 | --- | --- | --- |
