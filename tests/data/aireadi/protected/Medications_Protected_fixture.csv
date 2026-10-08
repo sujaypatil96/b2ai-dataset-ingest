@@ -1,0 +1,11 @@
+studyid,redcap_repeat_instrument,redcap_repeat_instance,cmname,cmroute,cmrouteot,cmdos,cmdosu,cmdosfrq,rxnorm_code,rxnorm_term
+900001,current_medications,1,CANARY-NAME-LEVO,6,,125,16,QD,10582,levothyroxine
+900001,current_medications,2,CANARY-NAME-ASA,6,,81,8,QD,1191,aspirin
+900002,current_medications,1,CANARY-NAME-MET,6,,2024-01-02 00:00:00,8,BID,6809,metformin
+900002,current_medications,2,CANARY-NAME-INS,9,,10,5,QD,,
+900002,current_medications,2,CANARY-NAME-DUP,6,,1,15,QD,6809,metformin
+900003,current_medications,1,CANARY-NAME-CREAM,888,CANARY-ROUTE-OTHER,1,18,PRN,10582,levothyroxine
+900003,other_form,1,CANARY-NAME-OTHER,6,,1,15,QD,10582,levothyroxine
+900004,current_medications,1,CANARY-NAME-BAD,6,,1,15,QD,ABC123,bogus
+900004,current_medications,2,CANARY-NAME-TWO,6,,5,8,ONCE,10582,Levothyroxine Sodium
+900099,current_medications,1,CANARY-NAME-UNMATCHED,6,,1,15,QD,10582,levothyroxine

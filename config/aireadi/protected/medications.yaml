@@ -1,0 +1,151 @@
+# Mapping: AI-READI protected supplement, "Medications" REDCap export -> TreatmentObservation (IR)
+#
+# WHAT THIS FILE IS. The participant's current-medications list, collected at the study visit
+# on the REDCap repeating instrument `current_medications`: one row per medication per
+# participant (`redcap_repeat_instance` numbers them), keyed by `studyid` = OMOP person_id.
+# It is NOT OMOP drug_exposure -- the public release ships no drug_exposure at all -- and it is
+# the only treatment signal AI-READI has (config/aireadi/observation/scope.yaml deferred the
+# `cm_*` yes/no items for exactly this reason).
+#
+# WHAT IS EMITTED, AND WHAT IS DELIBERATELY NOT (decisions 2026-10-06)
+#   agent      rxnorm_code + rxnorm_term -> Treatment.agent (RxNorm RXCUI; assigned at capture
+#                                            through BioPortal; the sample row is ingredient-level)
+#   route      cmroute                   -> Treatment.route_of_administration (NCIT)
+#   drug_type  constant                  -> Treatment.drug_type (see below)
+#   dose       cmdos + cmdosu            -> IR ONLY (TreatmentObservation.dose, UCUM)
+#   frequency  cmdosfrq                  -> IR ONLY (TreatmentObservation.frequency, NCIT)
+# Dose and frequency are read into the IR but NOT emitted: a phenopacket DoseInterval requires
+# `quantity`, `schedule_frequency` AND a timestamped `interval`, this list carries no dates, and
+# under time_precision: age no date may leave the machine anyway. So the packet says "takes
+# oral levothyroxine" and the report counts the doses withheld. "Start minimally, show the team,
+# revisit" was the call; the emitter is the one place to change if it is revisited, and the
+# honest form is a zero-length interval at the visit date under time_precision: date.
+#
+# drug_type IS UNKNOWN_DRUG_TYPE, NOT PRESCRIPTION OR EHR_MEDICATION_LIST. The schema's DrugType
+# names the *setting* a medication record came from. This is a concomitant-medication list (the
+# `cm` CDASH prefix; the dictionary's own note says "concomitant medication/treatment/therapy"),
+# self-reported at the visit: no EHR was consulted, no prescription was recorded, and the
+# picklists (topical, puff, spray, capsule) show it includes over-the-counter items. The
+# `otc_watchlist` below lets `validate-aireadi --protected` settle that empirically on the real
+# file: a non-zero count means PRESCRIPTION would be false for part of the list, and UNKNOWN is
+# the only value true of every row. Change this constant only if AI-READI confirms the form was
+# restricted to prescribed medication -- then it is one line.
+#
+# RXNORM. Prefix `rxnorm` and IRI per Bioregistry (https://bioregistry.io/registry/rxnorm); the
+# Resource is registered in ontology/resources.py. Codes are NOT resolved against RxNav
+# (decision 2026-10-06: that would send the cohort's drug vocabulary to NLM); the in-file
+# `rxnorm_term` is the label, and the preflight checks that each code carries exactly one term.
+# `cmname`, the medication name as typed, is free text and is never read.
+#
+# ROUTE / FREQUENCY / UNIT CODES verified against OLS4 (NCIT) on 2026-10-06, by label search then
+# id -> label check. ONCE and UNK have no NCIT schedule-frequency term and map to nothing. Units
+# are UCUM (project convention, see config/aireadi/units.yaml); count-like units (tablet, capsule,
+# puff, spray, inhalation) are UCUM annotations on the unit 1.
+#
+# EXCEL. `cmdos` is free text ("Amount taken"), and Excel auto-converted some entries on the way
+# in -- a "1-2" becomes a date. mapping/redcap.py renders such a cell in a form no numeric parser
+# accepts, so it is counted under doses_unparsed and the medication is kept without a dose.
+
+table: protected_medications
+produces: TreatmentObservation
+file_glob: "*Medications*Protected*"     # the delivered .xlsx, or a .csv conversion of it
+id_column: studyid
+instrument_column: redcap_repeat_instrument
+instrument: current_medications          # rows from any other instrument are skipped and counted
+instance_column: redcap_repeat_instance
+refusal_codes: ["777"]
+
+drug_type: UNKNOWN_DRUG_TYPE
+
+agent:
+  code_column: rxnorm_code
+  label_column: rxnorm_term
+  prefix: rxnorm
+  pattern: "^[0-9]{1,7}$"                # Bioregistry's RXCUI pattern
+
+route:
+  column: cmroute
+  terms:
+    "1":  { id: "NCIT:C38250", label: "Intralesional Route of Administration" }
+    "2":  { id: "NCIT:C28161", label: "Intramuscular Route of Administration" }
+    "3":  { id: "NCIT:C38255", label: "Intraocular Route of Administration" }
+    "4":  { id: "NCIT:C38258", label: "Intraperitoneal Route of Administration" }
+    "5":  { id: "NCIT:C38284", label: "Nasal Route of Administration" }
+    "6":  { id: "NCIT:C38288", label: "Oral Route of Administration" }
+    "7":  { id: "NCIT:C38295", label: "Rectal Route of Administration" }
+    "8":  { id: "NCIT:C38216", label: "Inhalation Route of Administration" }
+    "9":  { id: "NCIT:C38299", label: "Subcutaneous Route of Administration" }
+    "10": { id: "NCIT:C38304", label: "Topical Route of Administration" }
+    "11": { id: "NCIT:C38305", label: "Transdermal Route of Administration" }
+    "12": { id: "NCIT:C38313", label: "Vaginal Route of Administration" }
+    "888": null                          # Other: free text `cmrouteot`, never read
+
+dose:
+  value_column: cmdos
+  unit_column: cmdosu
+  units:
+    "1":  { id: "UCUM:%{v/v}", label: "percent volume per volume" }
+    "2":  { id: "UCUM:{capsule}", label: "capsule" }
+    "3":  { id: "UCUM:g", label: "gram" }
+    "4":  { id: "UCUM:{inhalation}", label: "inhalation" }
+    "5":  { id: "UCUM:[IU]", label: "international unit" }
+    "6":  { id: "UCUM:L/h", label: "liter per hour" }
+    "7":  { id: "UCUM:L/min", label: "liter per minute" }
+    "8":  { id: "UCUM:mg", label: "milligram" }
+    "9":  { id: "UCUM:mg/kg", label: "milligram per kilogram" }
+    "10": { id: "UCUM:mL", label: "milliliter" }
+    "11": { id: "UCUM:mL/h", label: "milliliter per hour" }
+    "12": { id: "UCUM:mL/kg", label: "milliliter per kilogram" }
+    "13": { id: "UCUM:{puff}", label: "puff" }
+    "14": { id: "UCUM:{spray}", label: "spray" }
+    "15": { id: "UCUM:{tbl}", label: "tablet" }
+    "16": { id: "UCUM:ug", label: "microgram" }
+    "17": { id: "UCUM:ug/kg", label: "microgram per kilogram" }
+    "18": null                           # Other: the dose is dropped, the medication kept
+    "19": { id: "UCUM:mg/g", label: "milligram per gram" }
+    "20": { id: "UCUM:mg/mL", label: "milligram per milliliter" }
+
+frequency:
+  column: cmdosfrq
+  terms:
+    QD:   { id: "NCIT:C125004", label: "Once Daily" }
+    BID:  { id: "NCIT:C64496", label: "Twice Daily" }
+    TID:  { id: "NCIT:C64527", label: "Three Times Daily" }
+    QID:  { id: "NCIT:C64530", label: "Four Times Daily" }
+    QOD:  { id: "NCIT:C64525", label: "Every Other Day" }
+    QW:   { id: "NCIT:C67069", label: "Weekly" }
+    QM:   { id: "NCIT:C64498", label: "Monthly" }
+    PRN:  { id: "NCIT:C64499", label: "As Needed" }
+    ONCE: null                           # no NCIT schedule-frequency term (searched 2026-10-06)
+    UNK:  null
+    "888": null
+
+# Over-the-counter ingredients, matched by the PREFLIGHT ONLY against rxnorm_term (word-bounded,
+# case-insensitive) to test whether the list is prescription-only. Chosen to be unambiguous:
+# supplements, and drugs with no prescription-only form at common strengths. Ibuprofen and
+# naproxen are deliberately absent -- both exist as prescription strengths.
+otc_watchlist:
+  - aspirin
+  - acetaminophen
+  - cholecalciferol
+  - cyanocobalamin
+  - ascorbic acid
+  - multivitamin
+  - fish oil
+  - omega-3 fatty acids
+  - melatonin
+  - loratadine
+  - cetirizine
+  - diphenhydramine
+  - docusate
+  - psyllium
+  - calcium carbonate
+  - magnesium oxide
+  - zinc
+  - biotin
+  - glucosamine
+
+dropped_columns:
+  cmname: "Free text: the medication name as typed. The RxNorm term is the controlled label.
+    Never read."
+  cmrouteot: "Free text: 'if other, please specify'. Never read."

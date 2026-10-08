@@ -108,8 +108,12 @@ def iter_terms(mapping: dict[str, Any]) -> Iterator[tuple[str, dict[str, Any]]]:
     """Yield ``(context, term_dict)`` for every ``{id, label}`` term in a mapping.
 
     Understands the voice shapes — ``conditions`` (diagnosis), ``items`` and
-    ``score.assay`` / ``score.unit`` (questionnaires) — and the OMOP shapes: ``measures``
-    (per-item ``{assay, unit, procedure_code, body_site}``), ``units`` and ``laterality``.
+    ``score.assay`` / ``score.unit`` (questionnaires) — the OMOP shapes: ``measures``
+    (per-item ``{assay, unit, procedure_code, body_site}``), ``units`` and ``laterality`` —
+    and the REDCap supplement shapes: a ``columns.*.value_map`` entry that recodes onto a term,
+    ``checkbox_groups.*.choices``, and the ``route``/``frequency`` ``terms`` and ``dose``
+    ``units`` of a medications config. A ``null`` choice there means "a real answer with no
+    term" and is skipped, not reported.
 
     A block this function does not walk is a block ``validate_mapping`` cannot warn about,
     so every new config shape must be added here or its placeholders ship silently.
@@ -140,6 +144,26 @@ def iter_terms(mapping: dict[str, Any]) -> Iterator[tuple[str, dict[str, Any]]]:
             yield "study_group.assay", study_group["assay"]
         for name, term in (study_group.get("value_terms") or {}).items():
             yield f"study_group.value_terms.{name}", term
+    # REDCap supplement shapes (sources/aireadi/protected.py).
+    for column, spec in (mapping.get("columns") or {}).items():
+        if not isinstance(spec, dict):
+            continue
+        for code, term in (spec.get("value_map") or {}).items():
+            if isinstance(term, dict):  # a recode onto an {id, label} term, e.g. gender identity
+                yield f"columns.{column}.value_map.{code}", term
+    for group, spec in (mapping.get("checkbox_groups") or {}).items():
+        if not isinstance(spec, dict):
+            continue
+        for code, term in (spec.get("choices") or {}).items():
+            if term is not None:
+                yield f"checkbox_groups.{group}.choices.{code}", term
+    for block in ("route", "frequency", "dose"):
+        spec = mapping.get(block)
+        if not isinstance(spec, dict):
+            continue
+        for code, term in (spec.get("terms") or spec.get("units") or {}).items():
+            if term is not None:
+                yield f"{block}.{code}", term
 
 
 def validate_mapping(mapping: dict[str, Any]) -> list[str]:

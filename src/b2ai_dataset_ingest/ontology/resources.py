@@ -86,6 +86,20 @@ KNOWN_RESOURCES: dict[str, dict[str, str]] = {
         "namespace_prefix": "UCUM",
         "iri_prefix": "https://ucum.org/",
     },
+    "RXNORM": {
+        # Prefix, casing and IRI per Bioregistry (https://bioregistry.io/registry/rxnorm);
+        # local ids are bare RXCUIs (^[0-9]{1,7}$). Used for Treatment.agent on the AI-READI
+        # protected medications supplement. Codes are NOT resolved against RxNav (see
+        # config/aireadi/protected/medications.yaml), so the version is the RxNorm release
+        # RxNav reported on the day the supplement landed: the codes were assigned at capture
+        # by BioPortal and carry no release of their own.
+        "id": "rxnorm",
+        "name": "RxNorm",
+        "url": "https://www.nlm.nih.gov/research/umls/rxnorm",
+        "version": "2026-10-05",
+        "namespace_prefix": "rxnorm",
+        "iri_prefix": "https://mor.nlm.nih.gov/RxNav/search?searchBy=RXCUI&searchTerm=",
+    },
     "B2AI": {
         "id": "b2ai",
         "name": "Bridge2AI project-local codes (b2ai-dataset-ingest)",

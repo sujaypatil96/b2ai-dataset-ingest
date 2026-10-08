@@ -247,3 +247,82 @@ there is no `examples/phenopackets/aireadi-*/` counterpart to the Voice examples
   lab-finding `mh_a1c`) need a curator's call on what was actually asked.
 - **The LOINC upgrade tranche** — ~40 items currently carry `b2ai:` local assay ids and can be
   swapped for verified LOINC codes in place, changing no code.
+
+## 8. The protected supplement (added 2026-10-06)
+
+AI-READI withholds four variables from every public release — sex, race/ethnicity,
+medications and 5-digit zip ([controlled variables](https://docs.aireadi.org/docs/3/controlled-variables))
+— and releases them to approved users under a separate DUA. They arrived first, in 2026-10,
+ahead of the matching OMOP tables (dataset v3.0.0, Pilot through Wave 4, still to be delivered
+as of 2026-10-08), and not as OMOP tables but as **raw REDCap exports**: one Excel workbook per
+form, keyed by the REDCap record id `studyid`, which is the 4-digit integer the OMOP tables
+carry as `person_id`. The demographics export has one row per participant and its row count
+equals the cumulative participant count of dataset v3.0.0, so the supplement pairs with that
+release. Until those tables land, `--protected` on its own emits nothing, by design (see
+*enriches, never creates* below); the 100-participant mini release is drawn from the same
+cohort and pairs with the supplement for an interim run.
+
+| Export | Shape | → |
+| --- | --- | --- |
+| *Demographics and Other* | one row per participant; REDCap checkbox columns (`race___c41261`); NCIT codes as choice codes | `Individual.sex` (sex at birth), `Individual.gender` (NCIT gender identity), `Individual.race` / `.ethnicity` (**IR only**) |
+| *Medications* | repeating instrument, one row per medication; coded route / unit / frequency; BioPortal RxNorm | `MedicalAction.treatment` — RxNorm agent, NCIT route, `UNKNOWN_DRUG_TYPE`; dose and frequency **kept in the IR, not emitted** |
+
+Read with `--protected <dir>` on both `aireadi` and `validate-aireadi`. Configs live under
+`config/aireadi/protected/`, the REDCap primitives in `mapping/redcap.py` (the counterpart to
+`mapping/omop.py`: nothing in it is AI-READI-specific), the reader in
+`sources/aireadi/protected.py`.
+
+**Decisions, all taken 2026-10-06:**
+
+- **Race and ethnicity are IR-only.** Re-verified against schema v2 before deciding:
+  `individual.proto` (id, alternate_ids, date_of_birth, time_at_last_encounter, vital_status,
+  sex, karyotypic_sex, gender, taxonomy), `phenopackets.proto` and `base.proto` carry no race,
+  ethnicity, ancestry or population field, and upstream issue phenopacket-schema#231
+  ("Ethnicity") has been open since 2020-07. Coercing them into a `Measurement` would assert a
+  clinical finding where none was measured — the reason `scope.yaml` leaves the PhenX social
+  determinants out. The IR carries them for a future emitter; the run report counts them.
+- **Dose and frequency are read but not emitted.** A `DoseInterval` requires `quantity`,
+  `schedule_frequency` *and* a timestamped `interval`, and `TimeInterval` takes timestamps
+  only — the one place in the schema where an age cannot stand in for a date. The medication
+  list is undated, and under `time_precision: age` no date leaves the machine anyway. So the
+  packet states agent and route and the report counts `doses withheld`. If the team wants
+  doses, the honest encoding is a zero-length interval at the visit date under
+  `time_precision: date`; that is an emitter-only change because the IR already carries both.
+- **`drug_type` is `UNKNOWN_DRUG_TYPE`.** The enum names the *setting* a record came from. This
+  is a self-reported concomitant-medication list (`cm` CDASH prefix), not an EHR list and not a
+  prescription record, and it includes over-the-counter items — `validate-aireadi --protected`
+  tallies matches against an `otc_watchlist` on the real file so the claim is checked rather
+  than assumed. A non-zero tally means `PRESCRIPTION` is false for part of the list.
+- **RxNorm codes are not resolved externally.** Doing so would send the cohort's drug
+  vocabulary to NLM. The in-file `rxnorm_term` is the label; the preflight checks that each
+  code carries exactly one term. Prefix `rxnorm` and IRI follow Bioregistry.
+- **The supplement enriches, never creates.** A row whose id is in no clinical table is counted
+  and dropped; the ingest reads the supplement last so the universe is known.
+- **Free text is never read.** `ancestry` is filled on most rows and is as identifying as a
+  surname; it, `raceot`, `cmname` and every `*ot` column are listed under `dropped_columns` and
+  touched by no code path. The validator names them as present-and-unread and summarises
+  nothing about them, not even a fill count.
+
+**A finding worth passing upstream.** The dictionary spells NCIT concept codes as REDCap choice
+codes, and resolving each against OLS4 found that `race` choice `C17459` ("American Indian or
+Alaska Native") is NCIT *Hispanic or Latino*; the correct code is `C41259`, which the config
+uses. `ethnic` choice `C999` ("Yes, Chicano") is not an NCIT ethnicity code at all;
+`NCIT:C209381 Chicano` exists and is used. Three more drift in label (`C77813` "North Coast of
+Africa", `C51777` "Legally Separated", `C51774` "Never Married"). Nothing is minted from a
+column name.
+
+**Excel.** The export types cells, and the types lie: a code is `int` on one row and `str` on
+the next, and a free-text dose such as `1-2` arrives as a *datetime* after Excel's
+auto-conversion. `redcap.cell_text` reduces every cell to the text a CSV would carry and renders
+a datetime in a form no numeric parser accepts, so the mangled dose is counted and the
+medication kept. The validator reads cells typed and reports how many were converted.
+
+**Testing.** `tests/data/aireadi/protected/` is a hand-authored CSV pair over the same `9000xx`
+ids — CSV so the diff is readable; the `.xlsx` path is exercised by building a typed workbook in
+a temp directory, lock file included. `tests/test_aireadi_protected.py` pins every rule above,
+including that no free-text canary and no race term reaches a packet, the IR or the report.
+
+**Opened by this, not closed.** The measurement SSSOM set collapsed sex-split reference
+intervals to sex-blind gates because sex was redacted; with `Individual.sex` now populated those
+rows can be tightened per sex, as each says. A dated medication list (a follow-up visit's, say)
+would make `interval` honest and reopen the dose decision.

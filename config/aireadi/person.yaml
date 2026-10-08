@@ -47,6 +47,9 @@ columns:
       Female: FEMALE
       female: FEMALE
 
-# race / ethnicity: DEFERRED. config/shared/value_sets.yaml still records
-# "ethnicity / race codings: TODO (decide ontology - NCIT / HANCESTRO)", and this release
-# carries nothing to map.
+# SEX, RACE AND ETHNICITY NOW ARRIVE VIA THE PROTECTED SUPPLEMENT (2026-10-06):
+# config/aireadi/protected/demographics.yaml, read with `--protected`. Sex at birth from that
+# export OVERWRITES whatever this table yields (it is redacted in every public release),
+# gender identity becomes an NCIT term on Individual.gender, and race/ethnicity are carried
+# on the IR only -- the phenopacket schema has no slot for them. This file stays as written
+# for a release that does carry gender_concept_id.

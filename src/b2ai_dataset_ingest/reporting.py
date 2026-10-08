@@ -80,6 +80,28 @@ class IngestReport:
     #: Long rows with no resolvable visit; the row's own date is used instead.
     rows_without_visit: int = 0
 
+    # -- REDCap protected-supplement counters (see sources/aireadi/protected.py) --
+    #: Treatments (MedicalAction.treatment) built from the medications supplement.
+    treatments_emitted: int = 0
+    #: "field" -> Individuals whose sex / gender / race / ethnicity came from the supplement.
+    protected_fields_set: Counter = field(default_factory=Counter)
+    #: "table" -> supplement rows whose id matches no participant in the clinical tables.
+    #: Dropped: the supplement enriches participants, it never creates one.
+    protected_rows_unmatched: Counter = field(default_factory=Counter)
+    #: "table.reason" -> supplement rows skipped (duplicate id/instance, another instrument).
+    rows_skipped: Counter = field(default_factory=Counter)
+    #: "table.column" -> medication rows with no RxNorm code: no agent, nothing to emit.
+    agents_missing: Counter = field(default_factory=Counter)
+    #: "table.column" -> medication rows whose RxNorm code is not a bare RXCUI.
+    agents_malformed: Counter = field(default_factory=Counter)
+    #: "table.column" -> dose cells that are not a number, Excel's date auto-conversion included.
+    doses_unparsed: Counter = field(default_factory=Counter)
+    #: "table.column" -> numeric doses whose unit code has no UCUM term (dose dropped, agent kept).
+    dose_units_unmapped: Counter = field(default_factory=Counter)
+    #: Treatments whose dose and/or frequency sit in the IR and were not emitted: a phenopacket
+    #: DoseInterval needs a timestamped interval the medication list does not have.
+    doses_withheld: int = 0
+
     # -- recorders (called by the engine / reader; no-ops are cheap) --
     def note_unresolved_item(self, table: str, column: str) -> None:
         self.items_unresolved[f"{table}.{column}"] += 1
@@ -111,6 +133,9 @@ class IngestReport:
     def note_field_redacted(self, table: str, column: str, rows: int = 1) -> None:
         self.fields_redacted[f"{table}.{column}"] += rows
 
+    def note_row_skipped(self, table: str, reason: str) -> None:
+        self.rows_skipped[f"{table}.{reason}"] += 1
+
     @property
     def has_degradation(self) -> bool:
         """True if a *fixable* gap was hit — something a config or a curation pass can close.
@@ -120,6 +145,10 @@ class IngestReport:
         release (a censored lab result is correctly dropped, not a defect), and including
         them would pin the flag True forever and make it useless. They are still counted and
         printed. Same reasoning the existing ``tables_unmapped`` exclusion already uses.
+
+        Of the supplement counters only ``protected_rows_unmatched`` (an id join that failed)
+        and ``agents_malformed`` (a code that is not an RXCUI) count: a medication row with no
+        RxNorm code, a dose Excel mangled, or an *Other* unit are the data as delivered.
         """
         return bool(
             self.tables_missing
@@ -130,6 +159,8 @@ class IngestReport:
             or self.placeholders_skipped
             or self.units_unmapped
             or self.fields_redacted
+            or self.protected_rows_unmatched
+            or self.agents_malformed
         )
 
     def render(self) -> str:
@@ -144,6 +175,16 @@ class IngestReport:
             + (f" ({', '.join(self.tables_read)})" if self.tables_read else ""),
             f"  rows merged:         {self.rows_merged}",
         ]
+        if self.treatments_emitted or self.protected_fields_set:
+            lines.append(f"  treatments:          {self.treatments_emitted}")
+        if self.protected_fields_set:
+            detail = ", ".join(f"{k}={v}" for k, v in sorted(self.protected_fields_set.items()))
+            lines.append(f"  fields from supplement: {detail}")
+        if self.doses_withheld:
+            lines.append(
+                f"  doses withheld:      {self.doses_withheld}  (dose/frequency kept in the IR; "
+                "a DoseInterval needs a timestamped interval)"
+            )
         if self.questionnaires_selected:
             lines.append(
                 f"  questionnaires:      restricted to "
@@ -189,6 +230,12 @@ class IngestReport:
             ("answers dropped (refusal/unknown code)", self.sentinel_answers),
             ("values dropped (unit not in UCUM map)", self.units_unmapped),
             ("source fields fully redacted", self.fields_redacted),
+            ("supplement rows skipped (id not in cohort)", self.protected_rows_unmatched),
+            ("supplement rows skipped (duplicate / other instrument)", self.rows_skipped),
+            ("medication rows without an RxNorm code (no agent)", self.agents_missing),
+            ("medication rows with a malformed RxNorm code", self.agents_malformed),
+            ("doses dropped (not numeric, Excel-mangled dates included)", self.doses_unparsed),
+            ("doses dropped (unit has no UCUM term)", self.dose_units_unmapped),
         ):
             if counter:
                 total = sum(counter.values())

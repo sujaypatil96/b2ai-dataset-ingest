@@ -24,13 +24,16 @@ jobs:
         run: uv run pytest -q
 
       # The CLI is deliberately not unit-tested, so CI exercises it. Runs against the
-      # committed hand-authored fixture only: nothing licensed may be fetched here.
+      # committed hand-authored fixture only: nothing licensed may be fetched here. The
+      # protected-supplement fixture is CSV, so this needs no `excel` extra.
       - name: Smoke-test the AI-READI CLI against the committed fixture
         run: |
-          uv run b2ai-ingest validate-aireadi -i tests/data/aireadi -c config/aireadi
-          uv run b2ai-ingest aireadi -i tests/data/aireadi -c config/aireadi -o "$RUNNER_TEMP/aireadi"
+          uv run b2ai-ingest validate-aireadi -i tests/data/aireadi -c config/aireadi -p tests/data/aireadi/protected
+          uv run b2ai-ingest aireadi -i tests/data/aireadi -c config/aireadi -o "$RUNNER_TEMP/aireadi" -p tests/data/aireadi/protected
           test "$(ls "$RUNNER_TEMP"/aireadi/*.json | wc -l)" -eq 4
           ! grep -q '"TODO"' "$RUNNER_TEMP"/aireadi/*.json
+          grep -q '"medicalActions"' "$RUNNER_TEMP"/aireadi/900001.json
+          ! grep -q 'CANARY-' "$RUNNER_TEMP"/aireadi/*.json
 
   validate-mappings:
     # Enforces the B2AI -> HPO SSSOM guardrail: installs the `validation` extra (oaklib) so the

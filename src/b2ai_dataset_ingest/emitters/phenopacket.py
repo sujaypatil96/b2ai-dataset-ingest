@@ -7,8 +7,14 @@ Mapping:
     MeasurementObservation         -> Phenopacket.measurements (Measurement, time_observed,
                                       reference_range, procedure.body_site)
     PhenotypicFeatureObservation   -> Phenopacket.phenotypic_features (PhenotypicFeature)
+    TreatmentObservation           -> Phenopacket.medical_actions (MedicalAction.treatment:
+                                      agent, route_of_administration, drug_type -- dose and
+                                      frequency are deliberately NOT written, see _medical_action)
     TimePoint                      -> TimeElement (timestamp | age | ontologyClass)
     audio_references               -> Phenopacket.files (File, referenced only)
+    Individual.race / .ethnicity   -> nothing: schema v2 has no slot for them (verified against
+                                      individual.proto, phenopackets.proto and base.proto on
+                                      2026-10-06; phenopacket-schema#231 is open since 2020)
 
 Built on the official GA4GH ``phenopackets`` package (protobuf, schema v2). Every
 ``OntologyClass`` used contributes a versioned ``Resource`` to ``MetaData`` so the document
@@ -32,6 +38,7 @@ from b2ai_dataset_ingest.model import (
     OntologyTerm,
     Participant,
     TimePoint,
+    TreatmentObservation,
 )
 from b2ai_dataset_ingest.ontology import prefix_of, resolve_label, resource_for
 
@@ -60,6 +67,8 @@ class PhenopacketEmitter(Emitter):
             packet.measurements.append(_measurement(measurement))
         for feature in participant.phenotypic_features:
             packet.phenotypic_features.append(_phenotypic_feature(feature))
+        for treatment in participant.treatments:
+            packet.medical_actions.append(_medical_action(treatment))
         for uri in participant.audio_references:
             packet.files.append(pp.File(uri=uri))
 
@@ -120,6 +129,10 @@ def _individual(individual: Individual) -> pp.Individual:
         subject.time_at_last_encounter.CopyFrom(
             pp.TimeElement(age=pp.Age(iso8601duration=individual.age_iso8601))
         )
+    if individual.gender is not None:
+        subject.gender.CopyFrom(_ontology_class(individual.gender))
+    # Individual.race / .ethnicity are deliberately not written: the schema has no slot for
+    # them (see the module docstring). They stay in the IR and on the run report.
     return subject
 
 
@@ -213,6 +226,35 @@ def _evidence(evidence) -> pp.Evidence:
             external.description = reference.description
         message.reference.CopyFrom(external)
     return message
+
+
+def _medical_action(observation: TreatmentObservation) -> pp.MedicalAction:
+    """Build a ``MedicalAction`` carrying a ``Treatment``: agent, route and drug type only.
+
+    ``dose`` and ``frequency`` are read into the IR and deliberately not written. A GA4GH
+    ``DoseInterval`` requires ``quantity``, ``schedule_frequency`` *and* a ``TimeInterval``,
+    and ``TimeInterval`` is a pair of timestamps -- the one place in the schema where an Age
+    cannot stand in for a date. A self-reported current-medications list is undated, and at
+    the default age precision no date may leave the pipeline anyway, so a dose interval here
+    would either omit a required field or fabricate an interval. The reader counts what was
+    withheld (``doses_withheld``). Revisiting this is an emitter-only change, because the IR
+    already carries both: the honest form is a zero-length interval at the visit date, under
+    ``time_precision: date``.
+
+    ``drug_type`` defaults to ``UNKNOWN_DRUG_TYPE``, the proto default, which MessageToJson
+    omits -- so a self-reported list carries no ``drugType`` at all rather than a false
+    ``EHR_MEDICATION_LIST`` or ``PRESCRIPTION``.
+    """
+    treatment = pp.Treatment(agent=_ontology_class(observation.agent))
+    if observation.route is not None:
+        treatment.route_of_administration.CopyFrom(_ontology_class(observation.route))
+    if observation.drug_type in pp.DrugType.keys():
+        treatment.drug_type = pp.DrugType.Value(observation.drug_type)
+    else:
+        logger.warning("unknown drug_type %r; using UNKNOWN_DRUG_TYPE", observation.drug_type)
+    action = pp.MedicalAction()
+    action.treatment.CopyFrom(treatment)
+    return action
 
 
 def _time_element(time: TimePoint | None) -> pp.TimeElement | None:

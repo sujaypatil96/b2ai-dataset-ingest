@@ -52,3 +52,35 @@ added for it, the existing hazards double as gate cases.
 | A censored bound never reaches a gate | 900001's NT-proBNP. |
 | The silent band between the poles | 900001's systolic 128 / 124 (AHA "Elevated") → nothing. |
 | A per-foot item asserts presence and never absence | 900003's left foot 7/10 → `HP:0002936` present; right foot 10/10 asserts nothing. |
+
+## The protected supplement fixture (`protected/`)
+
+Two CSVs standing in for the REDCap Excel exports AI-READI delivers under its separate DUA for
+the controlled variables (sex, race/ethnicity, medications). Same `9000xx` ids, every value
+invented, CSV rather than `.xlsx` so the diff is readable; the `.xlsx` path builds a typed
+workbook from these in a temp dir during tests. `studyid` is the REDCap record id, which the
+OMOP tables carry as `person_id`. Every free-text cell is a `CANARY-…` string, and a test asserts
+none reaches a packet, the IR or the report.
+
+| Trap | Where |
+| --- | --- |
+| The supplement wins on sex over a redacted `person.csv` | 900001 `F`, 900002 `M`. |
+| Sex `I` (intersex) recodes to `OTHER_SEX` | 900003. |
+| Refusal `777` leaves sex and gender unset, and is counted | 900004 `scrsex` and `genderid`. |
+| Gender identity is an NCIT term | 900001 (`2`), 900002 (`1`), 900003 (`3`). |
+| The dictionary's wrong race code | 900002 ticks `race___c17459`, which must map to `NCIT:C41259`, never to the NCIT meaning of C17459. |
+| A multi-select race | 900002 ticks two boxes → two terms. |
+| Race `777` refusal / `888` other | 900003 / 900004 — no term, counted differently. |
+| Ethnicity choice `C999` ("Chicano") | 900002 → `NCIT:C209381`. |
+| Free text present and never read | `ancestry`, `raceot`, `ethnicot`, `racetrib`, `mhoccur_cnsot`, `mhoccur_cnrot`, `pxhic9`, `dvenvlocn`, `cmname`, `cmrouteot`. |
+| An id in no clinical table | 900099 in both files — counted, never emitted. |
+| A medication with dose, unit, frequency and route | 900001 levothyroxine 125 µg QD oral. |
+| An over-the-counter ingredient (watchlist) | 900001 aspirin. |
+| A dose Excel mangled into a date | 900002 metformin `2024-01-02 00:00:00` — counted, agent kept. |
+| A row with no RxNorm code | 900002 instance 2 — no agent, skipped, counted. |
+| A duplicate `(studyid, instance)` | 900002's second instance-2 row — skipped. |
+| Route `888` (other) and unit `18` (other) | 900003 — route and dose dropped, agent and `PRN` kept. |
+| A row from another instrument | 900003 `other_form` — skipped. |
+| A malformed RxNorm code | 900004 `ABC123` — skipped, counted. |
+| One code, two spellings of the term | `10582` as `levothyroxine` and `Levothyroxine Sodium` — the preflight flags it. |
+| `ONCE`, which has no NCIT frequency term | 900004 — frequency unset. |

@@ -19,7 +19,7 @@ raw tables  ->  source reader  ->  YAML mapping engine  ->  canonical IR  ->  em
 | Dataset | Status | Data |
 | --- | --- | --- |
 | [Bridge2AI-Voice](https://bridge2ai.org/data-voice/) | pilot / in progress | real data is PII/credentialed; we develop against public **synthetic** data ([justaddcoffee/b2ai-voice-synthetic-phenotype](https://github.com/justaddcoffee/b2ai-voice-synthetic-phenotype)) |
-| [Bridge2AI AI-READi](https://bridge2ai.org/data-ai-readi/) | v1 implemented | clinical data is **OMOP CDM v5.4**; developed against the public [VUMC synthetic release](https://hiplab.vumc.org/synthetix/ai-readi/) plus AI-READI's published CC-BY-4.0 crosswalk, with a committed hand-authored fixture. Nothing AI-READI-derived is committed — see below. |
+| [Bridge2AI AI-READi](https://bridge2ai.org/data-ai-readi/) | v1 implemented | clinical data is **OMOP CDM v5.4**; developed against the public [VUMC synthetic release](https://hiplab.vumc.org/synthetix/ai-readi/) plus AI-READI's published CC-BY-4.0 crosswalk, with a committed hand-authored fixture. Nothing AI-READI-derived is committed — see below. The **protected supplement** (sex, race/ethnicity, medications: REDCap exports under a separate DUA) is read with `--protected`. |
 
 ## Scope (current)
 
@@ -32,18 +32,21 @@ Phenotype tables only:
 | `questionnaire/` (PHQ-9, GAD-7, VHI-10) | → | `Measurement` (per-item ordinals + precomputed totals) |
 | audio / derived acoustic features | → | referenced, **not** ingested |
 
-AI-READI (`clinical_data/`, OMOP CDM v5.4 — long/EAV, keyed by `*_concept_id`):
+AI-READI (`clinical_data/`, OMOP CDM v5.4 — long/EAV, keyed by the variable in `*_source_value`):
 
 | Source table | → | IR / Phenopacket element |
 | --- | --- | --- |
 | `participants.tsv` + `person.csv` | → | `Individual` (age; sex where a release ships it) + cohort provenance |
 | `visit_occurrence.csv` | → | `TimeElement` (age by default — see the SDD on date precision) |
 | `condition_occurrence.csv` | → | `Disease` (item → MONDO; no onset — the date is the form-fill date) |
-| `measurement.csv` | → | `Measurement` (UCUM units, per-row reference ranges, per-eye `procedure.bodySite`) |
-| `observation.csv`, `procedure_occurrence.csv`, the 8 modality dirs | → | **not** ingested in v1 |
+| `measurement.csv` | → | `Measurement` (UCUM units, per-row reference ranges, per-eye `procedure.bodySite`) + reference-range-gated HPO `PhenotypicFeature`s |
+| `observation.csv` | → | `Measurement` for CES-D-10 and PAID-5, with gated HPO features; every other family dropped by an explicit policy |
+| protected supplement, *Demographics* export | → | `Individual.sex` (sex at birth), `Individual.gender` (NCIT gender identity); race/ethnicity **IR-only** — the schema has no slot |
+| protected supplement, *Medications* export | → | `MedicalAction.treatment` (RxNorm agent, NCIT route; dose/frequency kept in the IR, not emitted) |
+| `procedure_occurrence.csv`, the 8 modality dirs | → | **not** ingested (see the SDD for why) |
 
-v1 emits `Measurement`s only; HPO `PhenotypicFeature` derivation (which needs an
-ordinal→present/absent threshold policy) is a planned follow-up.
+The supplement is the set of variables AI-READI withholds from public releases and delivers to
+approved users as REDCap exports, not OMOP — see **The AI-READI protected supplement** below.
 
 One phenopacket per participant, with **time-stamped observations** — time-course is
 native to phenopackets via `TimeElement` (`PhenotypicFeature.onset`,
@@ -267,8 +270,8 @@ The only real axis is the data generation project.
 
 | | voice_dgp | aireadi |
 | --- | --- | --- |
-| synthetic | `b2ai-ingest voice` | no reader yet |
-| real | `b2ai-ingest voice` | no reader yet |
+| synthetic | `b2ai-ingest voice` | `b2ai-ingest aireadi` |
+| real | `b2ai-ingest voice` | `b2ai-ingest aireadi` (+ `--protected` for the supplement) |
 
 So each Voice cell is the same pair of commands against a different input path:
 
@@ -360,6 +363,38 @@ For the real cells under the ownership split, the same two commands go through t
 account and call the venv binary directly, since `uv run` needs a writable home. See
 **Separating ownership** above.
 
+#### The AI-READI protected supplement
+
+AI-READI withholds sex, race/ethnicity, medications and 5-digit zip from every public
+release and delivers them to approved users under a separate DUA — not as OMOP tables but as
+**raw REDCap exports**, one Excel workbook per form, keyed by the REDCap record id `studyid`
+(the OMOP `person_id`). Pass the directory holding them with `--protected`. The reader joins
+them onto the participants the clinical tables establish and never creates a participant from
+them.
+
+```bash
+uv sync --extra excel          # openpyxl, to read the .xlsx exports (a .csv export needs nothing)
+uv run b2ai-ingest validate-aireadi -i <release root> -c config/aireadi --strict-coverage \
+  --protected <dir holding the two exports>
+uv run b2ai-ingest aireadi -i <release root> -o out/<provenance>/aireadi/phenopackets \
+  --protected <dir holding the two exports>
+```
+
+The preflight stays PHI-safe on the supplement: it prints column names, choice codes, counts
+and an over-the-counter ingredient tally, never a cell. It also names the free-text columns
+(`ancestry`, `raceot`, `cmname`, …) as present-and-unread; no code path reads them.
+
+What lands where, and the decisions behind it, are in
+[docs/design/aireadi-ingest.md §8](docs/design/aireadi-ingest.md#8-the-protected-supplement-added-2026-10-06):
+sex at birth and an NCIT gender-identity term on the `Individual`; race and ethnicity in the IR
+and the run report only, because the schema has no slot; each medication as a
+`MedicalAction.treatment` with an RxNorm agent and NCIT route, dose and frequency kept in the
+IR but not emitted.
+
+The exports are licensed Data. Keep them under `data/real/aireadi/` (gitignored, guarded, and
+covered by the ownership split above) rather than in a Downloads folder, and run the two
+commands through the data account as for any real run.
+
 See [docs/plans/0001-voice-ingest-remaining-work.md](docs/plans/0001-voice-ingest-remaining-work.md) for
 what remains, and why AI-READI is deliberately not being generalised for yet.
 
@@ -371,8 +406,9 @@ uv run b2ai-ingest --help     # CLI help
 scripts/fetch_synthetic_data.sh   # pull the public synthetic voice data into data/synthetic/
 
 # AI-READI (OMOP CDM). Preflight first — it is PHI-safe and reports what will be dropped.
-uv run b2ai-ingest validate-aireadi -i tests/data/aireadi -c config/aireadi
-uv run b2ai-ingest aireadi -i tests/data/aireadi -o out/synthetic/aireadi/phenopackets
+# -p points at the protected supplement (sex, race/ethnicity, medications); omit it to skip.
+uv run b2ai-ingest validate-aireadi -i tests/data/aireadi -c config/aireadi -p tests/data/aireadi/protected
+uv run b2ai-ingest aireadi -i tests/data/aireadi -o out/synthetic/aireadi/phenopackets -p tests/data/aireadi/protected
 ```
 
 ## Development

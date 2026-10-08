@@ -49,6 +49,12 @@ hpo = [
 clustering = [
     "stratiphy>=0.5.1",
 ]
+# The AI-READI protected supplement (sex, race/ethnicity, medications) arrives as REDCap
+# Excel exports, read with `b2ai-ingest aireadi --protected`. Reading .xlsx needs openpyxl;
+# a .csv export of the same sheets needs nothing, which is why this is an extra.
+excel = [
+    "openpyxl>=3.1",
+]
 
 [dependency-groups]
 dev = [
